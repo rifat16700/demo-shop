@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promo Codes — Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/config.js"></script><script src="../assets/js/supabase-init.js"></script>
+    <script src="assets/js/admin-common.js"></script>
+</head>
+<body>
+<div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
+<main class="admin-main" id="adminMain" style="display:none;">
+    <header class="admin-header">
+        <div class="header-left">
+            <button class="hamburger-btn" onclick="openSidebar()">☰</button>
+            <div><div class="page-title">Promo Codes</div><div class="page-subtitle">Discount codes management</div></div>
+        </div>
+        <div class="header-right">
+            <button class="btn btn-primary" onclick="openModal()">+ Add Promo</button>
+        </div>
+    </header>
+    <div class="admin-content">
+        <div class="card" style="padding:0;">
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Code</th><th>Discount (৳)</th><th>Usage Limit</th><th>Used</th><th>Expires</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="promoBody"><tr><td colspan="7" style="text-align:center;padding:40px;color:#8E8E93;">Loading...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="modal-overlay" id="promoModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title" id="promoModalTitle">Add Promo Code</div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Code *</label>
+                <input class="form-input" id="pCode" placeholder="SAVE50" style="text-transform:uppercase;">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Discount Amount (৳) *</label>
+                <input class="form-input" id="pDiscount" type="number" placeholder="50">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Usage Limit (blank = unlimited)</label>
+                <input class="form-input" id="pLimit" type="number" placeholder="100">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Expiry Date (optional)</label>
+                <input class="form-input" id="pExpiry" type="datetime-local">
+            </div>
+        </div>
+        <div class="toggle-wrap" onclick="togglePA()" style="margin-bottom:20px;">
+            <div><div class="toggle-label">Active</div></div>
+            <button class="toggle-switch on" id="pActive" type="button"></button>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary btn-full" onclick="savePromo()">💾 Save</button>
+            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var allPromos = [], editingId = null, pActive = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+    adminInit('promos'); loadPromos();
+});
+
+function loadPromos() {
+    sb.from('promos').select('*').order('created_at', { ascending: false }).then(function(r) {
+        document.getElementById('pageLoader').style.display = 'none';
+        document.getElementById('adminMain').style.display  = 'flex';
+        allPromos = r.data || [];
+        renderPromos();
+    });
+}
+
+function renderPromos() {
+    var html = '';
+    if (!allPromos.length) { html = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#8E8E93;">No promo codes yet</td></tr>'; }
+    allPromos.forEach(function(p) {
+        html += '<tr>' +
+            '<td><code style="font-size:14px;font-weight:700;color:#BF5AF2;background:rgba(191,90,242,0.1);padding:3px 8px;border-radius:6px;">' + p.code + '</code></td>' +
+            '<td style="font-weight:700;color:#34C759;">-৳' + p.discount + '</td>' +
+            '<td>' + (p.usage_limit || '∞') + '</td>' +
+            '<td>' + (p.used_count || 0) + '</td>' +
+            '<td style="font-size:12px;color:#8E8E93;">' + (p.expires_at ? formatDateShort(p.expires_at) : 'Never') + '</td>' +
+            '<td><span class="badge ' + (p.is_active ? 'badge-delivered' : 'badge-cancelled') + '">' + (p.is_active ? 'Active' : 'Inactive') + '</span></td>' +
+            '<td style="display:flex;gap:6px;">' +
+                '<button class="btn btn-ghost btn-sm" onclick=\'editPromo(' + JSON.stringify(p).replace(/'/g,"&apos;") + ')\'>✏️</button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deletePromo(\'' + p.id + '\')">🗑️</button>' +
+            '</td></tr>';
+    });
+    document.getElementById('promoBody').innerHTML = html;
+}
+
+function openModal() {
+    editingId = null; pActive = true;
+    document.getElementById('promoModalTitle').textContent = 'Add Promo Code';
+    ['pCode','pDiscount','pLimit','pExpiry'].forEach(function(id) { document.getElementById(id).value = ''; });
+    setToggle('pActive', true);
+    document.getElementById('promoModal').classList.add('show');
+}
+
+function editPromo(p) {
+    editingId = p.id; pActive = p.is_active !== false;
+    document.getElementById('promoModalTitle').textContent = 'Edit Promo';
+    document.getElementById('pCode').value     = p.code || '';
+    document.getElementById('pDiscount').value = p.discount || '';
+    document.getElementById('pLimit').value    = p.usage_limit || '';
+    document.getElementById('pExpiry').value   = p.expires_at ? p.expires_at.substring(0,16) : '';
+    setToggle('pActive', pActive);
+    document.getElementById('promoModal').classList.add('show');
+}
+
+function setToggle(id, state) {
+    var el = document.getElementById(id);
+    if (state) el.classList.add('on'); else el.classList.remove('on');
+}
+function togglePA() { pActive = !pActive; setToggle('pActive', pActive); }
+
+function savePromo() {
+    var code = document.getElementById('pCode').value.trim().toUpperCase();
+    var disc = parseInt(document.getElementById('pDiscount').value) || 0;
+    if (!code || !disc) { showToast('Code and discount required', 'error'); return; }
+    var payload = {
+        code: code, discount: disc, is_active: pActive,
+        usage_limit: parseInt(document.getElementById('pLimit').value) || null,
+        expires_at: document.getElementById('pExpiry').value || null
+    };
+    var req = editingId ? sb.from('promos').update(payload).eq('id', editingId) : sb.from('promos').insert([payload]);
+    req.then(function(r) {
+        if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+        showToast('✅ Saved!', 'success'); closeModal(); loadPromos();
+    });
+}
+
+function deletePromo(id) {
+    if (!adminConfirm('Delete this promo code?')) return;
+    sb.from('promos').delete().eq('id', id).then(function(r) {
+        if (r.error) { showToast('Delete failed', 'error'); return; }
+        showToast('Deleted!', 'success'); loadPromos();
+    });
+}
+function closeModal() { document.getElementById('promoModal').classList.remove('show'); }
+</script>
+</body>
+</html>

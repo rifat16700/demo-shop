@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products — Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/supabase-init.js"></script>
+    <script src="assets/js/admin-common.js"></script>
+    <style>
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+        .product-card {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: var(--radius-md); overflow: hidden; transition: var(--transition);
+        }
+        .product-card:hover { border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
+        .product-img { width: 100%; height: 180px; object-fit: cover; background: var(--bg-card); display: block; }
+        .product-card-body { padding: 14px; }
+        .product-name { font-weight: 700; font-size: 14px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .product-price { font-size: 16px; font-weight: 800; color: var(--accent); }
+        .product-old-price { font-size: 12px; color: var(--text-secondary); text-decoration: line-through; margin-left: 6px; }
+        .product-card-footer { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); }
+
+        /* Variant Builder */
+        .variant-builder { }
+        .variant-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; margin-bottom: 12px; }
+        .variant-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .color-preview { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); }
+        .size-item { display: grid; grid-template-columns: 80px 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+        .gallery-url-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
+
+    <main class="admin-main" id="adminMain" style="display:none;">
+        <header class="admin-header">
+            <div class="header-left">
+                <button class="hamburger-btn" onclick="openSidebar()">☰</button>
+                <div>
+                    <div class="page-title">Products</div>
+                    <div class="page-subtitle" id="prodCountSub">Loading...</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-primary" onclick="openProductModal()">+ Add Product</button>
+            </div>
+        </header>
+
+        <div class="admin-content">
+            <div class="filter-bar">
+                <div class="search-box">
+                    <span>🔍</span>
+                    <input type="text" id="prodSearch" placeholder="Search products..." oninput="filterProducts()">
+                </div>
+                <select class="form-select" id="catFilter" onchange="filterProducts()" style="width:auto;min-width:160px;">
+                    <option value="">All Categories</option>
+                </select>
+                <select class="form-select" id="activeFilter" onchange="filterProducts()" style="width:auto;min-width:140px;">
+                    <option value="">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+
+            <div class="product-grid" id="productGrid">
+                <div style="grid-column:1/-1;text-align:center;padding:40px;color:#8E8E93;">Loading products...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Product Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-box modal-box-lg" style="max-width:800px;">
+            <div class="modal-header">
+                <div class="modal-title" id="productModalTitle">Add Product</div>
+                <button class="modal-close" onclick="closeModal('productModal')">✕</button>
+            </div>
+
+            <div style="max-height:75vh;overflow-y:auto;padding-right:4px;">
+
+            <!-- Basic Info -->
+            <div class="form-group">
+                <label class="form-label">Product Name *</label>
+                <input class="form-input" id="pName" placeholder="Product name...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="pDesc" rows="3" placeholder="Product description..."></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Base Price (৳) *</label>
+                    <input class="form-input" id="pBasePrice" type="number" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Flash Sale Discount (৳)</label>
+                    <input class="form-input" id="pFlashPrice" type="number" placeholder="0">
+                    <div class="form-hint">Final = Base Price - this amount</div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Flash Sale End Date</label>
+                    <input class="form-input" id="pFlashEnd" type="datetime-local">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" id="pCategory">
+                        <option value="">No Category</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="toggle-wrap" onclick="toggleProductField('pActive')">
+                    <div><div class="toggle-label">Active (visible on site)</div></div>
+                    <button class="toggle-switch on" id="pActive" type="button"></button>
+                </div>
+                <div class="toggle-wrap" onclick="toggleProductField('pFeatured')">
+                    <div><div class="toggle-label">Featured (Flash Deals section)</div></div>
+                    <button class="toggle-switch" id="pFeatured" type="button"></button>
+                </div>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- Gallery Images -->
+            <div class="form-group">
+                <label class="form-label">🖼️ Gallery Images (URL links)</label>
+                <div id="galleryWrap"></div>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="addGalleryUrl()" style="margin-top:8px;">+ Add Image URL</button>
+                <div class="form-hint">প্রতিটি image এর direct URL দাও। Color variant এর image আলাদা Variant section এ দিতে হবে।</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">🎬 Video URL (Optional)</label>
+                <input class="form-input" id="pVideoUrl" placeholder="YouTube / video direct link">
+                <div class="form-hint">YouTube embed link বা direct video URL দাও।</div>
+            </div>
+
+            <hr class="section-divider">
+
+            <!-- Variant Builder -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <label class="form-label" style="margin:0;">🎨 Color Variants</label>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="addVariant()">+ Add Color</button>
+            </div>
+            <div id="variantsWrap"></div>
+
+            <div style="display:flex;gap:10px;margin-top:20px;">
+                <button class="btn btn-primary btn-full" onclick="saveProduct()" id="saveProductBtn">💾 Save Product</button>
+                <button class="btn btn-ghost" onclick="closeModal('productModal')">Cancel</button>
+            </div>
+
+            </div><!-- /scroll -->
+        </div>
+    </div>
+
+    <script>
+    var allProducts = [], allCategories = [];
+    var editingProductId = null;
+    var galleryUrls = [];
+    var variants = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        adminInit('products');
+        loadCategories();
+        loadProducts();
+    });
+
+    function loadCategories() {
+        sb.from('categories').select('*').eq('is_active', true).order('sort_order').then(function(r) {
+            allCategories = r.data || [];
+            var catFilter = document.getElementById('catFilter');
+            var pCat = document.getElementById('pCategory');
+            allCategories.forEach(function(c) {
+                catFilter.innerHTML += '<option value="' + c.id + '">' + c.name + '</option>';
+                pCat.innerHTML     += '<option value="' + c.id + '">' + c.name + '</option>';
+            });
+        });
+    }
+
+    function loadProducts() {
+        sb.from('products').select('*').order('created_at', { ascending: false }).then(function(r) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            allProducts = r.data || [];
+            document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
+            renderProducts(allProducts);
+        });
+    }
+
+    function filterProducts() {
+        var q   = document.getElementById('prodSearch').value.toLowerCase();
+        var cat = document.getElementById('catFilter').value;
+        var act = document.getElementById('activeFilter').value;
+
+        var filtered = allProducts.filter(function(p) {
+            return (!q   || (p.name || '').toLowerCase().includes(q)) &&
+                   (!cat || p.category_id === cat) &&
+                   (!act || (act === 'active' ? p.is_active : !p.is_active));
+        });
+        renderProducts(filtered);
+    }
+
+    function renderProducts(products) {
+        var grid = document.getElementById('productGrid');
+        if (!products.length) {
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:#8E8E93;"><div style="font-size:40px;margin-bottom:12px;">🛍️</div><div>No products found</div></div>';
+            return;
+        }
+        grid.innerHTML = '';
+        products.forEach(function(p) {
+            var img = '';
+            var variants = p.variants || [];
+            if (variants.length && variants[0].imageUrl) {
+                img = variants[0].imageUrl;
+            } else if (p.gallery_images && p.gallery_images.length) {
+                img = p.gallery_images[0];
+            }
+
+            var finalPrice = p.base_price;
+            var saleHtml = '';
+            if (p.flash_sale_price > 0) {
+                finalPrice = p.base_price - p.flash_sale_price;
+                saleHtml = '<span class="product-old-price">৳' + p.base_price + '</span> <span class="badge badge-pending" style="font-size:10px;">SALE</span>';
+            }
+
+            var card = document.createElement('div');
+            card.className = 'product-card';
+            card.innerHTML =
+                '<img src="' + img + '" class="product-img" onerror="this.src=\'\';this.style.minHeight=\'60px\'">' +
+                '<div class="product-card-body">' +
+                    '<div class="product-name">' + p.name + '</div>' +
+                    '<div>' +
+                        '<span class="product-price">৳' + finalPrice + '</span>' + saleHtml +
+                    '</div>' +
+                    '<div style="margin-top:6px;font-size:12px;color:#8E8E93;">' +
+                        variants.length + ' color(s) | ' +
+                        (p.is_active ? '<span style="color:#34C759;">●  Active</span>' : '<span style="color:#FF3B30;">● Inactive</span>') +
+                    '</div>' +
+                '</div>' +
+                '<div class="product-card-footer">' +
+                    '<button class="btn btn-ghost btn-sm" style="flex:1;" onclick=\'editProduct(' + JSON.stringify(p).replace(/'/g,"\\'") + ')\'>✏️ Edit</button>' +
+                    '<button class="btn btn-danger btn-sm" onclick="deleteProduct(\'' + p.id + '\')">🗑️</button>' +
+                    '<button class="btn btn-ghost btn-sm" onclick="toggleActive(\'' + p.id + '\',' + p.is_active + ')">' + (p.is_active ? '🔴 Hide' : '🟢 Show') + '</button>' +
+                '</div>';
+            grid.appendChild(card);
+        });
+    }
+
+    // ── Product Modal ────────────────────────────────────────
+    function openProductModal(product) {
+        editingProductId = null;
+        galleryUrls = [''];
+        variants    = [];
+        document.getElementById('productModalTitle').textContent = 'Add New Product';
+        document.getElementById('pName').value      = '';
+        document.getElementById('pDesc').value      = '';
+        document.getElementById('pBasePrice').value = '';
+        document.getElementById('pFlashPrice').value= '';
+        document.getElementById('pFlashEnd').value  = '';
+        document.getElementById('pVideoUrl').value  = '';
+        document.getElementById('pCategory').value  = '';
+        setToggle('pActive', true);
+        setToggle('pFeatured', false);
+        renderGallery();
+        renderVariants();
+        document.getElementById('productModal').classList.add('show');
+    }
+
+    function editProduct(p) {
+        editingProductId = p.id;
+        galleryUrls = (p.gallery_images && p.gallery_images.length) ? p.gallery_images : [''];
+        variants    = p.variants ? JSON.parse(JSON.stringify(p.variants)) : [];
+
+        document.getElementById('productModalTitle').textContent = 'Edit Product';
+        document.getElementById('pName').value       = p.name || '';
+        document.getElementById('pDesc').value       = p.description || '';
+        document.getElementById('pBasePrice').value  = p.base_price || '';
+        document.getElementById('pFlashPrice').value = p.flash_sale_price || '';
+        document.getElementById('pFlashEnd').value   = p.flash_sale_end ? p.flash_sale_end.substring(0,16) : '';
+        document.getElementById('pVideoUrl').value   = p.video_url || '';
+        document.getElementById('pCategory').value   = p.category_id || '';
+        setToggle('pActive',   p.is_active);
+        setToggle('pFeatured', p.is_featured);
+        renderGallery();
+        renderVariants();
+        document.getElementById('productModal').classList.add('show');
+    }
+
+    function setToggle(id, state) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (state) el.classList.add('on'); else el.classList.remove('on');
+    }
+
+    function toggleProductField(id) {
+        var el = document.getElementById(id);
+        if (el.classList.contains('on')) el.classList.remove('on'); else el.classList.add('on');
+    }
+
+    // ── Gallery ──────────────────────────────────────────────
+    function renderGallery() {
+        var wrap = document.getElementById('galleryWrap');
+        wrap.innerHTML = '';
+        galleryUrls.forEach(function(url, i) {
+            var row = document.createElement('div');
+            row.className = 'gallery-url-row';
+            row.innerHTML =
+                '<input class="form-input" placeholder="https://...image.jpg" value="' + (url||'') + '" data-gidx="' + i + '">' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="removeGallery(' + i + ')">✕</button>';
+            wrap.appendChild(row);
+        });
+    }
+
+    function addGalleryUrl() { galleryUrls.push(''); renderGallery(); }
+    function removeGallery(i) { galleryUrls.splice(i, 1); if (!galleryUrls.length) galleryUrls = ['']; renderGallery(); }
+
+    function collectGallery() {
+        var inputs = document.querySelectorAll('[data-gidx]');
+        var arr = [];
+        inputs.forEach(function(inp) { var v = inp.value.trim(); if (v) arr.push(v); });
+        return arr;
+    }
+
+    // ── Variants ─────────────────────────────────────────────
+    function addVariant() {
+        variants.push({ colorName: '', colorHex: '#007AFF', imageUrl: '', sizes: [{ size: 'M', stock: 10, extraPrice: 0 }] });
+        renderVariants();
+    }
+
+    function addSize(vi) {
+        variants[vi].sizes.push({ size: '', stock: 0, extraPrice: 0 });
+        renderVariants();
+    }
+
+    function removeVariant(vi) { variants.splice(vi, 1); renderVariants(); }
+    function removeSize(vi, si) { variants[vi].sizes.splice(si, 1); renderVariants(); }
+
+    function renderVariants() {
+        var wrap = document.getElementById('variantsWrap');
+        wrap.innerHTML = '';
+
+        variants.forEach(function(v, vi) {
+            var sizesHtml = (v.sizes || []).map(function(s, si) {
+                return '<div class="size-item">' +
+                    '<input class="form-input" placeholder="Size" value="' + (s.size||'') + '" data-v="' + vi + '" data-s="' + si + '" data-f="size">' +
+                    '<input class="form-input" placeholder="Stock" type="number" value="' + (s.stock||0) + '" data-v="' + vi + '" data-s="' + si + '" data-f="stock">' +
+                    '<input class="form-input" placeholder="Extra ৳" type="number" value="' + (s.extraPrice||0) + '" data-v="' + vi + '" data-s="' + si + '" data-f="extraPrice">' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeSize(' + vi + ',' + si + ')">✕</button>' +
+                '</div>';
+            }).join('');
+
+            var div = document.createElement('div');
+            div.className = 'variant-item';
+            div.innerHTML =
+                '<div class="variant-header">' +
+                    '<div class="color-preview" id="cprev-' + vi + '" style="background:' + (v.colorHex||'#888') + ';"></div>' +
+                    '<input class="form-input" placeholder="Color Name" value="' + (v.colorName||'') + '" data-vf="' + vi + '" data-ff="colorName" style="flex:1;">' +
+                    '<input type="color" value="' + (v.colorHex||'#007AFF') + '" data-vf="' + vi + '" data-ff="colorHex" style="width:44px;height:38px;border-radius:8px;border:none;cursor:pointer;background:none;" oninput="document.getElementById(\'cprev-' + vi + '\').style.background=this.value">' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeVariant(' + vi + ')">🗑️</button>' +
+                '</div>' +
+                '<div class="form-group" style="margin-bottom:10px;">' +
+                    '<label class="form-label">Color Image URL</label>' +
+                    '<input class="form-input" placeholder="https://...color-image.jpg" value="' + (v.imageUrl||'') + '" data-vf="' + vi + '" data-ff="imageUrl">' +
+                '</div>' +
+                '<label class="form-label">Sizes (Name | Stock | Extra Price ৳)</label>' +
+                sizesHtml +
+                '<button type="button" class="btn btn-ghost btn-sm" onclick="addSize(' + vi + ')" style="margin-top:6px;">+ Add Size</button>';
+
+            wrap.appendChild(div);
+        });
+    }
+
+    function collectVariants() {
+        // Collect variant field values from DOM
+        var vfInputs = document.querySelectorAll('[data-vf]');
+        vfInputs.forEach(function(inp) {
+            var vi = parseInt(inp.dataset.vf);
+            var ff = inp.dataset.ff;
+            if (variants[vi] !== undefined) variants[vi][ff] = inp.value;
+        });
+
+        var sfInputs = document.querySelectorAll('[data-v][data-s]');
+        sfInputs.forEach(function(inp) {
+            var vi = parseInt(inp.dataset.v);
+            var si = parseInt(inp.dataset.s);
+            var ff = inp.dataset.f;
+            if (variants[vi] && variants[vi].sizes[si] !== undefined) {
+                var val = inp.value;
+                if (ff === 'stock' || ff === 'extraPrice') val = parseInt(val) || 0;
+                variants[vi].sizes[si][ff] = val;
+            }
+        });
+
+        return variants;
+    }
+
+    function saveProduct() {
+        var name = document.getElementById('pName').value.trim();
+        if (!name) { showToast('Product name required', 'error'); return; }
+
+        var payload = {
+            name:             name,
+            description:      document.getElementById('pDesc').value.trim(),
+            base_price:       parseInt(document.getElementById('pBasePrice').value) || 0,
+            flash_sale_price: parseInt(document.getElementById('pFlashPrice').value) || 0,
+            flash_sale_end:   document.getElementById('pFlashEnd').value || null,
+            video_url:        document.getElementById('pVideoUrl').value.trim(),
+            category_id:      document.getElementById('pCategory').value || null,
+            is_active:        document.getElementById('pActive').classList.contains('on'),
+            is_featured:      document.getElementById('pFeatured').classList.contains('on'),
+            gallery_images:   collectGallery(),
+            variants:         collectVariants(),
+        };
+
+        var btn = document.getElementById('saveProductBtn');
+        setBtnLoading(btn, true);
+
+        var req = editingProductId
+            ? sb.from('products').update(payload).eq('id', editingProductId)
+            : sb.from('products').insert([payload]);
+
+        req.then(function(r) {
+            setBtnLoading(btn, false, '💾 Save Product');
+            if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+            showToast('✅ Product saved!', 'success');
+            closeModal('productModal');
+            loadProducts();
+        });
+    }
+
+    function deleteProduct(id) {
+        if (!adminConfirm('এই product মুছবেন? এই কাজ undo করা যাবে না।')) return;
+        sb.from('products').delete().eq('id', id).then(function(r) {
+            if (r.error) { showToast('Delete failed', 'error'); return; }
+            showToast('Deleted!', 'success');
+            allProducts = allProducts.filter(function(p) { return p.id !== id; });
+            renderProducts(allProducts);
+        });
+    }
+
+    function toggleActive(id, current) {
+        sb.from('products').update({ is_active: !current }).eq('id', id).then(function(r) {
+            if (r.error) { showToast('Update failed', 'error'); return; }
+            var idx = allProducts.findIndex(function(p) { return p.id === id; });
+            if (idx > -1) allProducts[idx].is_active = !current;
+            renderProducts(allProducts);
+        });
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+    </script>
+</body>
+</html>

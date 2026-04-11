@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout — Freelancing By Rifat</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/config.js"></script><script src="assets/js/supabase-init.js"></script>
+    <style>
+        .checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; padding: 20px 0 40px; }
+        .section-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; margin-bottom: 16px; }
+        .section-card-title { font-size: 15px; font-weight: 800; color: var(--text-dark); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+        .payment-option { border: 2px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; cursor: pointer; margin-bottom: 10px; transition: var(--transition); display: flex; align-items: center; gap: 12px; }
+        .payment-option:hover { border-color: var(--primary); }
+        .payment-option.selected { border-color: var(--primary); background: rgba(255,77,77,0.04); }
+        .payment-option input[type="radio"] { accent-color: var(--primary); width: 18px; height: 18px; }
+        .payment-label { font-size: 14px; font-weight: 700; flex: 1; }
+        .payment-desc  { font-size: 12px; color: var(--text-muted); }
+        .manual-pay-box { background: rgba(255,77,77,0.05); border: 1.5px dashed var(--primary); border-radius: var(--radius-md); padding: 16px; margin-top: 12px; display: none; }
+        .adv-box { background: rgba(255,149,0,0.06); border: 1.5px solid rgba(255,149,0,0.3); border-radius: 12px; padding: 14px; margin-bottom:16px; }
+        .addon-item { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; transition: var(--transition); margin-bottom: 8px; }
+        .addon-item:hover { border-color: var(--primary); }
+        .addon-item.selected { border-color: var(--primary); background: rgba(255,77,77,0.04); }
+        .summary-line  { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; }
+        .summary-total { border-top: 2px solid var(--border); padding-top: 12px; font-size: 18px; font-weight: 900; }
+        .order-item-row2 { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        @media (max-width: 900px) { .checkout-layout { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
+
+<nav class="navbar">
+    <a href="cart.html" class="nav-icon-btn">←</a>
+    <a href="index.html" class="navbar-brand">🛍️ <span id="navBrand">Checkout</span></a>
+    <div style="margin-left:auto;font-size:13px;color:#888;">🔒 Secure Checkout</div>
+</nav>
+
+<div class="container">
+    <!-- Stepper -->
+    <div class="stepper" style="padding:20px 0 0;">
+        <div class="step-wrap">
+            <div class="step-dot active" id="step1dot">1</div>
+            <div class="step-label">Your Info</div>
+        </div>
+        <div class="step-line" id="line12"></div>
+        <div class="step-wrap">
+            <div class="step-dot" id="step2dot">2</div>
+            <div class="step-label">Delivery</div>
+        </div>
+        <div class="step-line" id="line23"></div>
+        <div class="step-wrap">
+            <div class="step-dot" id="step3dot">3</div>
+            <div class="step-label">Payment</div>
+        </div>
+    </div>
+
+    <div class="checkout-layout">
+        <!-- LEFT: Forms -->
+        <div>
+
+            <!-- STEP 1: Customer Info -->
+            <div id="step1" class="section-card">
+                <div class="section-card-title">👤 Step 1: Customer Information</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Full Name *</label>
+                        <input class="form-input" id="custName" placeholder="Your full name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number *</label>
+                        <input class="form-input" id="custPhone" placeholder="01XXXXXXXXX" type="tel">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email (optional)</label>
+                    <input class="form-input" id="custEmail" placeholder="email@example.com" type="email">
+                </div>
+                <button class="btn btn-primary btn-full" onclick="goStep2()">Continue to Delivery →</button>
+            </div>
+
+            <!-- STEP 2: Delivery -->
+            <div id="step2" class="section-card" style="display:none;">
+                <div class="section-card-title">🚚 Step 2: Delivery Details</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Division *</label>
+                        <select class="form-select" id="divSelect" onchange="loadDistricts()"><option value="">Select Division</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">District *</label>
+                        <select class="form-select" id="distSelect" onchange="loadUpazilas();calcDelivery()"><option value="">Select District</option></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Upazila / Area *</label>
+                    <select class="form-select" id="upaSelect"><option value="">Select Upazila</option></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Full Address *</label>
+                    <textarea class="form-textarea" id="custAddress" rows="2" placeholder="House #, Road #, Area..."></textarea>
+                </div>
+
+                <!-- Delivery charge display -->
+                <div id="deliveryInfo" class="adv-box" style="display:none;background:rgba(52,199,89,0.06);border-color:rgba(52,199,89,0.3);">
+                    <div style="font-size:13px;font-weight:700;color:#22C55E;">🚚 Delivery Charge: <span id="deliveryChargeLabel">৳0</span></div>
+                </div>
+
+                <!-- Addons -->
+                <div id="addonsSection">
+                    <div style="font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:10px;">✨ Add-ons (Optional)</div>
+                    <div id="addonsList"></div>
+                </div>
+
+                <div style="display:flex;gap:10px;margin-top:4px;">
+                    <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+                    <button class="btn btn-primary" style="flex:1;" onclick="goStep3()">Continue to Payment →</button>
+                </div>
+            </div>
+
+            <!-- STEP 3: Payment -->
+            <div id="step3" class="section-card" style="display:none;">
+                <div class="section-card-title">💳 Step 3: Payment Method</div>
+
+                <!-- Advance payment info -->
+                <div id="advanceSection" class="adv-box" style="display:none;">
+                    <div style="font-size:13px;font-weight:700;color:#FF9500;margin-bottom:4px;">⚠️ Advance Required</div>
+                    <div style="font-size:13px;color:#666;" id="advanceInfoText"></div>
+                    <div style="font-size:20px;font-weight:900;color:var(--text-dark);margin-top:6px;">Advance: <span id="advanceAmountLabel" style="color:var(--primary);">৳0</span></div>
+                </div>
+
+                <!-- Payment Options -->
+                <div id="paymentOptions">
+                    <!-- Will be populated from settings -->
+                </div>
+
+                <!-- Manual payment details -->
+                <div class="manual-pay-box" id="manualPayBox">
+                    <div style="font-size:13px;font-weight:700;margin-bottom:10px;">
+                        Send <span id="manualPayAmt" style="color:var(--primary);font-size:16px;">৳0</span> to:
+                    </div>
+                    <div style="font-size:20px;font-weight:800;color:var(--text-dark);margin-bottom:4px;" id="manualPayNumber">01XXXXXXXXX</div>
+                    <div style="font-size:12px;color:#888;margin-bottom:14px;" id="manualPayMethodName">bKash / Nagad</div>
+                    <div class="form-group" style="margin-bottom:12px;">
+                        <label class="form-label">Sender Number *</label>
+                        <input class="form-input" id="senderNumber" placeholder="Number you sent from" type="tel">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label">Transaction ID *</label>
+                        <input class="form-input" id="trxId" placeholder="TrxID / Reference Number">
+                    </div>
+                </div>
+
+                <!-- Promo Code -->
+                <div style="margin-top:16px;display:flex;gap:8px;">
+                    <input class="form-input" id="promoInput" placeholder="Promo code (optional)">
+                    <button class="btn btn-ghost" onclick="applyPromo()">Apply</button>
+                </div>
+                <div id="promoMsg" style="font-size:13px;margin-top:6px;"></div>
+
+                <div style="display:flex;gap:10px;margin-top:20px;">
+                    <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+                    <button class="btn btn-primary btn-full btn-lg" id="placeOrderBtn" onclick="placeOrder()">
+                        🚀 Place Order
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT: Summary -->
+        <div>
+            <div class="section-card" style="position:sticky;top:80px;">
+                <div class="section-card-title">📋 Order Summary</div>
+                <div id="summaryItems"></div>
+                <div style="margin-top:14px;">
+                    <div class="summary-line"><span>Subtotal</span><span id="smSubtotal">৳0</span></div>
+                    <div class="summary-line" id="addonLine" style="display:none;"><span>Add-ons</span><span id="smAddon">৳0</span></div>
+                    <div class="summary-line"><span>Delivery</span><span id="smDelivery">—</span></div>
+                    <div class="summary-line" id="promoLine" style="display:none;color:var(--success);"><span>Promo Discount</span><span id="smPromo">-৳0</span></div>
+                    <div class="summary-line summary-total"><span>Total</span><span id="smTotal" style="color:var(--primary);">৳0</span></div>
+                    <div class="summary-line" id="advPayLine" style="display:none;color:var(--warning);"><span>To Pay Now (Advance)</span><span id="smAdvPay">৳0</span></div>
+                    <div class="summary-line" id="codPayLine" style="display:none;color:#888;"><span>Cash on Delivery</span><span id="smCod">৳0</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────
+var cart = [], settings = {}, zones = [], addons = [];
+var currentStep  = 1;
+var deliveryCharge = 0, addonTotal = 0, promoDiscount = 0;
+var promoCode = '', selectedAddons = [];
+var advancePayable = 0;
+var selectedPayMethod = '';
+var allPromos = [];
+var draftSent = false;
+
+// ── Init ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    cart = getCart();
+    if (!cart.length) { window.location.href = 'cart.html'; return; }
+
+    // Check if returning from gateway payment
+    var urlParams = new URLSearchParams(window.location.search);
+    var pyStatus  = urlParams.get('status');
+    var pyOrderId = urlParams.get('order_id');
+    var pyTrxId   = urlParams.get('transaction_id');
+
+    var p1 = sb.from('settings').select('*').eq('id',1).single();
+    var p2 = sb.from('delivery_zones').select('*');
+    var p3 = sb.from('addons').select('*').eq('is_active',true).order('created_at');
+    var p4 = sb.from('promos').select('*').eq('is_active',true);
+
+    Promise.all([p1, p2, p3, p4]).then(function(results) {
+        settings = results[0].data || {};
+        zones    = results[1].data || [];
+        addons   = results[2].data || [];
+        allPromos = results[3].data || [];
+
+        document.getElementById('navBrand').textContent = settings.store_name || CONFIG.STORE_NAME;
+        document.getElementById('pageLoader').style.display = 'none';
+
+        renderSummaryItems();
+        renderAddons();
+        loadBdDivisions();
+
+        // If returning from payment gateway
+        if (pyStatus === 'completed' && pyOrderId) {
+            verifyGatewayPayment(pyOrderId, pyTrxId);
+        }
+    });
+
+    // Draft notification on tab leave
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden && !draftSent && cart.length) {
+            sendDraftNotification();
+            draftSent = true;
+        }
+    });
+});
+
+// ── Render Order Summary Items ────────────────────────────────
+function renderSummaryItems() {
+    var subtotal = 0;
+    var html = cart.map(function(item) {
+        var lineTotal = item.price * (item.quantity || 1);
+        subtotal += lineTotal;
+        return '<div class="order-item-row2">' +
+            (item.image ? '<img src="' + item.image + '" style="width:48px;height:48px;border-radius:8px;object-fit:cover;background:#f5f5f5;flex-shrink:0;">' : '') +
+            '<div style="flex:1;font-size:13px;">' +
+                '<div style="font-weight:700;">' + item.productName + '</div>' +
+                '<div style="color:#888;">' + (item.color||'') + ' / ' + (item.size||'') + ' × ' + (item.quantity||1) + '</div>' +
+            '</div>' +
+            '<div style="font-weight:800;font-size:14px;color:var(--primary);">৳' + lineTotal + '</div>' +
+        '</div>';
+    }).join('');
+
+    document.getElementById('summaryItems').innerHTML = html;
+    document.getElementById('smSubtotal').textContent = '৳' + subtotal;
+    updateSummaryTotals();
+}
+
+function updateSummaryTotals() {
+    var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
+    var total = subtotal + addonTotal + deliveryCharge - promoDiscount;
+    document.getElementById('smAddon').textContent   = '৳' + addonTotal;
+    document.getElementById('smDelivery').textContent = deliveryCharge > 0 ? '৳' + deliveryCharge : '—';
+    document.getElementById('smPromo').textContent    = '-৳' + promoDiscount;
+    document.getElementById('smTotal').textContent    = '৳' + total;
+    document.getElementById('addonLine').style.display  = addonTotal > 0 ? 'flex' : 'none';
+    document.getElementById('promoLine').style.display  = promoDiscount > 0 ? 'flex' : 'none';
+    return total;
+}
+
+// ── Addons ────────────────────────────────────────────────────
+function renderAddons() {
+    if (!addons.length) { document.getElementById('addonsSection').style.display = 'none'; return; }
+    var html = addons.map(function(a) {
+        return '<div class="addon-item" onclick="toggleAddon(\'' + a.id + '\',this)" data-id="' + a.id + '" data-price="' + a.price + '">' +
+            '<span style="font-size:22px;">' + (a.icon||'🎁') + '</span>' +
+            '<div style="flex:1;"><div style="font-weight:700;font-size:14px;">' + a.name + '</div></div>' +
+            '<div style="font-weight:800;color:var(--primary);">+৳' + a.price + '</div>' +
+            '<input type="checkbox" style="width:18px;height:18px;accent-color:var(--primary);" data-chk="' + a.id + '">' +
+        '</div>';
+    }).join('');
+    document.getElementById('addonsList').innerHTML = html;
+}
+
+function toggleAddon(id, el) {
+    var chk = el.querySelector('[data-chk]');
+    chk.checked = !chk.checked;
+    el.classList.toggle('selected', chk.checked);
+
+    var price = parseInt(el.dataset.price) || 0;
+    if (chk.checked) {
+        if (!selectedAddons.find(function(a){return a.id===id;})) selectedAddons.push({id:id, price:price, name:el.querySelector('div > div').textContent});
+    } else {
+        selectedAddons = selectedAddons.filter(function(a){return a.id!==id;});
+    }
+
+    addonTotal = selectedAddons.reduce(function(s,a){return s+a.price;},0);
+    updateSummaryTotals();
+}
+
+// ── BD APIs ─────────────────────────────────────────────────
+function loadBdDivisions() {
+    fetch('https://bdapis.com/api/v1.1/divisions').then(function(r){return r.json();}).then(function(d) {
+        var sel = document.getElementById('divSelect');
+        (d.data || []).forEach(function(div) {
+            sel.innerHTML += '<option value="' + div.division + '">' + div.division + '</option>';
+        });
+    }).catch(function(){});
+}
+
+function loadDistricts() {
+    var div = document.getElementById('divSelect').value;
+    if (!div) return;
+    var sel = document.getElementById('distSelect');
+    sel.innerHTML = '<option value="">Loading...</option>';
+    fetch('https://bdapis.com/api/v1.1/division/' + div).then(function(r){return r.json();}).then(function(d) {
+        sel.innerHTML = '<option value="">Select District</option>';
+        (d.data || []).forEach(function(dist) {
+            sel.innerHTML += '<option value="' + dist.district + '">' + dist.district + '</option>';
+        });
+    }).catch(function(){});
+}
+
+function loadUpazilas() {
+    var dist = document.getElementById('distSelect').value;
+    if (!dist) return;
+    var sel = document.getElementById('upaSelect');
+    sel.innerHTML = '<option value="">Loading...</option>';
+    fetch('https://bdapis.com/api/v1.1/district/' + dist).then(function(r){return r.json();}).then(function(d) {
+        sel.innerHTML = '<option value="">Select Upazila</option>';
+        (d.data || []).forEach(function(u) {
+            sel.innerHTML += '<option value="' + (u.upazilla||u.upazila) + '">' + (u.upazilla||u.upazila) + '</option>';
+        });
+    }).catch(function(){});
+    calcDelivery();
+}
+
+function calcDelivery() {
+    var district = document.getElementById('distSelect').value;
+    if (!district) return;
+
+    deliveryCharge = 120; // default
+    for (var i = 0; i < zones.length; i++) {
+        var z = zones[i];
+        if (z.districts && z.districts.includes(district)) {
+            deliveryCharge = z.charge;
+            break;
+        }
+        if (!z.districts || z.districts.length === 0) {
+            deliveryCharge = z.charge; // fallback zone
+        }
+    }
+
+    document.getElementById('deliveryInfo').style.display = 'block';
+    document.getElementById('deliveryChargeLabel').textContent = '৳' + deliveryCharge;
+    updateSummaryTotals();
+}
+
+// ── Stepper ──────────────────────────────────────────────────
+function goStep(n) {
+    currentStep = n;
+    ['step1','step2','step3'].forEach(function(id, i) {
+        document.getElementById(id).style.display = (i+1 === n) ? 'block' : 'none';
+    });
+
+    var dots = ['step1dot','step2dot','step3dot'];
+    dots.forEach(function(id, i) {
+        var el = document.getElementById(id);
+        el.classList.remove('active','done');
+        if (i+1 < n)  el.classList.add('done');
+        if (i+1 === n) el.classList.add('active');
+    });
+
+    ['line12','line23'].forEach(function(id, i) {
+        var el = document.getElementById(id);
+        el.classList.toggle('done', n > i+2);
+    });
+
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function goStep2() {
+    var name  = document.getElementById('custName').value.trim();
+    var phone = document.getElementById('custPhone').value.trim();
+    if (!name)  { alert('Please enter your name'); return; }
+    if (!phone || phone.length < 11) { alert('Please enter a valid phone number'); return; }
+    goStep(2);
+}
+
+function goStep3() {
+    var div  = document.getElementById('divSelect').value;
+    var dist = document.getElementById('distSelect').value;
+    var upa  = document.getElementById('upaSelect').value;
+    var addr = document.getElementById('custAddress').value.trim();
+    if (!div || !dist) { alert('Please select Division and District'); return; }
+    if (!addr) { alert('Please enter your address'); return; }
+
+    buildPaymentOptions();
+    goStep(3);
+}
+
+// ── Payment Options ───────────────────────────────────────────
+function buildPaymentOptions() {
+    var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
+    var total = subtotal + addonTotal + deliveryCharge - promoDiscount;
+
+    // Calculate advance
+    var advAmt = settings.advance_amount || 0;
+    if (advAmt === -1) advancePayable = deliveryCharge;
+    else if (advAmt > 0) advancePayable = advAmt;
+    else advancePayable = 0;
+
+    var showAdvance = advancePayable > 0 && settings.allow_cod;
+    var advSection = document.getElementById('advanceSection');
+    if (showAdvance) {
+        advSection.style.display = 'block';
+        document.getElementById('advanceInfoText').textContent = 'Remaining ৳' + (total - advancePayable) + ' will be paid on delivery.';
+        document.getElementById('advanceAmountLabel').textContent = '৳' + advancePayable;
+        document.getElementById('advPayLine').style.display = 'flex';
+        document.getElementById('smAdvPay').textContent = '৳' + advancePayable;
+        document.getElementById('codPayLine').style.display = 'flex';
+        document.getElementById('smCod').textContent = '৳' + (total - advancePayable);
+    } else { advSection.style.display = 'none'; }
+
+    var opts = '';
+
+    // Auto gateway — settings DB থেকে, না থাকলে CONFIG থেকে
+    var proxyUrl = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;
+    if (proxyUrl) {
+        opts += payOpt('auto_gateway', '🌐', 'Pay Online', 'bKash/Rocket/Card via payment gateway (instant)', '');
+    }
+
+    // Manual bKash
+    if (settings.bkash_number) {
+        opts += payOpt('manual_bkash', '💜', 'bKash', 'Send to ' + settings.bkash_number, 'personal');
+    }
+
+    // Manual Nagad
+    if (settings.nagad_number) {
+        opts += payOpt('manual_nagad', '🧡', 'Nagad', 'Send to ' + settings.nagad_number, 'personal');
+    }
+
+    // COD
+    if (settings.allow_cod) {
+        var codLabel = advancePayable > 0 ? 'Hybrid COD (Advance + Delivery)' : 'Cash on Delivery';
+        var codDesc = advancePayable > 0 ? 'Pay ৳' + advancePayable + ' advance via bKash/Nagad, rest on delivery' : 'Pay when product is received';
+        opts += payOpt('cod', '💵', codLabel, codDesc, '');
+    }
+
+    document.getElementById('paymentOptions').innerHTML = opts;
+}
+
+function payOpt(value, icon, name, desc, badge) {
+    return '<div class="payment-option" onclick="selectPayment(\'' + value + '\')" data-payval="' + value + '">' +
+        '<input type="radio" name="payMethod" value="' + value + '">' +
+        '<span style="font-size:22px;">' + icon + '</span>' +
+        '<div>' +
+            '<div class="payment-label">' + name + (badge ? ' <span style="font-size:10px;background:#eee;padding:2px 6px;border-radius:10px;">' + badge + '</span>' : '') + '</div>' +
+            '<div class="payment-desc">' + desc + '</div>' +
+        '</div>' +
+    '</div>';
+}
+
+function selectPayment(value) {
+    selectedPayMethod = value;
+    document.querySelectorAll('.payment-option').forEach(function(el) {
+        el.classList.toggle('selected', el.dataset.payval === value);
+        var radio = el.querySelector('input[type="radio"]');
+        if (radio) radio.checked = el.dataset.payval === value;
+    });
+
+    var manualBox = document.getElementById('manualPayBox');
+    var total = updateSummaryTotals();
+    var payAmt = (value === 'cod' && advancePayable > 0) ? advancePayable : (value.startsWith('manual') ? total : 0);
+
+    if (value === 'manual_bkash' || (value === 'cod' && advancePayable > 0 && settings.advance_method === 'manual')) {
+        var num = (value === 'manual_bkash') ? settings.bkash_number : settings.bkash_number;
+        document.getElementById('manualPayNumber').textContent  = num || '';
+        document.getElementById('manualPayMethodName').textContent = 'bKash';
+        document.getElementById('manualPayAmt').textContent     = '৳' + (value === 'manual_bkash' ? total : advancePayable);
+        manualBox.style.display = 'block';
+        return;
+    }
+
+    if (value === 'manual_nagad') {
+        document.getElementById('manualPayNumber').textContent  = settings.nagad_number || '';
+        document.getElementById('manualPayMethodName').textContent = 'Nagad';
+        document.getElementById('manualPayAmt').textContent     = '৳' + total;
+        manualBox.style.display = 'block';
+        return;
+    }
+
+    manualBox.style.display = 'none';
+}
+
+// ── Promo ─────────────────────────────────────────────────────
+function applyPromo() {
+    var code = document.getElementById('promoInput').value.trim().toUpperCase();
+    if (!code) return;
+    var promo = allPromos.find(function(p){ return p.code === code && p.is_active; });
+    var msg = document.getElementById('promoMsg');
+    if (!promo) { msg.textContent = '❌ Invalid or expired promo code'; msg.style.color = 'var(--danger)'; return; }
+    if (promo.expires_at && new Date(promo.expires_at) < new Date()) { msg.textContent = '❌ Promo code expired'; msg.style.color='var(--danger)'; return; }
+    promoDiscount = promo.discount;
+    promoCode     = promo.code;
+    msg.textContent = '✅ Discount of ৳' + promo.discount + ' applied!';
+    msg.style.color = 'var(--success)';
+    updateSummaryTotals();
+}
+
+// ── Place Order ───────────────────────────────────────────────
+function placeOrder() {
+    if (!selectedPayMethod) { alert('Please select a payment method'); return; }
+
+    var name  = document.getElementById('custName').value.trim();
+    var phone = document.getElementById('custPhone').value.trim();
+    var email = document.getElementById('custEmail').value.trim();
+    var div   = document.getElementById('divSelect').value;
+    var dist  = document.getElementById('distSelect').value;
+    var upa   = document.getElementById('upaSelect').value;
+    var addr  = document.getElementById('custAddress').value.trim();
+
+    var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
+    var total    = subtotal + addonTotal + deliveryCharge - promoDiscount;
+
+    // Manual payment validation
+    var senderNum = '', trxId = '';
+    var manualBox = document.getElementById('manualPayBox');
+    if (manualBox.style.display !== 'none') {
+        senderNum = document.getElementById('senderNumber').value.trim();
+        trxId     = document.getElementById('trxId').value.trim();
+        if (!senderNum || !trxId) { alert('Please enter Sender Number and Transaction ID'); return; }
+    }
+
+    var orderId = genOrderId();
+    var payMethod = selectedPayMethod === 'cod' ? (advancePayable > 0 ? 'Hybrid COD' : 'COD') :
+                    selectedPayMethod === 'manual_bkash' ? 'bKash' :
+                    selectedPayMethod === 'manual_nagad' ? 'Nagad' : 'Online';
+
+    var orderData = {
+        id:             orderId,
+        customer_name:  name,
+        customer_phone: phone,
+        customer_email: email,
+        division:       div,
+        district:       dist,
+        upazila:        upa,
+        address:        addr,
+        items:          cart,
+        addons:         selectedAddons.map(function(a){return a.name;}).join(', ') || 'None',
+        subtotal:       subtotal,
+        addon_total:    addonTotal,
+        delivery_charge:deliveryCharge,
+        promo_code:     promoCode || null,
+        promo_discount: promoDiscount,
+        grand_total:    total,
+        advance_payable:advancePayable,
+        payment_method: payMethod,
+        payment_status: senderNum ? 'Advance Paid' : 'Unpaid',
+        payment_trx_id: trxId || null,
+        payment_sender: senderNum || null,
+        status:         'Pending',
+    };
+
+    // Auto gateway redirect
+    if (selectedPayMethod === 'auto_gateway') {
+        initiateGatewayPayment(orderId, total, orderData);
+        return;
+    }
+
+    var btn = document.getElementById('placeOrderBtn');
+    btn.disabled = true;
+    btn.textContent = 'Placing Order...';
+
+    sb.from('orders').insert([orderData]).then(function(r) {
+        if (r.error) { btn.disabled = false; btn.textContent = '🚀 Place Order'; alert('Error: ' + r.error.message); return; }
+        sendOrderNotification(orderData);
+        localStorage.removeItem(CONFIG.CART_KEY);
+        window.location.href = 'success.html?id=' + orderId;
+    });
+}
+
+// ── Auto Gateway Payment ──────────────────────────────────────
+function initiateGatewayPayment(orderId, total, orderData) {
+    var proxyUrl = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;
+    var apiKey   = settings.gateway_api_key   || CONFIG.GATEWAY_API_KEY;
+    var name     = document.getElementById('custName').value.trim();
+    var phone    = document.getElementById('custPhone').value.trim();
+    var email    = document.getElementById('custEmail').value.trim() || (phone + '@linko.com');
+    var address  = document.getElementById('custAddress').value.trim();
+
+    var baseUrl  = window.location.href.split('?')[0];
+    var sUrl = baseUrl + '?status=completed&order_id=' + orderId;
+    var cUrl = baseUrl + '?status=cancel';
+
+    var reqBody = {
+        cus_name:    name,
+        cus_email:   email,
+        amount:      total,
+        success_url: sUrl,
+        cancel_url:  cUrl
+    };
+
+    // Save order to DB first (Pending/Unpaid), then redirect
+    sb.from('orders').insert([Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' })]).then(function(r) {
+        if (r.error) { alert('Order save failed: ' + r.error.message); return; }
+
+        fetch(proxyUrl + '?action=create', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'API-KEY': apiKey },
+            body: JSON.stringify(reqBody)
+        }).then(function(res) { return res.json(); }).then(function(pD) {
+            if (pD.payment_url) {
+                window.location.href = pD.payment_url;
+            } else {
+                alert('Gateway Error: ' + (pD.message || 'Cannot get payment URL'));
+            }
+        }).catch(function(err) {
+            alert('Gateway connection failed. Try manual payment.');
+        });
+    });
+}
+
+function verifyGatewayPayment(orderId, trxId) {
+    var proxyUrl = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;
+    var apiKey   = settings.gateway_api_key   || CONFIG.GATEWAY_API_KEY;
+
+    // Show verifying state
+    document.getElementById('pageLoader').style.display = 'flex';
+
+    fetch(proxyUrl + '?action=verify', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'API-KEY': apiKey },
+        body: JSON.stringify({ transaction_id: trxId })
+    }).then(function(r) { return r.json(); }).then(function(res) {
+        var vStatus = (res.status || '').toUpperCase();
+        var isSuccess = vStatus === 'COMPLETED' || vStatus === 'SUCCESS' || vStatus === 'VALID';
+
+        if (isSuccess) {
+            // Need to load order for Telegram notification
+            sb.from('orders').select('*').eq('id', orderId).single().then(function(oRes) {
+                var newPayStatus = (oRes.data && oRes.data.payment_method === 'Hybrid COD') ? 'Advance Paid' : 'Paid';
+
+                sb.from('orders').update({
+                    payment_status:  newPayStatus,
+                    payment_trx_id:  trxId || 'AUTO',
+                    status:          'Confirmed'
+                }).eq('id', orderId).then(function() {
+                    if (oRes.data) sendOrderNotification(oRes.data);
+                    localStorage.removeItem(CONFIG.CART_KEY);
+                    // Clean URL then redirect
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    window.location.href = 'success.html?id=' + orderId;
+                });
+            });
+        } else {
+            document.getElementById('pageLoader').style.display = 'none';
+            alert('⚠️ Payment Verification Failed!\nStatus: ' + (res.status || 'Unknown') + '\n\nContact support with Order ID: ' + orderId);
+        }
+    }).catch(function() {
+        document.getElementById('pageLoader').style.display = 'none';
+        alert('Verification failed. Please contact support with Order ID: ' + orderId);
+    });
+}
+
+// ── Telegram Notifications ────────────────────────────────────
+function sendOrderNotification(order) {
+    if (!settings.telegram_main_bot) return;
+    var chats = settings.telegram_main_chats || [];
+    if (typeof chats === 'string') chats = chats.split(',');
+
+    var msg = '🛍️ *NEW ORDER* — #' + order.id + '\n\n' +
+              '👤 ' + order.customer_name + ' | 📞 ' + order.customer_phone + '\n' +
+              '📍 ' + order.district + ', ' + order.division + '\n' +
+              '💳 Method: ' + order.payment_method + '\n' +
+              '💰 Total: ৳' + order.grand_total + '\n' +
+              (order.payment_trx_id ? '🔑 TrxID: `' + order.payment_trx_id + '`\n' : '') +
+              '📦 Items: ' + (Array.isArray(order.items) ? order.items.map(function(i){return i.productName;}).join(', ') : '—');
+
+    chats.forEach(function(chatId) {
+        if (!chatId) return;
+        fetch('https://api.telegram.org/bot' + settings.telegram_main_bot + '/sendMessage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' })
+        }).catch(function(){});
+    });
+}
+
+function sendDraftNotification() {
+    if (!settings.telegram_draft_bot || !settings.telegram_draft_chat) return;
+    var name   = document.getElementById('custName')  ? document.getElementById('custName').value.trim()  : '';
+    var phone  = document.getElementById('custPhone') ? document.getElementById('custPhone').value.trim() : '';
+    var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
+
+    var msg = '⚠️ *DRAFT ORDER* — Tab switched!\n\n' +
+              (name  ? '👤 ' + name  + '\n' : '') +
+              (phone ? '📞 ' + phone + '\n' : '') +
+              '🛒 Items: ' + cart.length + '\n' +
+              '💰 Cart Value: ৳' + subtotal;
+
+    fetch('https://api.telegram.org/bot' + settings.telegram_draft_bot + '/sendMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: settings.telegram_draft_chat, text: msg, parse_mode: 'Markdown' })
+    }).catch(function(){});
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function genOrderId() {
+    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    var id = '';
+    for (var i = 0; i < 8; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
+    return id;
+}
+
+function getCart() { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY)||'[]'); } catch(e){ return []; } }
+</script>
+</body>
+</html>

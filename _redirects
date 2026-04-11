@@ -1,0 +1,16 @@
+# Cloudflare Pages — SPA Redirect Rules
+# Project: Freelancing By Rifat E-Commerce
+
+# Admin panel — exact paths
+/admin                  /admin/index.html     200
+/admin/                 /admin/index.html     200
+
+# User app pages
+/shop                   /shop.html            200
+/cart                   /cart.html            200
+/checkout               /checkout.html        200
+/track                  /track.html           200
+/success                /success.html         200
+
+# Catch-all (serves index.html for unknown routes)
+/*                      /index.html           404

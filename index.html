@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freelancing By Rifat — Home</title>
+    <meta name="description" content="Best quality products at the best prices. Shop now at Freelancing By Rifat.">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/supabase-init.js"></script>
+</head>
+<body>
+
+<!-- Page Loader -->
+<div class="page-loader" id="pageLoader">
+    <div class="spinner"></div>
+    <div style="font-size:13px;color:#888;font-weight:600;" id="storeName">Loading...</div>
+</div>
+
+<!-- Mobile Overlay -->
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
+
+<!-- Mobile Menu -->
+<div class="mobile-menu" id="mobileMenu">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div style="font-size:18px;font-weight:800;" id="mMenuBrand">Menu</div>
+        <button onclick="closeMobileMenu()" style="background:none;border:none;font-size:22px;">✕</button>
+    </div>
+    <div id="mMenuCats"></div>
+    <hr style="margin:16px 0;border-color:#eee;">
+    <a href="track.html" style="display:flex;align-items:center;gap:10px;padding:10px;font-weight:600;color:#444;border-radius:10px;background:#f5f5f5;margin-bottom:8px;">📦 Track Order</a>
+    <a href="admin/index.html" style="display:flex;align-items:center;gap:10px;padding:10px;font-weight:600;color:#444;border-radius:10px;background:#f5f5f5;">🔐 Admin Panel</a>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar" id="mainNavbar">
+    <button class="nav-icon-btn hamburger" onclick="openMobileMenu()">☰</button>
+    <a href="index.html" class="navbar-brand">
+        <div id="navLogo" style="font-size:22px;">🛍️</div>
+        <span id="navBrand">Shop</span>
+    </a>
+    <div class="navbar-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search products..." id="searchInput" oninput="liveSearch()" autocomplete="off">
+    </div>
+    <div class="navbar-actions">
+        <a href="track.html" class="nav-icon-btn" title="Track Order">📦</a>
+        <a href="cart.html" class="nav-icon-btn" id="cartBtn" title="Cart">
+            🛒
+            <span class="cart-badge" id="cartBadge" style="display:none;">0</span>
+        </a>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main>
+    <div class="container">
+
+        <!-- Hero Slider -->
+        <section id="heroSection" style="margin-top:16px;"></section>
+
+        <!-- Categories -->
+        <section class="section">
+            <h2 class="section-title">🏷️ Categories</h2>
+            <div class="cat-scroll" id="catRow">
+                <div class="skeleton" style="width:120px;height:44px;border-radius:30px;"></div>
+                <div class="skeleton" style="width:100px;height:44px;border-radius:30px;"></div>
+                <div class="skeleton" style="width:130px;height:44px;border-radius:30px;"></div>
+            </div>
+        </section>
+
+        <!-- Flash Deals -->
+        <section class="section" id="flashSection" style="display:none;">
+            <h2 class="section-title">
+                ⚡ Flash Deals
+                <span id="flashTimer" class="flash-timer">Ends in: --:--:--</span>
+            </h2>
+            <div class="products-grid" id="flashGrid"></div>
+        </section>
+
+        <!-- All Products -->
+        <section class="section">
+            <h2 class="section-title" id="productsTitle">
+                🛍️ All Products
+                <span><a href="shop.html" style="color:var(--primary);">View All →</a></span>
+            </h2>
+            <div class="products-grid" id="productsGrid">
+                <!-- Skeletons -->
+                <div style="border-radius:14px;overflow:hidden;background:#fff;border:1px solid #eee;">
+                    <div class="skeleton" style="height:200px;border-radius:0;"></div>
+                    <div style="padding:12px;"><div class="skeleton" style="height:16px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:60%;"></div></div>
+                </div>
+                <div style="border-radius:14px;overflow:hidden;background:#fff;border:1px solid #eee;">
+                    <div class="skeleton" style="height:200px;border-radius:0;"></div>
+                    <div style="padding:12px;"><div class="skeleton" style="height:16px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:60%;"></div></div>
+                </div>
+                <div style="border-radius:14px;overflow:hidden;background:#fff;border:1px solid #eee;">
+                    <div class="skeleton" style="height:200px;border-radius:0;"></div>
+                    <div style="padding:12px;"><div class="skeleton" style="height:16px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:60%;"></div></div>
+                </div>
+                <div style="border-radius:14px;overflow:hidden;background:#fff;border:1px solid #eee;">
+                    <div class="skeleton" style="height:200px;border-radius:0;"></div>
+                    <div style="padding:12px;"><div class="skeleton" style="height:16px;margin-bottom:8px;"></div><div class="skeleton" style="height:20px;width:60%;"></div></div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="footer" id="mainFooter">
+    <div class="footer-grid">
+        <div>
+            <div class="footer-brand" id="footerBrand">Freelancing By Rifat</div>
+            <div class="footer-desc" id="footerDesc">Your trusted shopping destination. Quality products at the best price.</div>
+        </div>
+        <div>
+            <div class="footer-title">Pages</div>
+            <a href="index.html">Home</a>
+            <a href="shop.html">Shop</a>
+            <a href="track.html">Track Order</a>
+            <a href="cart.html">Cart</a>
+        </div>
+        <div>
+            <div class="footer-title">Social</div>
+            <a href="#" id="footerFb">Facebook</a>
+            <a href="#" id="footerIg">Instagram</a>
+            <a href="#" id="footerYt">YouTube</a>
+        </div>
+        <div>
+            <div class="footer-title">Support</div>
+            <a href="#" id="footerWa">WhatsApp</a>
+            <a href="track.html">Track Order</a>
+            <a href="admin/index.html">Admin Login</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <span id="footerCopyright">© 2025 Freelancing By Rifat. All rights reserved.</span>
+    </div>
+</footer>
+
+<!-- Add to Cart Toast -->
+<div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--text-dark);color:#fff;padding:12px 22px;border-radius:30px;font-size:14px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,0.2);transition:0.4s cubic-bezier(.68,-.55,.27,1.55);z-index:9999;display:flex;align-items:center;gap:10px;white-space:nowrap;" id="cartToast">
+    <span>🛒</span> <span id="cartToastMsg">Added to cart!</span>
+    <a href="cart.html" style="background:var(--primary);color:#fff;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-left:4px;">View Cart</a>
+</div>
+
+<script>
+var allProducts = [], siteSettings = {}, activeCatId = '';
+
+// ── Init ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    updateCartBadge();
+    loadSiteData();
+});
+
+function loadSiteData() {
+    var p1 = sb.from('settings').select('*').eq('id', 1).single();
+    var p2 = sb.from('banners').select('*').eq('is_active', true).order('sort_order');
+    var p3 = sb.from('categories').select('*').eq('is_active', true).order('sort_order');
+    var p4 = sb.from('products').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(20);
+
+    Promise.all([p1, p2, p3, p4]).then(function(results) {
+        var settings  = results[0].data || {};
+        var banners   = results[1].data || [];
+        var cats      = results[2].data || [];
+        allProducts   = results[3].data || [];
+
+        siteSettings = settings;
+        applySettings(settings);
+        renderHero(banners);
+        renderCategories(cats);
+        renderProducts(allProducts);
+        renderFlashDeals();
+
+        document.getElementById('pageLoader').style.display = 'none';
+    }).catch(function(err) {
+        console.error(err);
+        document.getElementById('pageLoader').style.display = 'none';
+    });
+}
+
+// ── Apply Settings ────────────────────────────────────────────
+function applySettings(s) {
+    var name = s.store_name || CONFIG.STORE_NAME;
+    document.title = name + ' — Home';
+    document.getElementById('navBrand').textContent    = name;
+    document.getElementById('footerBrand').textContent = name;
+    document.getElementById('storeName').textContent   = name;
+    document.getElementById('mMenuBrand').textContent  = 'Menu';
+    document.getElementById('footerCopyright').textContent = '© ' + new Date().getFullYear() + ' ' + name + '. All rights reserved.';
+    if (s.footer_text) document.getElementById('footerDesc').textContent = s.footer_text;
+    if (s.facebook_url)  { document.getElementById('footerFb').href = s.facebook_url; }
+    if (s.instagram_url) { document.getElementById('footerIg').href = s.instagram_url; }
+    if (s.youtube_url)   { document.getElementById('footerYt').href = s.youtube_url; }
+    if (s.whatsapp_number) {
+        document.getElementById('footerWa').href = 'https://wa.me/' + s.whatsapp_number;
+    }
+    if (s.logo_url) {
+        var lg = document.getElementById('navLogo');
+        lg.innerHTML = '<img src="' + s.logo_url + '" style="height:36px;width:auto;" onerror="this.outerHTML=\'🛍️\'">';
+    }
+}
+
+// ── Hero Slider ───────────────────────────────────────────────
+var slideIdx = 0, slideTimer;
+
+function renderHero(banners) {
+    var section = document.getElementById('heroSection');
+    if (!banners.length) { section.style.display = 'none'; return; }
+
+    var slidesHtml = banners.map(function(b) {
+        var inner = b.link_url ? '<a href="' + b.link_url + '">' : '<div>';
+        var closeTag = b.link_url ? '</a>' : '</div>';
+        return '<div class="slide">' +
+            '<img src="' + b.image_url + '" alt="' + (b.title||'') + '" loading="lazy">' +
+            '<div class="slide-content">' +
+                inner +
+                (b.title ? '<div class="slide-headline">' + b.title + '</div>' : '') +
+                (b.subtitle ? '<div class="slide-sub">' + b.subtitle + '</div>' : '') +
+                closeTag +
+            '</div>' +
+        '</div>';
+    }).join('');
+
+    var dotsHtml = banners.map(function(b, i) {
+        return '<div class="dot' + (i===0?' active':'') + '" onclick="goSlide(' + i + ')"></div>';
+    }).join('');
+
+    section.innerHTML =
+        '<div class="hero-slider">' +
+            '<div class="slider-track" id="sliderTrack">' + slidesHtml + '</div>' +
+            (banners.length > 1 ? '<button class="slider-btn slider-prev" onclick="prevSlide()">‹</button><button class="slider-btn slider-next" onclick="nextSlide()">›</button><div class="slider-dots">' + dotsHtml + '</div>' : '') +
+        '</div>';
+
+    if (banners.length > 1) startSlider(banners.length);
+}
+
+function startSlider(count) {
+    clearInterval(slideTimer);
+    slideTimer = setInterval(function() { nextSlide(count); }, 4000);
+}
+
+function goSlide(i) {
+    slideIdx = i;
+    document.getElementById('sliderTrack').style.transform = 'translateX(-' + (i * 100) + '%)';
+    document.querySelectorAll('.dot').forEach(function(d, j) { d.classList.toggle('active', j===i); });
+}
+
+function nextSlide(count) {
+    var total = count || document.querySelectorAll('.slide').length;
+    goSlide((slideIdx + 1) % total);
+}
+
+function prevSlide() {
+    var total = document.querySelectorAll('.slide').length;
+    goSlide((slideIdx - 1 + total) % total);
+}
+
+// ── Categories ────────────────────────────────────────────────
+function renderCategories(cats) {
+    var row = document.getElementById('catRow');
+    if (!cats.length) { row.parentElement.style.display = 'none'; return; }
+
+    var mmCats = document.getElementById('mMenuCats');
+    var html = '<a href="shop.html" class="cat-pill' + (!activeCatId ? ' active' : '') + '" data-cat="">🌟 All</a>';
+    var mmHtml = '<a href="shop.html" style="display:block;padding:10px;font-weight:600;color:#444;border-radius:10px;margin-bottom:4px;">🌟 All Products</a>';
+
+    cats.forEach(function(c) {
+        html += '<a href="shop.html?cat=' + c.id + '" class="cat-pill" data-cat="' + c.id + '">' +
+            (c.icon_url ? '<img src="' + c.icon_url + '">' : '') + c.name + '</a>';
+        mmHtml += '<a href="shop.html?cat=' + c.id + '" style="display:block;padding:10px;font-weight:600;color:#444;border-radius:10px;margin-bottom:4px;">' + c.name + '</a>';
+    });
+
+    row.innerHTML = html;
+    if (mmCats) mmCats.innerHTML = mmHtml;
+}
+
+// ── Flash Deals ───────────────────────────────────────────────
+function renderFlashDeals() {
+    var flashProds = allProducts.filter(function(p) {
+        return p.flash_sale_price > 0 && p.is_featured;
+    });
+
+    if (!flashProds.length) return;
+
+    document.getElementById('flashSection').style.display = 'block';
+    document.getElementById('flashGrid').innerHTML = flashProds.slice(0, 6).map(productCardHtml).join('');
+
+    // Timer (count to nearest midnight)
+    var endTime = flashProds[0].flash_sale_end ? new Date(flashProds[0].flash_sale_end) : new Date();
+    if (!flashProds[0].flash_sale_end) { endTime.setHours(23, 59, 59); }
+    startFlashTimer(endTime);
+}
+
+function startFlashTimer(end) {
+    var timer = document.getElementById('flashTimer');
+    function tick() {
+        var diff = end - Date.now();
+        if (diff <= 0) { timer.textContent = 'Ended!'; return; }
+        var h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+        timer.textContent = 'Ends: ' + pad(h) + ':' + pad(m) + ':' + pad(s);
+    }
+    tick();
+    setInterval(tick, 1000);
+}
+
+function pad(n) { return n < 10 ? '0' + n : n; }
+
+// ── Products ──────────────────────────────────────────────────
+function renderProducts(products) {
+    var grid = document.getElementById('productsGrid');
+    if (!products.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:#999;"><div style="font-size:48px;margin-bottom:12px;">🛍️</div><div>No products yet. Check back soon!</div></div>';
+        return;
+    }
+    grid.innerHTML = products.slice(0, 12).map(productCardHtml).join('');
+}
+
+function productCardHtml(p) {
+    var variants = p.variants || [];
+    var img = '';
+    if (variants.length && variants[0].imageUrl) img = variants[0].imageUrl;
+    else if (p.gallery_images && p.gallery_images.length) img = p.gallery_images[0];
+
+    var finalPrice = p.base_price;
+    var saleHtml = '';
+    if (p.flash_sale_price > 0) {
+        finalPrice = p.base_price - p.flash_sale_price;
+        saleHtml = '<span class="product-old-price">৳' + p.base_price + '</span>';
+    }
+
+    return '<a href="product.html?id=' + p.id + '" class="product-card">' +
+        '<div class="product-img-wrap">' +
+            (img ? '<img src="' + img + '" alt="' + p.name + '" loading="lazy">' : '<div style="height:200px;background:linear-gradient(135deg,#f0f0f5,#e0e0ea);display:flex;align-items:center;justify-content:center;font-size:48px;">🛍️</div>') +
+            '<div class="product-badges">' +
+                (p.flash_sale_price > 0 ? '<span class="product-badge badge-sale">SALE</span>' : '') +
+                (isNewProduct(p.created_at) ? '<span class="product-badge badge-new">NEW</span>' : '') +
+            '</div>' +
+        '</div>' +
+        '<div class="product-info">' +
+            '<div class="product-name">' + p.name + '</div>' +
+            '<div class="product-price-row">' +
+                '<span class="product-price">৳' + finalPrice + '</span>' + saleHtml +
+            '</div>' +
+            '<button class="product-add-btn" onclick="quickAddToCart(event, \'' + p.id + '\')">+ Add to Cart</button>' +
+        '</div>' +
+    '</a>';
+}
+
+function isNewProduct(created) {
+    return (Date.now() - new Date(created).getTime()) < 7 * 24 * 3600 * 1000;
+}
+
+// ── Live Search ───────────────────────────────────────────────
+function liveSearch() {
+    var q = document.getElementById('searchInput').value.trim().toLowerCase();
+    if (!q) { renderProducts(allProducts); return; }
+    var results = allProducts.filter(function(p) { return (p.name||'').toLowerCase().includes(q); });
+    renderProducts(results);
+    document.getElementById('productsTitle').textContent = '🔍 Search: "' + document.getElementById('searchInput').value + '"';
+}
+
+// ── Quick Add to Cart ─────────────────────────────────────────
+function quickAddToCart(e, productId) {
+    e.preventDefault();
+    var product = allProducts.find(function(p) { return p.id === productId; });
+    if (!product) return;
+
+    var cart = getCart();
+    var finalPrice = product.flash_sale_price > 0 ? product.base_price - product.flash_sale_price : product.base_price;
+    var variants = product.variants || [];
+    var firstImg = (variants.length && variants[0].imageUrl) ? variants[0].imageUrl : (product.gallery_images && product.gallery_images[0]) ? product.gallery_images[0] : '';
+
+    // Add with default variant (first color, first size)
+    var color = variants.length ? variants[0].colorName : '';
+    var size  = (variants.length && variants[0].sizes && variants[0].sizes.length) ? variants[0].sizes[0].size : '';
+
+    var key = product.id + '-' + color + '-' + size;
+    var existing = cart.find(function(i) { return i.key === key; });
+
+    if (existing) {
+        existing.quantity++;
+    } else {
+        cart.push({
+            key: key, productId: product.id, productName: product.name,
+            price: finalPrice, color: color, size: size, quantity: 1, image: firstImg
+        });
+    }
+
+    saveCart(cart);
+    updateCartBadge();
+    showCartToast(product.name);
+}
+
+// ── Cart Helpers ──────────────────────────────────────────────
+function getCart() { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY) || '[]'); } catch(e) { return []; } }
+function saveCart(cart) { localStorage.setItem(CONFIG.CART_KEY, JSON.stringify(cart)); }
+
+function updateCartBadge() {
+    var cart = getCart();
+    var count = cart.reduce(function(s, i) { return s + (i.quantity || 1); }, 0);
+    var badge = document.getElementById('cartBadge');
+    if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'flex' : 'none'; }
+}
+
+function showCartToast(name) {
+    var toast = document.getElementById('cartToast');
+    document.getElementById('cartToastMsg').textContent = '"' + name.substring(0,30) + '" added!';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(window.toastTimer);
+    window.toastTimer = setTimeout(function() {
+        toast.style.transform = 'translateX(-50%) translateY(100px)';
+    }, 2500);
+}
+
+// ── Mobile Menu ───────────────────────────────────────────────
+function openMobileMenu()  {
+    document.getElementById('mobileMenu').classList.add('open');
+    document.getElementById('mobileOverlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+function closeMobileMenu() {
+    document.getElementById('mobileMenu').classList.remove('open');
+    document.getElementById('mobileOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+}
+</script>
+</body>
+</html>

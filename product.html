@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product — Freelancing By Rifat</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/config.js"></script><script src="assets/js/supabase-init.js"></script>
+    <style>
+        .product-page { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 24px 0; }
+        .gallery-main { position: relative; aspect-ratio: 1; border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-light); }
+        .gallery-main img { width: 100%; height: 100%; object-fit: cover; }
+        .gallery-thumbs { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .gallery-thumb { width: 70px; height: 70px; border-radius: 10px; object-fit: cover; cursor: pointer; border: 2px solid transparent; transition: var(--transition); }
+        .gallery-thumb.active { border-color: var(--primary); }
+        .color-swatches { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+        .color-swatch { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: var(--transition); position: relative; }
+        .color-swatch.selected { border-color: var(--text-dark); box-shadow: 0 0 0 3px rgba(0,0,0,0.1); }
+        .color-swatch-label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10px; font-weight: 700; color: var(--text-dark); }
+        .size-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+        .size-btn { padding: 8px 16px; border: 2px solid var(--border); border-radius: 10px; font-size: 13px; font-weight: 700; background: #fff; cursor: pointer; transition: var(--transition); }
+        .size-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .size-btn.selected { background: var(--primary); border-color: var(--primary); color: #fff; }
+        .size-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .qty-selector { display: flex; align-items: center; gap: 0; border: 2px solid var(--border); border-radius: 12px; overflow: hidden; width: fit-content; }
+        .qty-btn2 { width: 44px; height: 44px; border: none; background: var(--bg-light); font-size: 20px; cursor: pointer; transition: var(--transition); }
+        .qty-btn2:hover { background: var(--primary); color: #fff; }
+        .qty-num2 { width: 48px; text-align: center; font-size: 16px; font-weight: 800; border: none; outline: none; font-family: inherit; background: #fff; }
+        .price-tag { font-size: 32px; font-weight: 900; color: var(--primary); }
+        .price-old  { font-size: 16px; color: var(--text-muted); text-decoration: line-through; margin-left: 8px; }
+        .video-wrap { margin-top: 20px; aspect-ratio: 16/9; border-radius: var(--radius-md); overflow: hidden; background: #000; }
+        .video-wrap iframe { width: 100%; height: 100%; border: none; }
+        @media (max-width: 768px) { .product-page { grid-template-columns: 1fr; gap: 20px; } }
+    </style>
+</head>
+<body>
+<div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
+
+<nav class="navbar">
+    <a href="shop.html" class="nav-icon-btn">←</a>
+    <a href="index.html" class="navbar-brand"><span id="navBrand">Shop</span></a>
+    <div class="navbar-actions" style="margin-left:auto;">
+        <a href="cart.html" class="nav-icon-btn">🛒<span class="cart-badge" id="cartBadge" style="display:none;">0</span></a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="product-page" id="productPage" style="display:none;">
+
+        <!-- Left: Gallery -->
+        <div>
+            <div class="gallery-main">
+                <img id="mainImg" src="" alt="">
+            </div>
+            <div class="gallery-thumbs" id="thumbsRow"></div>
+            <div class="video-wrap" id="videoWrap" style="display:none;">
+                <iframe id="videoFrame" allowfullscreen></iframe>
+            </div>
+        </div>
+
+        <!-- Right: Info -->
+        <div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;" id="breadcrumb">Home / Shop</div>
+            <h1 style="font-size:22px;font-weight:900;color:var(--text-dark);margin-bottom:10px;" id="pName">Loading...</h1>
+
+            <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:16px;">
+                <span class="price-tag" id="currentPrice">৳0</span>
+                <span class="price-old" id="priceOld"></span>
+                <span id="saleLabel" style="display:none;font-size:12px;background:var(--primary);color:#fff;padding:3px 8px;border-radius:20px;font-weight:700;margin-left:6px;">SALE</span>
+            </div>
+
+            <!-- Reviews summary -->
+            <div id="reviewSummary" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;color:#888;cursor:pointer;" onclick="document.getElementById('reviewsSection').scrollIntoView({behavior:'smooth'})">
+                <span id="reviewStars" style="color:#FF9500;font-size:16px;">★★★★★</span>
+                <span id="reviewCount">0 reviews</span>
+            </div>
+
+            <!-- Description -->
+            <p id="pDesc" style="font-size:14px;color:var(--text-body);line-height:1.7;margin-bottom:20px;"></p>
+
+            <!-- Color selector -->
+            <div id="colorSection" style="margin-bottom:24px;">
+                <div style="font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:14px;">
+                    Color: <span id="selectedColorLabel" style="color:var(--primary);">—</span>
+                </div>
+                <div class="color-swatches" id="colorSwatches"></div>
+            </div>
+
+            <!-- Size selector -->
+            <div id="sizeSection" style="margin-bottom:20px;">
+                <div style="font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:10px;">
+                    Size: <span id="selectedSizeLabel" style="color:var(--primary);">—</span>
+                    <span id="stockLabel" style="font-size:11px;color:#888;margin-left:8px;"></span>
+                </div>
+                <div class="size-btns" id="sizeBtns"></div>
+            </div>
+
+            <!-- Qty -->
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+                <div class="qty-selector">
+                    <button class="qty-btn2" onclick="changeQty(-1)">−</button>
+                    <input class="qty-num2" id="qtyInput" value="1" min="1" type="number" readonly>
+                    <button class="qty-btn2" onclick="changeQty(1)">+</button>
+                </div>
+                <div style="font-size:14px;color:#888;" id="stockInfo"></div>
+            </div>
+
+            <!-- Buttons -->
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+                <button class="btn btn-primary btn-full btn-lg" id="addToCartBtn" onclick="addToCart()">🛒 Add to Cart</button>
+                <a href="cart.html" class="btn btn-outline btn-full" onclick="addToCart()">⚡ Buy Now</a>
+                <button class="btn btn-whatsapp btn-full" id="waBtn" style="display:none;" onclick="orderWhatsApp()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.917 1.049 5.59 2.773 7.664L1.92 23.07a1 1 0 001.258 1.258l3.406-.853C8.401 24.938 10.15 25.5 12 25.5 18.627 25.5 24 20.127 24 13.5S18.627 2 12 2z"/></svg>
+                    Order via WhatsApp
+                </button>
+            </div>
+
+            <!-- Product Meta -->
+            <div style="background:var(--bg-light);border-radius:12px;padding:14px;font-size:13px;">
+                <div style="display:flex;gap:20px;flex-wrap:wrap;">
+                    <div>🚚 Fast Delivery</div>
+                    <div>🔒 Secure Payment</div>
+                    <div>↩️ Easy Return</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div id="reviewsSection" style="background:#fff;border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;border:1px solid #eee;">
+        <h2 style="font-size:18px;font-weight:800;margin-bottom:16px;">⭐ Customer Reviews</h2>
+        <div id="reviewsList"></div>
+        <hr style="margin:20px 0;border-color:#f0f0f0;">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:14px;">Write a Review</h3>
+        <div id="reviewForm">
+            <div class="form-row" style="margin-bottom:12px;">
+                <input class="form-input" id="rvName" placeholder="Your Name *">
+                <input class="form-input" id="rvPhone" placeholder="Phone (optional)">
+            </div>
+            <div style="margin-bottom:12px;">
+                <div style="font-size:13px;font-weight:700;margin-bottom:6px;">Rating *</div>
+                <div class="star-input" id="starInput">
+                    <label><input type="radio" name="star" value="5"><span>★</span></label>
+                    <label><input type="radio" name="star" value="4"><span>★</span></label>
+                    <label><input type="radio" name="star" value="3"><span>★</span></label>
+                    <label><input type="radio" name="star" value="2"><span>★</span></label>
+                    <label><input type="radio" name="star" value="1"><span>★</span></label>
+                </div>
+            </div>
+            <textarea class="form-textarea" id="rvText" placeholder="Describe your experience..." style="margin-bottom:12px;"></textarea>
+            <input class="form-input" id="rvImage" placeholder="Review image URL (optional)" style="margin-bottom:12px;">
+            <button class="btn btn-primary" onclick="submitReview()">📤 Submit Review</button>
+        </div>
+    </div>
+</div>
+
+<footer class="footer"><div class="footer-bottom"><span id="footerCopy">© 2025 Freelancing By Rifat</span></div></footer>
+
+<script>
+var product = null, settings = {}, selectedColor = null, selectedSize = null, currentQty = 1;
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateCartBadge();
+    var id = new URLSearchParams(window.location.search).get('id');
+    if (!id) { window.location.href = 'shop.html'; return; }
+
+    var p1 = sb.from('settings').select('*').eq('id',1).single();
+    var p2 = sb.from('products').select('*').eq('id', id).single();
+    var p3 = sb.from('reviews').select('*').eq('product_id', id).eq('is_approved', true).order('created_at', { ascending: false });
+
+    Promise.all([p1, p2, p3]).then(function(results) {
+        settings = results[0].data || {};
+        product  = results[1].data;
+        var reviews = results[2].data || [];
+
+        if (!product) { window.location.href = 'shop.html'; return; }
+
+        document.title = product.name + ' — ' + (settings.store_name || '');
+        document.getElementById('navBrand').textContent = settings.store_name || CONFIG.STORE_NAME;
+        document.getElementById('footerCopy').textContent = '© ' + new Date().getFullYear() + ' ' + (settings.store_name||'');
+
+        renderProduct(product);
+        renderReviews(reviews);
+        setupStarInput();
+
+        if (settings.allow_whatsapp_order && settings.whatsapp_number) {
+            document.getElementById('waBtn').style.display = 'flex';
+        }
+
+        document.getElementById('pageLoader').style.display = 'none';
+        document.getElementById('productPage').style.display = 'grid';
+    });
+});
+
+function renderProduct(p) {
+    document.getElementById('pName').textContent = p.name;
+    document.getElementById('pDesc').textContent = p.description || '';
+
+    var variants = p.variants || [];
+    var gallery  = p.gallery_images || [];
+
+    // Set initial price
+    updatePrice(null);
+
+    // Gallery
+    var allImages = [];
+    if (variants.length && variants[0].imageUrl) allImages.push(variants[0].imageUrl);
+    gallery.forEach(function(img) { if (!allImages.includes(img)) allImages.push(img); });
+
+    if (allImages.length) {
+        document.getElementById('mainImg').src = allImages[0];
+    }
+
+    var thumbsHtml = allImages.map(function(img, i) {
+        return '<img src="' + img + '" class="gallery-thumb' + (i===0?' active':'') + '" onclick="setMainImg(this,\'' + img + '\')">';
+    }).join('');
+    document.getElementById('thumbsRow').innerHTML = thumbsHtml;
+
+    // Video
+    if (p.video_url) {
+        var src = p.video_url;
+        if (src.includes('youtube.com/watch?v=')) src = src.replace('watch?v=', 'embed/');
+        if (src.includes('youtu.be/')) src = 'https://www.youtube.com/embed/' + src.split('youtu.be/')[1];
+        document.getElementById('videoFrame').src = src;
+        document.getElementById('videoWrap').style.display = 'block';
+    }
+
+    // Colors
+    if (variants.length) {
+        var colorHtml = variants.map(function(v, i) {
+            return '<div class="color-swatch' + (i===0?' selected':'') + '" style="background:' + (v.colorHex||'#888') + ';" title="' + v.colorName + '" onclick="selectColor(' + i + ')" data-vi="' + i + '">' +
+                '<span class="color-swatch-label">' + v.colorName + '</span></div>';
+        }).join('');
+        document.getElementById('colorSwatches').innerHTML = colorHtml;
+        selectColor(0);
+    } else {
+        document.getElementById('colorSection').style.display = 'none';
+        document.getElementById('sizeSection').style.display  = 'none';
+    }
+}
+
+function selectColor(vi) {
+    var variants = product.variants || [];
+    if (vi >= variants.length) return;
+    selectedColor = variants[vi];
+    selectedSize  = null;
+
+    document.getElementById('selectedColorLabel').textContent = selectedColor.colorName;
+    document.querySelectorAll('.color-swatch').forEach(function(el, i) { el.classList.toggle('selected', i === vi); });
+
+    // Update main image with color image
+    if (selectedColor.imageUrl) setMainImg(null, selectedColor.imageUrl);
+
+    // Render sizes
+    renderSizes(selectedColor.sizes || []);
+    updatePrice(null);
+}
+
+function renderSizes(sizes) {
+    var html = sizes.map(function(s, i) {
+        var outOfStock = s.stock <= 0;
+        return '<button class="size-btn' + (outOfStock?' disabled':'') + '" onclick="selectSize(' + i + ')" data-si="' + i + '"' + (outOfStock?' disabled':'') + '>' +
+            s.size + (outOfStock ? ' <span style="font-size:10px;">❌</span>' : '') + '</button>';
+    }).join('');
+    document.getElementById('sizeBtns').innerHTML = html;
+    if (sizes.length > 0 && sizes[0].stock > 0) selectSize(0);
+}
+
+function selectSize(si) {
+    var sizes = selectedColor ? selectedColor.sizes || [] : [];
+    if (si >= sizes.length) return;
+    selectedSize = sizes[si];
+
+    document.getElementById('selectedSizeLabel').textContent = selectedSize.size;
+    document.getElementById('stockLabel').textContent = 'Stock: ' + selectedSize.stock;
+    document.querySelectorAll('.size-btn').forEach(function(el, i) { el.classList.toggle('selected', i === si); });
+    updatePrice(selectedSize);
+}
+
+function updatePrice(size) {
+    var base = product.base_price;
+    var extra = size ? (size.extraPrice || 0) : 0;
+    var flashDiscount = product.flash_sale_price || 0;
+    
+    var finalPrice = base - flashDiscount + extra;
+    document.getElementById('currentPrice').textContent = '৳' + finalPrice;
+
+    if (flashDiscount > 0) {
+        document.getElementById('priceOld').textContent = '৳' + (base + extra);
+        document.getElementById('saleLabel').style.display = 'inline-flex';
+    }
+}
+
+function setMainImg(el, src) {
+    document.getElementById('mainImg').src = src;
+    document.querySelectorAll('.gallery-thumb').forEach(function(t) { t.classList.remove('active'); });
+    if (el) el.classList.add('active');
+}
+
+function changeQty(delta) {
+    var max = selectedSize ? selectedSize.stock : 999;
+    currentQty = Math.max(1, Math.min(currentQty + delta, max));
+    document.getElementById('qtyInput').value = currentQty;
+}
+
+function addToCart() {
+    var variants = product.variants || [];
+    if (variants.length && !selectedColor) { alert('Please select a color'); return; }
+    if (selectedColor && selectedColor.sizes && selectedColor.sizes.length && !selectedSize) { alert('Please select a size'); return; }
+
+    var base = product.base_price;
+    var extra = selectedSize ? (selectedSize.extraPrice || 0) : 0;
+    var flashDiscount = product.flash_sale_price || 0;
+    var finalPrice = base - flashDiscount + extra;
+
+    var allImgs = product.gallery_images || [];
+    var img = (selectedColor && selectedColor.imageUrl) ? selectedColor.imageUrl : (allImgs.length ? allImgs[0] : '');
+    var color = selectedColor ? selectedColor.colorName : '';
+    var size  = selectedSize ? selectedSize.size : '';
+    var key   = product.id + '-' + color + '-' + size;
+
+    var cart = getCart();
+    var ex = cart.find(function(i) { return i.key === key; });
+    if (ex) ex.quantity += currentQty;
+    else cart.push({ key: key, productId: product.id, productName: product.name, price: finalPrice, color: color, size: size, quantity: currentQty, image: img });
+
+    saveCart(cart);
+    updateCartBadge();
+}
+
+function orderWhatsApp() {
+    addToCart();
+    var color = selectedColor ? selectedColor.colorName : '';
+    var size  = selectedSize ? selectedSize.size : '';
+    var base = product.base_price;
+    var extra = selectedSize ? (selectedSize.extraPrice || 0) : 0;
+    var flashDiscount = product.flash_sale_price || 0;
+    var price = base - flashDiscount + extra;
+
+    var msg = 'Hello! I want to order:\n\n' +
+              '🛍️ Product: ' + product.name + '\n' +
+              (color ? '🎨 Color: ' + color + '\n' : '') +
+              (size  ? '📏 Size: '  + size  + '\n' : '') +
+              '🔢 Qty: ' + currentQty + '\n' +
+              '💰 Price: ৳' + price + '\n\n' +
+              '📦 Please confirm my order.';
+
+    var wanum = settings.whatsapp_number || '';
+    window.open('https://wa.me/' + wanum + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+// Reviews
+function renderReviews(reviews) {
+    var list = document.getElementById('reviewsList');
+    if (!reviews.length) { list.innerHTML = '<div style="text-align:center;padding:30px;color:#999;font-size:14px;">No reviews yet. Be the first!</div>'; return; }
+
+    var avg = reviews.reduce(function(s,r){return s+(r.rating||0);},0) / reviews.length;
+    document.getElementById('reviewStars').textContent = '★'.repeat(Math.round(avg)) + '☆'.repeat(5-Math.round(avg));
+    document.getElementById('reviewCount').textContent = reviews.length + ' review' + (reviews.length>1?'s':'');
+
+    list.innerHTML = reviews.map(function(r) {
+        var stars = '★'.repeat(r.rating) + '☆'.repeat(5-r.rating);
+        return '<div class="review-card-user">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">' +
+                '<div><b>' + (r.customer_name||'Anonymous') + '</b><div class="review-stars">' + stars + '</div></div>' +
+                '<div style="font-size:11px;color:#aaa;">' + new Date(r.created_at).toLocaleDateString() + '</div>' +
+            '</div>' +
+            (r.review_text ? '<p style="font-size:13.5px;line-height:1.6;">' + r.review_text + '</p>' : '') +
+            (r.review_image ? '<img src="' + r.review_image + '" style="width:80px;height:80px;border-radius:10px;object-fit:cover;margin-top:8px;">' : '') +
+        '</div>';
+    }).join('');
+}
+
+function setupStarInput() {
+    var labels = document.querySelectorAll('.star-input label span');
+    var inputs = document.querySelectorAll('.star-input input');
+    inputs.forEach(function(inp, i) {
+        inp.addEventListener('change', function() {
+            var val = parseInt(inp.value);
+            labels.forEach(function(lbl, j) { lbl.style.color = (5-j) <= val ? '#FF9500' : '#ddd'; });
+        });
+    });
+}
+
+function submitReview() {
+    var name  = document.getElementById('rvName').value.trim();
+    var phone = document.getElementById('rvPhone').value.trim();
+    var text  = document.getElementById('rvText').value.trim();
+    var img   = document.getElementById('rvImage').value.trim();
+    var starEl = document.querySelector('.star-input input:checked');
+    var rating = starEl ? parseInt(starEl.value) : 0;
+
+    if (!name) { alert('Please enter your name'); return; }
+    if (!rating) { alert('Please select a rating'); return; }
+
+    sb.from('reviews').insert([{
+        product_id: product.id, customer_name: name, customer_phone: phone,
+        rating: rating, review_text: text, review_image: img || null, is_approved: false
+    }]).then(function(r) {
+        if (r.error) { alert('Failed to submit review. Please try again.'); return; }
+        document.getElementById('reviewForm').innerHTML = '<div style="text-align:center;padding:24px;color:#22C55E;font-size:15px;font-weight:700;">✅ Review submitted! It will appear after admin approval.</div>';
+    });
+}
+
+function getCart()  { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY)||'[]'); } catch(e){ return []; } }
+function saveCart(c){ localStorage.setItem(CONFIG.CART_KEY, JSON.stringify(c)); }
+function updateCartBadge() {
+    var cart = getCart(), count = cart.reduce(function(s,i){return s+(i.quantity||1);},0);
+    var b = document.getElementById('cartBadge');
+    if (b) { b.textContent = count; b.style.display = count > 0 ? 'flex' : 'none'; }
+}
+</script>
+</body>
+</html>

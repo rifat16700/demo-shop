@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart — Freelancing By Rifat</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/config.js"></script><script src="assets/js/supabase-init.js"></script>
+    <style>
+        .cart-layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; padding: 20px 0; }
+        .order-summary { background: #fff; border-radius: var(--radius-lg); padding: 20px; border: 1px solid var(--border); position: sticky; top: 80px; height: fit-content; }
+        .summary-row   { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 10px; }
+        .summary-total { border-top: 2px solid var(--border); padding-top: 12px; margin-top: 8px; font-size: 18px; font-weight: 800; }
+        @media (max-width: 768px) { .cart-layout { grid-template-columns: 1fr; } .order-summary { position: static; } }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <a href="shop.html" class="nav-icon-btn">←</a>
+    <a href="index.html" class="navbar-brand">🛍️ <span id="navBrand">Cart</span></a>
+    <div style="margin-left:auto;font-size:13px;color:#888;" id="cartCountLabel"></div>
+</nav>
+
+<div class="container">
+    <div style="padding-top:10px;margin-bottom:4px;font-size:22px;font-weight:900;color:var(--text-dark);">🛒 Your Cart</div>
+
+    <div class="cart-layout">
+        <!-- Cart Items -->
+        <div id="cartItemsWrap"></div>
+
+        <!-- Order Summary -->
+        <div>
+            <div class="order-summary">
+                <div style="font-size:16px;font-weight:800;color:var(--text-dark);margin-bottom:16px;">📋 Order Summary</div>
+
+                <div class="summary-row"><span>Subtotal</span><span id="sumSubtotal">৳0</span></div>
+                <div class="summary-row" id="discountRow" style="color:var(--success);display:none;"><span>Discount</span><span id="sumDiscount">-৳0</span></div>
+                <div class="summary-row"><span style="color:#888;font-size:13px;">Delivery</span><span style="color:#888;font-size:13px;">Calculated at checkout</span></div>
+                <div class="summary-row summary-total"><span>Subtotal</span><span id="sumTotal" style="color:var(--primary);">৳0</span></div>
+
+                <a href="checkout.html" class="btn btn-primary btn-full btn-lg" id="checkoutBtn" style="margin-top:16px;">
+                    🚀 Proceed to Checkout
+                </a>
+
+                <a href="shop.html" style="display:block;text-align:center;margin-top:12px;font-size:13px;color:#888;font-weight:600;">← Continue Shopping</a>
+            </div>
+
+            <!-- Trust badges -->
+            <div style="background:#fff;border:1px solid #eee;border-radius:14px;padding:16px;margin-top:14px;">
+                <div style="font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:12px;">Why shop with us?</div>
+                <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:#666;">
+                    <div>🔒 Secure & Safe Checkout</div>
+                    <div>🚚 Fast Delivery Nationwide</div>
+                    <div>📦 Quality Guaranteed</div>
+                    <div>↩️ Easy Return Policy</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    sb.from('settings').select('store_name').eq('id',1).single().then(function(r) {
+        if (r.data) document.getElementById('navBrand').textContent = r.data.store_name || '';
+    });
+    renderCart();
+});
+
+function getCart()   { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY)||'[]'); } catch(e){ return []; } }
+function saveCart(c) { localStorage.setItem(CONFIG.CART_KEY, JSON.stringify(c)); }
+
+function renderCart() {
+    var cart = getCart();
+    var wrap = document.getElementById('cartItemsWrap');
+    document.getElementById('cartCountLabel').textContent = cart.length + ' item' + (cart.length!==1?'s':'');
+
+    if (!cart.length) {
+        wrap.innerHTML =
+            '<div style="text-align:center;padding:80px 20px;">' +
+            '<div style="font-size:64px;margin-bottom:16px;">🛒</div>' +
+            '<div style="font-size:20px;font-weight:800;color:var(--text-dark);margin-bottom:8px;">Cart is empty</div>' +
+            '<div style="color:#999;margin-bottom:20px;">Add some products to get started</div>' +
+            '<a href="shop.html" class="btn btn-primary btn-lg">🛍️ Start Shopping</a>' +
+            '</div>';
+        updateSummary(cart);
+        return;
+    }
+
+    wrap.innerHTML = cart.map(function(item, i) {
+        var subtotal = item.price * (item.quantity || 1);
+        return '<div class="cart-item" id="item-' + i + '">' +
+            (item.image ? '<img src="' + item.image + '" class="cart-item-img" onerror="this.style.display=\'none\'">' : '') +
+            '<div class="cart-item-info">' +
+                '<div class="cart-item-name">' + item.productName + '</div>' +
+                '<div class="cart-item-meta">' +
+                    (item.color ? '🎨 ' + item.color + '  ' : '') +
+                    (item.size  ? '📏 ' + item.size  : '') +
+                '</div>' +
+                '<div class="cart-item-price">৳' + subtotal + '</div>' +
+            '</div>' +
+            '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">' +
+                '<button onclick="removeItem(' + i + ')" style="background:none;border:none;font-size:18px;color:#ccc;cursor:pointer;" title="Remove">✕</button>' +
+                '<div class="qty-control">' +
+                    '<button class="qty-btn" onclick="changeQty(' + i + ',-1)">−</button>' +
+                    '<span class="qty-num">' + (item.quantity || 1) + '</span>' +
+                    '<button class="qty-btn" onclick="changeQty(' + i + ',1)">+</button>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+
+    updateSummary(cart);
+}
+
+function changeQty(i, delta) {
+    var cart = getCart();
+    cart[i].quantity = Math.max(1, (cart[i].quantity || 1) + delta);
+    saveCart(cart);
+    renderCart();
+}
+
+function removeItem(i) {
+    var cart = getCart();
+    cart.splice(i, 1);
+    saveCart(cart);
+    renderCart();
+}
+
+function updateSummary(cart) {
+    var subtotal = cart.reduce(function(s,i) { return s + i.price*(i.quantity||1); }, 0);
+    document.getElementById('sumSubtotal').textContent = '৳' + subtotal;
+    document.getElementById('sumTotal').textContent    = '৳' + subtotal;
+
+    var checkoutBtn = document.getElementById('checkoutBtn');
+    if (checkoutBtn && !cart.length) {
+        checkoutBtn.style.opacity = '0.4';
+        checkoutBtn.style.pointerEvents = 'none';
+    }
+}
+</script>
+</body>
+</html>

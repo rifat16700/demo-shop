@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings — Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/supabase-init.js"></script>
+    <script src="assets/js/admin-common.js"></script>
+    <style>
+        .settings-section { margin-bottom: 28px; }
+        .settings-section-title {
+            font-size: 13px; font-weight: 700; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.6px;
+            margin-bottom: 14px; padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .chat-id-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .chat-id-row .form-input { flex: 1; }
+    </style>
+</head>
+<body>
+    <div class="page-loader" id="pageLoader">
+        <div class="spinner"></div>
+    </div>
+
+    <main class="admin-main" id="adminMain" style="display:none;">
+        <header class="admin-header">
+            <div class="header-left">
+                <button class="hamburger-btn" onclick="openSidebar()">☰</button>
+                <div>
+                    <div class="page-title">Settings</div>
+                    <div class="page-subtitle">Platform configuration</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-primary" onclick="saveSettings()">💾 Save All Settings</button>
+            </div>
+        </header>
+
+        <div class="admin-content">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+
+        <!-- LEFT COLUMN -->
+        <div>
+            <!-- Store Info -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="settings-section-title">🏪 Store Information</div>
+                <div class="form-group">
+                    <label class="form-label">Store Name</label>
+                    <input class="form-input" id="storeName" placeholder="Freelancing By Rifat">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Logo URL</label>
+                    <input class="form-input" id="logoUrl" placeholder="https://...logo.png">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Favicon URL</label>
+                    <input class="form-input" id="faviconUrl" placeholder="https://...favicon.ico">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Footer Text</label>
+                    <input class="form-input" id="footerText" placeholder="© 2025 Your Store. All rights reserved.">
+                </div>
+            </div>
+
+            <!-- Social / Contact -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="settings-section-title">🌐 Social & Contact Links</div>
+                <div class="form-group">
+                    <label class="form-label">WhatsApp Number (with country code)</label>
+                    <input class="form-input" id="whatsappNumber" placeholder="8801XXXXXXXXX">
+                    <div class="form-hint">For WhatsApp Order button. Include country code (880 for BD).</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Facebook Page URL</label>
+                    <input class="form-input" id="facebookUrl" placeholder="https://facebook.com/yourpage">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Instagram URL</label>
+                    <input class="form-input" id="instagramUrl" placeholder="https://instagram.com/yourpage">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">YouTube Channel URL</label>
+                    <input class="form-input" id="youtubeUrl" placeholder="https://youtube.com/@yourchannel">
+                </div>
+            </div>
+
+            <!-- Telegram Bots -->
+            <div class="card">
+                <div class="settings-section-title">📱 Telegram Notifications</div>
+
+                <div class="settings-section-title" style="font-size:11px;border:none;color:#007AFF;padding:0;margin-bottom:10px;">Main Bot (Confirmed Orders)</div>
+                <div class="form-group">
+                    <label class="form-label">Main Bot Token</label>
+                    <input class="form-input" id="telegramMainBot" placeholder="123456789:ABCDEF...">
+                    <div class="form-hint">@BotFather থেকে পাবে। এই bot এ order notification যাবে।</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Main Chat IDs (multiple allowed)</label>
+                    <div id="mainChatIdsWrap"></div>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="addChatIdRow()" style="margin-top:8px;">+ Add Chat ID</button>
+                    <div class="form-hint">Chat ID পেতে: Bot কে message করো → api.telegram.org/bot TOKEN/getUpdates</div>
+                </div>
+
+                <hr class="section-divider">
+
+                <div class="settings-section-title" style="font-size:11px;border:none;color:#FF9500;padding:0;margin-bottom:10px;">Draft Bot (Abandoned Cart)</div>
+                <div class="form-group">
+                    <label class="form-label">Draft Bot Token</label>
+                    <input class="form-input" id="telegramDraftBot" placeholder="123456789:ABCDEF...">
+                    <div class="form-hint">Tab switch করলে draft order notification পাঠাবে।</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Draft Chat ID</label>
+                    <input class="form-input" id="telegramDraftChat" placeholder="-1001234567890">
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div>
+            <!-- Payment — bKash / Nagad -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="settings-section-title">💳 Manual Payment Numbers</div>
+                <div class="form-group">
+                    <label class="form-label">bKash Number</label>
+                    <input class="form-input" id="bkashNumber" placeholder="01XXXXXXXXX" maxlength="11">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nagad Number</label>
+                    <input class="form-input" id="nagadNumber" placeholder="01XXXXXXXXX" maxlength="11">
+                </div>
+            </div>
+
+            <!-- Payment — Auto Gateway -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="settings-section-title">🌐 Auto Payment Gateway</div>
+                <div class="form-group">
+                    <label class="form-label">Gateway Proxy URL</label>
+                    <input class="form-input" id="gatewayProxyUrl" placeholder="https://mypay.freelancingbyrifat.top/api_proxy.php">
+                    <div class="form-hint">PHP proxy এর URL। Default: mypay.freelancingbyrifat.top</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Gateway API Key</label>
+                    <input class="form-input" id="gatewayApiKey" type="password" placeholder="Your secret API key">
+                    <div class="form-hint">Proxy PHP ফাইলে যে API_KEY আছে সেটা দাও।</div>
+                </div>
+            </div>
+
+            <!-- COD & Advance Settings -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="settings-section-title">📦 COD & Advance Payment</div>
+
+                <!-- Allow COD toggle -->
+                <div class="toggle-wrap" style="margin-bottom:14px;" onclick="toggleCod()">
+                    <div>
+                        <div class="toggle-label">Allow Cash on Delivery (COD)</div>
+                        <div class="toggle-desc">Off করলে শুধু Online/bKash/Nagad দিয়ে order করা যাবে।</div>
+                    </div>
+                    <button class="toggle-switch" id="codToggle" type="button"></button>
+                </div>
+
+                <!-- WhatsApp order toggle -->
+                <div class="toggle-wrap" style="margin-bottom:14px;" onclick="toggleWhatsapp()">
+                    <div>
+                        <div class="toggle-label">WhatsApp Order Button</div>
+                        <div class="toggle-desc">Product page এ WhatsApp button দেখাবে।</div>
+                    </div>
+                    <button class="toggle-switch" id="waToggle" type="button"></button>
+                </div>
+
+                <hr class="section-divider">
+
+                <div class="form-group">
+                    <label class="form-label">Advance Payment Amount (টাকা)</label>
+                    <input class="form-input" id="advanceAmount" type="number" placeholder="0">
+                    <div class="form-hint">
+                        <b>0</b> = কোনো advance নেই (pure COD) &nbsp;|&nbsp;
+                        <b>-1</b> = Delivery Charge এর সমান &nbsp;|&nbsp;
+                        <b>200</b> = Fixed 200 টাকা advance
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Advance Payment Method</label>
+                    <select class="form-select" id="advanceMethod">
+                        <option value="manual">Manual — bKash / Nagad (TrxID দিতে হবে)</option>
+                        <option value="auto">Auto — Payment Gateway redirect</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Save Button -->
+            <button class="btn btn-primary btn-full btn-lg" onclick="saveSettings()">
+                💾 Save All Settings
+            </button>
+
+        </div>
+        </div><!-- /grid -->
+        </div><!-- /admin-content -->
+    </main>
+
+    <script>
+    var settingsData = {};
+    var mainChatIds = [];
+    var codEnabled = true;
+    var waEnabled  = false;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        adminInit('settings');
+        loadSettings();
+    });
+
+    function loadSettings() {
+        sb.from('settings').select('*').eq('id', 1).single().then(function(r) {
+            document.getElementById('pageLoader').style.display  = 'none';
+            document.getElementById('adminMain').style.display   = 'flex';
+
+            // ── প্রথমবার: DB তে row নেই, Config থেকে defaults দেখাও ──
+            var s = (r.data) ? r.data : {};
+            settingsData = s;
+
+            // Store info
+            setVal('storeName',   s.store_name  || CONFIG.STORE_NAME);
+            setVal('logoUrl',     s.logo_url    || '');
+            setVal('faviconUrl',  s.favicon_url || '');
+            setVal('footerText',  s.footer_text || '© ' + new Date().getFullYear() + ' ' + CONFIG.STORE_NAME + '. All rights reserved.');
+
+            // Social
+            setVal('whatsappNumber', s.whatsapp_number || '');
+            setVal('facebookUrl',    s.facebook_url    || '');
+            setVal('instagramUrl',   s.instagram_url   || '');
+            setVal('youtubeUrl',     s.youtube_url     || '');
+
+            // Telegram
+            setVal('telegramMainBot',  s.telegram_main_bot   || '');
+            setVal('telegramDraftBot', s.telegram_draft_bot  || '');
+            setVal('telegramDraftChat',s.telegram_draft_chat || '');
+
+            // Main chat IDs
+            mainChatIds = s.telegram_main_chats || [];
+            renderChatIds();
+
+            // Payment — Gateway URL কে CONFIG থেকে default দাও
+            setVal('bkashNumber',    s.bkash_number     || '');
+            setVal('nagadNumber',    s.nagad_number     || '');
+            setVal('gatewayProxyUrl',s.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL);
+            setVal('gatewayApiKey',  s.gateway_api_key  || '');
+            setVal('advanceAmount',  s.advance_amount !== undefined && s.advance_amount !== null ? s.advance_amount : 0);
+
+            document.getElementById('advanceMethod').value = s.advance_method || 'manual';
+
+            // Toggles — default: COD ON, WhatsApp OFF
+            codEnabled = s.allow_cod !== undefined ? s.allow_cod !== false : true;
+            waEnabled  = s.allow_whatsapp_order === true;
+            updateToggle('codToggle', codEnabled);
+            updateToggle('waToggle',  waEnabled);
+        });
+    }
+
+    function setVal(id, val) {
+        var el = document.getElementById(id);
+        if (el && val !== null && val !== undefined) el.value = val;
+    }
+
+    function toggleCod() {
+        codEnabled = !codEnabled;
+        updateToggle('codToggle', codEnabled);
+    }
+
+    function toggleWhatsapp() {
+        waEnabled = !waEnabled;
+        updateToggle('waToggle', waEnabled);
+    }
+
+    function updateToggle(id, state) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (state) { el.classList.add('on'); }
+        else        { el.classList.remove('on'); }
+    }
+
+    function renderChatIds() {
+        var wrap = document.getElementById('mainChatIdsWrap');
+        wrap.innerHTML = '';
+        if (!mainChatIds.length) mainChatIds = [''];
+        mainChatIds.forEach(function(cid, i) {
+            var row = document.createElement('div');
+            row.className = 'chat-id-row';
+            row.innerHTML =
+                '<input class="form-input" placeholder="Chat ID (e.g. -1001234567890)" value="' + (cid || '') + '" data-cidx="' + i + '">' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="removeChatId(' + i + ')">✕</button>';
+            wrap.appendChild(row);
+        });
+    }
+
+    function addChatIdRow() {
+        mainChatIds.push('');
+        renderChatIds();
+    }
+
+    function removeChatId(i) {
+        mainChatIds.splice(i, 1);
+        renderChatIds();
+    }
+
+    function collectChatIds() {
+        var inputs = document.querySelectorAll('[data-cidx]');
+        var ids = [];
+        inputs.forEach(function(inp) {
+            var v = inp.value.trim();
+            if (v) ids.push(v);
+        });
+        return ids;
+    }
+
+    function saveSettings() {
+        var payload = {
+            store_name:           document.getElementById('storeName').value.trim(),
+            logo_url:             document.getElementById('logoUrl').value.trim(),
+            favicon_url:          document.getElementById('faviconUrl').value.trim(),
+            footer_text:          document.getElementById('footerText').value.trim(),
+            whatsapp_number:      document.getElementById('whatsappNumber').value.trim(),
+            facebook_url:         document.getElementById('facebookUrl').value.trim(),
+            instagram_url:        document.getElementById('instagramUrl').value.trim(),
+            youtube_url:          document.getElementById('youtubeUrl').value.trim(),
+            bkash_number:         document.getElementById('bkashNumber').value.trim(),
+            nagad_number:         document.getElementById('nagadNumber').value.trim(),
+            gateway_proxy_url:    document.getElementById('gatewayProxyUrl').value.trim(),
+            gateway_api_key:      document.getElementById('gatewayApiKey').value.trim(),
+            allow_cod:            codEnabled,
+            allow_whatsapp_order: waEnabled,
+            advance_amount:       parseInt(document.getElementById('advanceAmount').value) || 0,
+            advance_method:       document.getElementById('advanceMethod').value,
+            telegram_main_bot:    document.getElementById('telegramMainBot').value.trim(),
+            telegram_main_chats:  collectChatIds(),
+            telegram_draft_bot:   document.getElementById('telegramDraftBot').value.trim(),
+            telegram_draft_chat:  document.getElementById('telegramDraftChat').value.trim(),
+            id: 1
+        };
+
+        sb.from('settings').upsert([payload]).then(function(r) {
+            if (r.error) {
+                showToast('❌ Save failed: ' + r.error.message, 'error');
+                return;
+            }
+            showToast('✅ Settings saved successfully!', 'success');
+        });
+    }
+    </script>
+</body>
+</html>

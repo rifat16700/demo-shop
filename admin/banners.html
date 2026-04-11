@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banners — Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/config.js"></script><script src="../assets/js/supabase-init.js"></script>
+    <script src="assets/js/admin-common.js"></script>
+    <style>
+        .banner-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+        .banner-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+        .banner-img  { width: 100%; height: 150px; object-fit: cover; background: var(--bg-card); display: block; }
+        .banner-body { padding: 12px; }
+        .banner-footer { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); }
+    </style>
+</head>
+<body>
+<div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
+<main class="admin-main" id="adminMain" style="display:none;">
+    <header class="admin-header">
+        <div class="header-left">
+            <button class="hamburger-btn" onclick="openSidebar()">☰</button>
+            <div><div class="page-title">Banners</div><div class="page-subtitle">Homepage slider</div></div>
+        </div>
+        <div class="header-right">
+            <button class="btn btn-primary" onclick="openModal()">+ Add Banner</button>
+        </div>
+    </header>
+    <div class="admin-content">
+        <div class="banner-grid" id="bannerGrid">
+            <div style="grid-column:1/-1;text-align:center;padding:40px;color:#8E8E93;">Loading...</div>
+        </div>
+    </div>
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="bannerModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title" id="bannerModalTitle">Add Banner</div>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="form-group"><label class="form-label">Banner Image URL *</label>
+            <input class="form-input" id="bImg" placeholder="https://...banner.jpg" oninput="updatePreview()">
+            <img id="bPreview" src="" style="width:100%;height:120px;object-fit:cover;border-radius:10px;margin-top:8px;display:none;" alt="preview"></div>
+        <div class="form-group"><label class="form-label">Title (optional)</label>
+            <input class="form-input" id="bTitle" placeholder="Banner headline"></div>
+        <div class="form-group"><label class="form-label">Subtitle (optional)</label>
+            <input class="form-input" id="bSub" placeholder="Banner subtitle"></div>
+        <div class="form-group"><label class="form-label">Link URL (optional)</label>
+            <input class="form-input" id="bLink" placeholder="https://...shop.html"></div>
+        <div class="form-group"><label class="form-label">Sort Order</label>
+            <input class="form-input" id="bSort" type="number" value="0"></div>
+        <div class="toggle-wrap" onclick="toggleBActive()" style="margin-bottom:20px;">
+            <div><div class="toggle-label">Active (show on homepage)</div></div>
+            <button class="toggle-switch on" id="bActive" type="button"></button>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary btn-full" onclick="saveBanner()">💾 Save</button>
+            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+var allBanners = [], editingId = null, bActive = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+    adminInit('banners');
+    loadBanners();
+});
+
+function loadBanners() {
+    sb.from('banners').select('*').order('sort_order').then(function(r) {
+        document.getElementById('pageLoader').style.display = 'none';
+        document.getElementById('adminMain').style.display  = 'flex';
+        allBanners = r.data || [];
+        renderBanners();
+    });
+}
+
+function renderBanners() {
+    var grid = document.getElementById('bannerGrid');
+    if (!allBanners.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:#8E8E93;"><div style="font-size:40px;margin-bottom:12px;">🖼️</div><div>No banners yet</div></div>';
+        return;
+    }
+    grid.innerHTML = '';
+    allBanners.forEach(function(b) {
+        var card = document.createElement('div'); card.className = 'banner-card';
+        card.innerHTML =
+            '<img src="' + (b.image_url||'') + '" class="banner-img">' +
+            '<div class="banner-body">' +
+                '<div style="font-weight:700;">' + (b.title||'No title') + '</div>' +
+                '<div style="font-size:12px;color:#8E8E93;">' + (b.subtitle||'') + '</div>' +
+                '<div style="font-size:11px;color:#8E8E93;margin-top:4px;">Sort: ' + (b.sort_order||0) + ' | <span class="' + (b.is_active?'':'') + '" style="color:' + (b.is_active?'#34C759':'#FF3B30') + ';">' + (b.is_active?'Active':'Inactive') + '</span></div>' +
+            '</div>' +
+            '<div class="banner-footer">' +
+                '<button class="btn btn-ghost btn-sm" style="flex:1;" onclick=\'editBanner(' + JSON.stringify(b).replace(/'/g,"&apos;") + ')\'>✏️ Edit</button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deleteBanner(\'' + b.id + '\')">🗑️</button>' +
+            '</div>';
+        grid.appendChild(card);
+    });
+}
+
+function updatePreview() {
+    var url = document.getElementById('bImg').value.trim();
+    var prev = document.getElementById('bPreview');
+    if (url) { prev.src = url; prev.style.display = 'block'; } else { prev.style.display = 'none'; }
+}
+
+function openModal() {
+    editingId = null; bActive = true;
+    document.getElementById('bannerModalTitle').textContent = 'Add Banner';
+    ['bImg','bTitle','bSub','bLink'].forEach(function(id) { document.getElementById(id).value = ''; });
+    document.getElementById('bSort').value = 0;
+    document.getElementById('bPreview').style.display = 'none';
+    setToggle('bActive', true);
+    document.getElementById('bannerModal').classList.add('show');
+}
+
+function editBanner(b) {
+    editingId = b.id; bActive = b.is_active !== false;
+    document.getElementById('bannerModalTitle').textContent = 'Edit Banner';
+    document.getElementById('bImg').value   = b.image_url || '';
+    document.getElementById('bTitle').value = b.title || '';
+    document.getElementById('bSub').value   = b.subtitle || '';
+    document.getElementById('bLink').value  = b.link_url || '';
+    document.getElementById('bSort').value  = b.sort_order || 0;
+    setToggle('bActive', bActive);
+    updatePreview();
+    document.getElementById('bannerModal').classList.add('show');
+}
+
+function setToggle(id, state) {
+    var el = document.getElementById(id);
+    if (state) el.classList.add('on'); else el.classList.remove('on');
+}
+function toggleBActive() { bActive = !bActive; setToggle('bActive', bActive); }
+
+function saveBanner() {
+    var img = document.getElementById('bImg').value.trim();
+    if (!img) { showToast('Image URL required', 'error'); return; }
+    var payload = { image_url: img, title: document.getElementById('bTitle').value.trim(), subtitle: document.getElementById('bSub').value.trim(), link_url: document.getElementById('bLink').value.trim(), sort_order: parseInt(document.getElementById('bSort').value)||0, is_active: bActive };
+    var req = editingId ? sb.from('banners').update(payload).eq('id', editingId) : sb.from('banners').insert([payload]);
+    req.then(function(r) {
+        if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+        showToast('✅ Saved!', 'success'); closeModal(); loadBanners();
+    });
+}
+
+function deleteBanner(id) {
+    if (!adminConfirm('Delete this banner?')) return;
+    sb.from('banners').delete().eq('id', id).then(function(r) {
+        if (r.error) { showToast('Delete failed', 'error'); return; }
+        showToast('Deleted!', 'success'); loadBanners();
+    });
+}
+function closeModal() { document.getElementById('bannerModal').classList.remove('show'); }
+</script>
+</body>
+</html>

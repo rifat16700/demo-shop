@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login — Freelancing By Rifat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../../assets/js/config.js"></script>
+    <script src="../../assets/js/supabase-init.js"></script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #080810;
+            color: #F5F5F7;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background */
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            animation: float 8s ease-in-out infinite;
+            pointer-events: none;
+        }
+        .bg-orb-1 {
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(0,122,255,0.15) 0%, transparent 70%);
+            top: -100px; left: -100px;
+            animation-delay: 0s;
+        }
+        .bg-orb-2 {
+            width: 350px; height: 350px;
+            background: radial-gradient(circle, rgba(191,90,242,0.12) 0%, transparent 70%);
+            bottom: -100px; right: -100px;
+            animation-delay: -4s;
+        }
+        .bg-orb-3 {
+            width: 250px; height: 250px;
+            background: radial-gradient(circle, rgba(52,199,89,0.08) 0%, transparent 70%);
+            top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            animation-delay: -2s;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50%       { transform: translateY(-30px) scale(1.05); }
+        }
+
+        /* Grid lines background */
+        body::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        /* Login card */
+        .login-card {
+            background: rgba(19,19,31,0.85);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 28px;
+            padding: 44px 40px;
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(30px);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+        }
+
+        .login-header { text-align: center; margin-bottom: 36px; }
+
+        .login-logo {
+            width: 64px; height: 64px;
+            background: linear-gradient(135deg, #007AFF, #5856D6);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 16px;
+            box-shadow: 0 8px 30px rgba(0,122,255,0.35);
+        }
+
+        .login-title {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #F5F5F7, #8E8E93);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px;
+        }
+
+        .login-sub {
+            font-size: 13.5px;
+            color: #8E8E93;
+        }
+
+        .form-group { margin-bottom: 16px; }
+
+        .form-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: #8E8E93;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 13px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            color: #F5F5F7;
+            font-size: 14.5px;
+            font-family: inherit;
+            transition: 0.2s ease;
+            outline: none;
+        }
+
+        .form-input::placeholder { color: #48484A; }
+
+        .form-input:focus {
+            border-color: #007AFF;
+            background: rgba(0,122,255,0.06);
+            box-shadow: 0 0 0 3px rgba(0,122,255,0.18);
+        }
+
+        .password-wrap { position: relative; }
+
+        .toggle-pass {
+            position: absolute;
+            right: 14px; top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #8E8E93;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+            transition: 0.2s;
+        }
+
+        .toggle-pass:hover { color: #F5F5F7; }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #007AFF, #0066DD);
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 24px;
+            transition: 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 6px 20px rgba(0,122,255,0.3);
+        }
+
+        .login-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 28px rgba(0,122,255,0.4);
+        }
+
+        .login-btn:active:not(:disabled) { transform: translateY(0); }
+        .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-box {
+            background: rgba(255,59,48,0.1);
+            border: 1px solid rgba(255,59,48,0.25);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 13px;
+            color: #FF3B30;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 28px;
+            font-size: 12px;
+            color: #48484A;
+        }
+
+        /* Redirect loader */
+        .redirect-loader {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+            color: #34C759;
+            font-size: 14px;
+            font-weight: 600;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .redirect-loader.show { display: flex; }
+    </style>
+</head>
+<body>
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
+    <div class="login-card">
+        <div class="login-header">
+            <div class="login-logo">🛍️</div>
+            <h1 class="login-title">Admin Login</h1>
+            <p class="login-sub">Freelancing By Rifat — Control Panel</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" id="loginEmail"
+                       placeholder="admin@example.com" required autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <div class="password-wrap">
+                    <input type="password" class="form-input" id="loginPass"
+                           placeholder="Enter your password" required>
+                    <button type="button" class="toggle-pass" onclick="togglePass()" id="togglePassBtn">👁️</button>
+                </div>
+            </div>
+
+            <div class="error-box" id="loginError"></div>
+
+            <button type="submit" class="login-btn" id="loginBtn">
+                <span id="loginBtnText">🔐 Login to Dashboard</span>
+            </button>
+        </form>
+
+        <div class="redirect-loader" id="redirectLoader">
+            <div class="spinner"></div>
+            <span>Redirecting to dashboard...</span>
+        </div>
+
+        <div class="login-footer">
+            Freelancing By Rifat &copy; 2025 &mdash; Admin Panel
+        </div>
+    </div>
+
+    <script>
+        var passVisible = false;
+
+        // Check if already logged in
+        sb.auth.getSession().then(function(res) {
+            if (res.data && res.data.session) {
+                document.getElementById('redirectLoader').classList.add('show');
+                window.location.href = 'dashboard.html';
+            }
+        });
+
+        // Toggle password visibility
+        function togglePass() {
+            passVisible = !passVisible;
+            var input = document.getElementById('loginPass');
+            var btn   = document.getElementById('togglePassBtn');
+            input.type = passVisible ? 'text' : 'password';
+            btn.textContent = passVisible ? '🙈' : '👁️';
+        }
+
+        // Login form submit
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            var email = document.getElementById('loginEmail').value.trim();
+            var pass  = document.getElementById('loginPass').value;
+            var btn   = document.getElementById('loginBtn');
+            var errBox = document.getElementById('loginError');
+            var btnText = document.getElementById('loginBtnText');
+
+            errBox.style.display = 'none';
+            btn.disabled = true;
+            btnText.innerHTML = '<div class="spinner"></div>Logging in...';
+            btn.style.flexDirection = 'row';
+
+            sb.auth.signInWithPassword({ email: email, password: pass }).then(function(res) {
+                if (res.error) {
+                    errBox.textContent = '❌ ' + (res.error.message || 'Login failed. Check credentials.');
+                    errBox.style.display = 'block';
+                    btn.disabled = false;
+                    btnText.textContent = '🔐 Login to Dashboard';
+                    return;
+                }
+
+                // Success
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('redirectLoader').classList.add('show');
+                setTimeout(function() {
+                    window.location.href = 'dashboard.html';
+                }, 600);
+
+            }).catch(function(err) {
+                errBox.textContent = '❌ Network error. Please try again.';
+                errBox.style.display = 'block';
+                btn.disabled = false;
+                btnText.textContent = '🔐 Login to Dashboard';
+            });
+        });
+    </script>
+</body>
+</html>

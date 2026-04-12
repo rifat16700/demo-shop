@@ -110,6 +110,7 @@ function adminInit(activePage) {
         var userEmail = session.user.email || '';
         
         // Check if the logged in Google user's email is an allowed admin
+        /* TEMPORARILY DISABLED BY USER REQUEST
         if (!ALLOWED_ADMIN_EMAILS.includes(userEmail)) {
             alert('Access Denied: You are not authorized as an Admin (' + userEmail + '). Logging out...');
             sb.auth.signOut().then(function() {
@@ -117,6 +118,7 @@ function adminInit(activePage) {
             });
             return;
         }
+        */
 
         // Set user info in sidebar
         var email = userEmail;

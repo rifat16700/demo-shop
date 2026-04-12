@@ -320,29 +320,69 @@
         });
     }
 
-    function addGalleryUrl() { galleryUrls.push(''); renderGallery(); }
-    function removeGallery(i) { galleryUrls.splice(i, 1); if (!galleryUrls.length) galleryUrls = ['']; renderGallery(); }
+    function addGalleryUrl() { 
+        galleryUrls = collectGallery();
+        galleryUrls.push(''); 
+        renderGallery(); 
+    }
+    
+    function removeGallery(i) { 
+        galleryUrls = collectGallery();
+        galleryUrls.splice(i, 1); 
+        if (!galleryUrls.length) galleryUrls = ['']; 
+        renderGallery(); 
+    }
 
     function collectGallery() {
         var inputs = document.querySelectorAll('[data-gidx]');
         var arr = [];
-        inputs.forEach(function(inp) { var v = inp.value.trim(); if (v) arr.push(v); });
+        inputs.forEach(function(inp) { arr.push(inp.value); });
         return arr;
     }
 
     // ── Variants ─────────────────────────────────────────────
     function addVariant() {
+        collectVariants();
         variants.push({ colorName: '', colorHex: '#007AFF', imageUrl: '', sizes: [{ size: 'M', stock: 10, extraPrice: 0 }] });
         renderVariants();
     }
 
     function addSize(vi) {
+        collectVariants();
         variants[vi].sizes.push({ size: '', stock: 0, extraPrice: 0 });
         renderVariants();
     }
 
-    function removeVariant(vi) { variants.splice(vi, 1); renderVariants(); }
-    function removeSize(vi, si) { variants[vi].sizes.splice(si, 1); renderVariants(); }
+    function removeVariant(vi) { 
+        collectVariants();
+        variants.splice(vi, 1); 
+        renderVariants(); 
+    }
+    
+    function removeSize(vi, si) { 
+        collectVariants();
+        variants[vi].sizes.splice(si, 1); 
+        renderVariants(); 
+    }
+
+    function applyVariantToAll(vi) {
+        collectVariants();
+        if (variants.length <= 1) {
+            showToast('No other variants to apply to!', 'warning');
+            return;
+        }
+        var sourceVariant = variants[vi];
+        for (var i = 0; i < variants.length; i++) {
+            if (i !== vi) {
+                // Copy all data EXCEPT colorName and colorHex
+                variants[i].imageUrl = sourceVariant.imageUrl;
+                // Deep copy the sizes array
+                variants[i].sizes = JSON.parse(JSON.stringify(sourceVariant.sizes));
+            }
+        }
+        renderVariants();
+        showToast('✅ Copied image and sizes to all other variants!', 'success');
+    }
 
     function renderVariants() {
         var wrap = document.getElementById('variantsWrap');
@@ -364,7 +404,8 @@
                 '<div class="variant-header">' +
                     '<div class="color-preview" id="cprev-' + vi + '" style="background:' + (v.colorHex||'#888') + ';"></div>' +
                     '<input class="form-input" placeholder="Color Name" value="' + (v.colorName||'') + '" data-vf="' + vi + '" data-ff="colorName" style="flex:1;">' +
-                    '<input type="color" value="' + (v.colorHex||'#007AFF') + '" data-vf="' + vi + '" data-ff="colorHex" style="width:44px;height:38px;border-radius:8px;border:none;cursor:pointer;background:none;" oninput="document.getElementById(\'cprev-' + vi + '\').style.background=this.value">' +
+                    '<input type="color" value="' + (v.colorHex||'#007AFF') + '" data-vf="' + vi + '" data-ff="colorHex" title="Color Hex" style="width:44px;height:38px;border-radius:8px;border:none;cursor:pointer;background:none;" oninput="document.getElementById(\'cprev-' + vi + '\').style.background=this.value">' +
+                    '<button type="button" class="btn btn-ghost btn-sm" onclick="applyVariantToAll(' + vi + ')" title="Copy image & sizes to all other colors" style="padding:0 8px;font-size:12.5px;">📋 Apply to All</button>' +
                     '<button type="button" class="btn btn-danger btn-sm" onclick="removeVariant(' + vi + ')">🗑️</button>' +
                 '</div>' +
                 '<div class="form-group" style="margin-bottom:10px;">' +
@@ -417,7 +458,7 @@
             category_id:      document.getElementById('pCategory').value || null,
             is_active:        document.getElementById('pActive').classList.contains('on'),
             is_featured:      document.getElementById('pFeatured').classList.contains('on'),
-            gallery_images:   collectGallery(),
+            gallery_images:   collectGallery().map(function(s) { return s.trim(); }).filter(Boolean),
             variants:         collectVariants(),
         };
 

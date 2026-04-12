@@ -338,8 +338,8 @@
             <p class="login-sub">Freelancing By Rifat — Control Panel</p>
         </div>
 
-        <!-- Login Form -->
-        <form id="loginForm">
+        <!-- Login Form (removed <form> wrapper behavior to strictly prevent reloads) -->
+        <div id="loginForm">
 
             <!-- Email -->
             <div class="form-group">
@@ -381,7 +381,7 @@
             </div>
 
             <!-- Submit Button -->
-            <button type="submit" class="login-btn" id="loginBtn">
+            <button type="button" class="login-btn" id="loginBtn" onclick="doLogin()">
                 <span id="loginBtnContent">
                     Login to Dashboard
                     <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
@@ -392,7 +392,7 @@
                     </svg>
                 </span>
             </button>
-        </form>
+        </div>
 
         <!-- Success redirect msg -->
         <div class="redirect-msg" id="redirectMsg">
@@ -471,51 +471,67 @@
                 window.location.href = 'dashboard.html';
             }
         }
-
+        
         // Wait for DOM
         document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM Loaded - Login UI ready");
             checkSession();
-
-            var form = document.getElementById('loginForm');
-            if (form) {
-                form.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-
-                    if (!sb) {
-                        showToast('❌ Authentication system not ready. Please refresh.', 'error');
-                        return;
-                    }
-
-                    var email      = document.getElementById('loginEmail').value.trim();
-                    var pass       = document.getElementById('loginPass').value;
-                    var btn        = document.getElementById('loginBtn');
-                    var btnContent = document.getElementById('loginBtnContent');
-                    var originalHTML = btnContent.innerHTML;
-
-                    btn.disabled = true;
-                    btnContent.innerHTML = '<div class="spinner"></div><span>Logging in...</span>';
-
-                    const { data, error } = await sb.auth.signInWithPassword({
-                        email: email,
-                        password: pass,
-                    });
-
-                    if (error) {
-                        showToast('❌ ' + (error.message || 'Login failed.'), 'error');
-                        btn.disabled = false;
-                        btnContent.innerHTML = originalHTML;
-                        return;
-                    }
-
-                    if (data && data.session) {
-                        showToast('✅ Login successful! Redirecting...', 'success');
-                        document.getElementById('loginForm').style.display = 'none';
-                        document.getElementById('redirectMsg').classList.add('show');
-                        setTimeout(function() { window.location.href = 'dashboard.html'; }, 800);
-                    }
-                });
-            }
         });
+
+        // ══ Login Click Handler ──────────────────────────────────
+        async function doLogin() {
+            console.log("Login button clicked!");
+
+            if (!sb) {
+                console.error("Auth System is null");
+                showToast('❌ Authentication system not ready. Please refresh.', 'error');
+                return;
+            }
+
+            var email      = document.getElementById('loginEmail').value.trim();
+            var pass       = document.getElementById('loginPass').value;
+            var btn        = document.getElementById('loginBtn');
+            var btnContent = document.getElementById('loginBtnContent');
+            var originalHTML = btnContent.innerHTML;
+
+            if(!email || !pass) {
+                showToast('Please enter both email and password.', 'error');
+                return;
+            }
+
+            console.log("Attempting login for:", email);
+
+            btn.disabled = true;
+            btnContent.innerHTML = '<div class="spinner"></div><span>Logging in...</span>';
+
+            try {
+                const { data, error } = await sb.auth.signInWithPassword({
+                    email: email,
+                    password: pass,
+                });
+
+                if (error) {
+                    console.error("Supabase login error:", error);
+                    showToast('❌ ' + (error.message || 'Login failed.'), 'error');
+                    btn.disabled = false;
+                    btnContent.innerHTML = originalHTML;
+                    return;
+                }
+
+                if (data && data.session) {
+                    console.log("Login successful, redirecting.");
+                    showToast('✅ Login successful! Redirecting...', 'success');
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('redirectMsg').classList.add('show');
+                    setTimeout(function() { window.location.href = 'dashboard.html'; }, 800);
+                }
+            } catch (err) {
+                console.error("Unexpected JS crash during login:", err);
+                showToast('❌ Unexpected error occurred.', 'error');
+                btn.disabled = false;
+                btnContent.innerHTML = originalHTML;
+            }
+        }
     </script>
 </body>
 </html>

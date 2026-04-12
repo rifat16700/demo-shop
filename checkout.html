@@ -336,9 +336,16 @@ function loadUpazilas() {
     sel.innerHTML = '<option value="">Loading...</option>';
     fetch('https://bdapis.com/api/v1.1/district/' + dist).then(function(r){return r.json();}).then(function(d) {
         sel.innerHTML = '<option value="">Select Upazila</option>';
-        (d.data || []).forEach(function(u) {
-            sel.innerHTML += '<option value="' + (u.upazilla||u.upazila) + '">' + (u.upazilla||u.upazila) + '</option>';
-        });
+        if (d.data && d.data.length > 0) {
+            var upaList = d.data[0].upazilla || d.data[0].upazillas || d.data[0].upazila || [];
+            if (Array.isArray(upaList)) {
+                upaList.forEach(function(u) {
+                    sel.innerHTML += '<option value="' + u + '">' + u + '</option>';
+                });
+            } else {
+                sel.innerHTML += '<option value="' + upaList + '">' + upaList + '</option>';
+            }
+        }
     }).catch(function(){});
     calcDelivery();
 }

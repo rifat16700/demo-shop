@@ -397,7 +397,16 @@
         <!-- Success redirect msg -->
         <div class="redirect-msg" id="redirectMsg">
             <div class="spinner" style="border-top-color:#2e7d32;border-color:rgba(46,125,50,0.25);"></div>
-             <script>
+            <span>Redirecting to dashboard...</span>
+        </div>
+
+        <!-- Footer -->
+        <div class="login-footer">
+            Freelancing By Rifat &copy; 2025 &mdash; Admin Panel
+        </div>
+    </div>
+
+    <script>
         // ══ CONFIGURATION ══
         var SUPABASE_URL      = 'https://qdkppbwjgkkxzgzgsykv.supabase.co';
         var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFka3BwYndqZ2treHpnemdzeWt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzY2NjgsImV4cCI6MjA5MDgxMjY2OH0.i1x16UGnM_4C2hVGZS9JreM2FJDxsIYeiHkA4BMOfrk';
@@ -462,53 +471,52 @@
                 window.location.href = 'dashboard.html';
             }
         }
-        checkSession();
 
-        // ══ Login form submit ─────────────────────────────────────
-        var form = document.getElementById('loginForm');
-        if (form) {
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
+        // Wait for DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            checkSession();
 
-                if (!sb) {
-                    showToast('❌ Authentication system not ready.', 'error');
-                    return;
-                }
+            var form = document.getElementById('loginForm');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
 
-                var email      = document.getElementById('loginEmail').value.trim();
-                var pass       = document.getElementById('loginPass').value;
-                var btn        = document.getElementById('loginBtn');
-                var btnContent = document.getElementById('loginBtnContent');
-                var originalHTML = btnContent.innerHTML;
+                    if (!sb) {
+                        showToast('❌ Authentication system not ready. Please refresh.', 'error');
+                        return;
+                    }
 
-                btn.disabled = true;
-                btnContent.innerHTML = '<div class="spinner"></div><span>Logging in...</span>';
+                    var email      = document.getElementById('loginEmail').value.trim();
+                    var pass       = document.getElementById('loginPass').value;
+                    var btn        = document.getElementById('loginBtn');
+                    var btnContent = document.getElementById('loginBtnContent');
+                    var originalHTML = btnContent.innerHTML;
 
-                // Official Supabase Async/Await Login
-                const { data, error } = await sb.auth.signInWithPassword({
-                    email: email,
-                    password: pass,
+                    btn.disabled = true;
+                    btnContent.innerHTML = '<div class="spinner"></div><span>Logging in...</span>';
+
+                    const { data, error } = await sb.auth.signInWithPassword({
+                        email: email,
+                        password: pass,
+                    });
+
+                    if (error) {
+                        showToast('❌ ' + (error.message || 'Login failed.'), 'error');
+                        btn.disabled = false;
+                        btnContent.innerHTML = originalHTML;
+                        return;
+                    }
+
+                    if (data && data.session) {
+                        showToast('✅ Login successful! Redirecting...', 'success');
+                        document.getElementById('loginForm').style.display = 'none';
+                        document.getElementById('redirectMsg').classList.add('show');
+                        setTimeout(function() { window.location.href = 'dashboard.html'; }, 800);
+                    }
                 });
-
-                if (error) {
-                    showToast('❌ ' + (error.message || 'Login failed. Check email & password.'), 'error');
-                    btn.disabled = false;
-                    btnContent.innerHTML = originalHTML;
-                    return;
-                }
-
-                if (data && data.session) {
-                    showToast('✅ Login successful! Redirecting...', 'success');
-                    document.getElementById('loginForm').style.display = 'none';
-                    document.getElementById('redirectMsg').classList.add('show');
-                    
-                    // Small delay for UI smoothness before redirect
-                    setTimeout(function() { 
-                        window.location.href = 'dashboard.html'; 
-                    }, 800);
-                }
-            });
-        }
+            }
+        });
     </script>
 </body>
+</html>
 

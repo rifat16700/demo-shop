@@ -34,18 +34,19 @@
         .timeline-title { font-size: 14px; font-weight: 700; color: var(--text-dark); }
         .timeline-sub   { font-size: 12px; color: #888; margin-top: 2px; }
     </style>
+    <link rel="stylesheet" href="assets/css/premium-icons.css">
 </head>
 <body>
 <nav class="navbar" style="background:rgba(255,255,255,0.9);">
     <a href="index.html" class="nav-icon-btn">←</a>
-    <a href="index.html" class="navbar-brand">🛍️ <span id="navBrand">Track Order</span></a>
+    <a href="index.html" class="navbar-brand"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> <span id="navBrand">Track Order</span></a>
 </nav>
 
 <div class="track-wrap">
     <!-- Search Form -->
     <div class="track-card" id="trackForm">
         <div style="text-align:center;margin-bottom:28px;">
-            <div style="font-size:48px;margin-bottom:10px;">📦</div>
+            <div style="font-size:48px;margin-bottom:10px;"><i data-lucide="package" class="lucide-icon icon-bounce"></i></div>
             <h1 style="font-size:22px;font-weight:900;color:var(--text-dark);margin-bottom:6px;">Track Your Order</h1>
             <p style="color:#888;font-size:14px;">Enter your Order ID and phone number to see status.</p>
         </div>
@@ -59,7 +60,7 @@
             <input class="form-input" id="trackPhone" placeholder="01XXXXXXXXX" type="tel">
         </div>
         <div id="trackError" style="color:var(--danger);font-size:13px;text-align:center;margin-bottom:10px;display:none;"></div>
-        <button class="btn btn-primary btn-full btn-lg" onclick="trackOrder()" id="trackBtn">🔍 Track Order</button>
+        <button class="btn btn-primary btn-full btn-lg" onclick="trackOrder()" id="trackBtn"><i data-lucide="search" class="lucide-icon"></i> Track Order</button>
     </div>
 
     <!-- Result -->
@@ -80,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 var STATUS_STEPS = ['Pending', 'Confirmed', 'Processing', 'Shipped', 'Delivered'];
-var STATUS_ICONS = { Pending: '⏳', Confirmed: '✅', Processing: '🔄', Shipped: '🚚', Delivered: '🎉', Cancelled: '❌' };
+var STATUS_ICONS = { Pending: '<i data-lucide="hourglass" class="lucide-icon icon-spin icon-warning"></i>', Confirmed: '<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i>', Processing: '🔄', Shipped: '<i data-lucide="truck" class="lucide-icon icon-bounce"></i>', Delivered: '🎉', Cancelled: '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i>' };
 
 function trackOrder() {
     var orderId = document.getElementById('trackOrderId').value.trim().toUpperCase();
@@ -94,10 +95,10 @@ function trackOrder() {
     btn.disabled = true; btn.textContent = 'Tracking...';
 
     sb.from('orders').select('*').eq('id', orderId).eq('customer_phone', phone).single().then(function(r) {
-        btn.disabled = false; btn.textContent = '🔍 Track Order';
+        btn.disabled = false; btn.textContent = '<i data-lucide="search" class="lucide-icon"></i> Track Order';
 
         if (r.error || !r.data) {
-            errEl.textContent = '❌ Order not found. Please check your Order ID and phone number.';
+            errEl.textContent = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Order not found. Please check your Order ID and phone number.';
             errEl.style.display = 'block';
             return;
         }
@@ -116,7 +117,7 @@ function renderTrackResult(order) {
     var timelineHtml = '';
     if (isCancelled) {
         timelineHtml = '<div class="timeline-item current">' +
-            '<div class="timeline-dot" style="background:#EF4444;border-color:#EF4444;">❌</div>' +
+            '<div class="timeline-dot" style="background:#EF4444;border-color:#EF4444;"><i data-lucide="x-circle" class="lucide-icon icon-danger"></i></div>' +
             '<div class="timeline-content"><div class="timeline-title" style="color:#EF4444;">Order Cancelled</div><div class="timeline-sub">This order was cancelled.</div></div>' +
         '</div>';
     } else {
@@ -169,14 +170,14 @@ function renderTrackResult(order) {
                 '</div>' +
             '</div>' +
 
-            '<div style="font-size:14px;font-weight:800;color:var(--text-dark);margin-bottom:14px;">📍 Delivery Timeline</div>' +
+            '<div style="font-size:14px;font-weight:800;color:var(--text-dark);margin-bottom:14px;"><i data-lucide="map-pin" class="lucide-icon icon-bounce"></i> Delivery Timeline</div>' +
             '<div class="timeline">' + timelineHtml + '</div>' +
 
             trackUrlHtml + payInfo +
 
             '<div style="display:flex;gap:10px;margin-top:20px;">' +
                 '<button class="btn btn-ghost btn-full btn-sm" onclick="resetTrack()">← Track Another</button>' +
-                '<a href="index.html" class="btn btn-ghost btn-full btn-sm">🛍️ Shop More</a>' +
+                '<a href="index.html" class="btn btn-ghost btn-full btn-sm"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> Shop More</a>' +
             '</div>' +
         '</div>';
 }
@@ -191,5 +192,15 @@ function resetTrack() {
     document.getElementById('trackForm').style.display   = 'block';
 }
 </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="assets/js/offline-handler.js"></script>
 </body>
 </html>

@@ -13,16 +13,17 @@
         .summary-total { border-top: 2px solid var(--border); padding-top: 12px; margin-top: 8px; font-size: 18px; font-weight: 800; }
         @media (max-width: 768px) { .cart-layout { grid-template-columns: 1fr; } .order-summary { position: static; } }
     </style>
+    <link rel="stylesheet" href="assets/css/premium-icons.css">
 </head>
 <body>
 <nav class="navbar">
     <a href="shop.html" class="nav-icon-btn">←</a>
-    <a href="index.html" class="navbar-brand">🛍️ <span id="navBrand">Cart</span></a>
+    <a href="index.html" class="navbar-brand"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> <span id="navBrand">Cart</span></a>
     <div style="margin-left:auto;font-size:13px;color:#888;" id="cartCountLabel"></div>
 </nav>
 
 <div class="container">
-    <div style="padding-top:10px;margin-bottom:4px;font-size:22px;font-weight:900;color:var(--text-dark);">🛒 Your Cart</div>
+    <div style="padding-top:10px;margin-bottom:4px;font-size:22px;font-weight:900;color:var(--text-dark);"><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i> Your Cart</div>
 
     <div class="cart-layout">
         <!-- Cart Items -->
@@ -31,7 +32,7 @@
         <!-- Order Summary -->
         <div>
             <div class="order-summary">
-                <div style="font-size:16px;font-weight:800;color:var(--text-dark);margin-bottom:16px;">📋 Order Summary</div>
+                <div style="font-size:16px;font-weight:800;color:var(--text-dark);margin-bottom:16px;"><i data-lucide="clipboard-list" class="lucide-icon"></i> Order Summary</div>
 
                 <div class="summary-row"><span>Subtotal</span><span id="sumSubtotal">৳0</span></div>
                 <div class="summary-row" id="discountRow" style="color:var(--success);display:none;"><span>Discount</span><span id="sumDiscount">-৳0</span></div>
@@ -39,7 +40,7 @@
                 <div class="summary-row summary-total"><span>Subtotal</span><span id="sumTotal" style="color:var(--primary);">৳0</span></div>
 
                 <a href="checkout.html" class="btn btn-primary btn-full btn-lg" id="checkoutBtn" style="margin-top:16px;">
-                    🚀 Proceed to Checkout
+                    <i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Proceed to Checkout
                 </a>
 
                 <a href="shop.html" style="display:block;text-align:center;margin-top:12px;font-size:13px;color:#888;font-weight:600;">← Continue Shopping</a>
@@ -50,8 +51,8 @@
                 <div style="font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:12px;">Why shop with us?</div>
                 <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:#666;">
                     <div>🔒 Secure & Safe Checkout</div>
-                    <div>🚚 Fast Delivery Nationwide</div>
-                    <div>📦 Quality Guaranteed</div>
+                    <div><i data-lucide="truck" class="lucide-icon icon-bounce"></i> Fast Delivery Nationwide</div>
+                    <div><i data-lucide="package" class="lucide-icon icon-bounce"></i> Quality Guaranteed</div>
                     <div>↩️ Easy Return Policy</div>
                 </div>
             </div>
@@ -78,10 +79,10 @@ function renderCart() {
     if (!cart.length) {
         wrap.innerHTML =
             '<div style="text-align:center;padding:80px 20px;">' +
-            '<div style="font-size:64px;margin-bottom:16px;">🛒</div>' +
+            '<div style="font-size:64px;margin-bottom:16px;"><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i></div>' +
             '<div style="font-size:20px;font-weight:800;color:var(--text-dark);margin-bottom:8px;">Cart is empty</div>' +
             '<div style="color:#999;margin-bottom:20px;">Add some products to get started</div>' +
-            '<a href="shop.html" class="btn btn-primary btn-lg">🛍️ Start Shopping</a>' +
+            '<a href="shop.html" class="btn btn-primary btn-lg"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> Start Shopping</a>' +
             '</div>';
         updateSummary(cart);
         return;
@@ -94,7 +95,7 @@ function renderCart() {
             '<div class="cart-item-info">' +
                 '<div class="cart-item-name">' + item.productName + '</div>' +
                 '<div class="cart-item-meta">' +
-                    (item.color ? '🎨 ' + item.color + '  ' : '') +
+                    (item.color ? '<i data-lucide="palette" class="lucide-icon icon-pulse"></i> ' + item.color + '  ' : '') +
                     (item.size  ? '📏 ' + item.size  : '') +
                 '</div>' +
                 '<div class="cart-item-price">৳' + subtotal + '</div>' +
@@ -139,5 +140,15 @@ function updateSummary(cart) {
     }
 }
 </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="assets/js/offline-handler.js"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/config.js"></script><script src="../assets/js/supabase-init.js"></script>
     <script src="assets/js/admin-common.js"></script>
+    <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
 <body>
 <div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
@@ -98,8 +99,8 @@ function renderPromos() {
             '<td style="font-size:12px;color:#8E8E93;">' + (p.expires_at ? formatDateShort(p.expires_at) : 'Never') + '</td>' +
             '<td><span class="badge ' + (p.is_active ? 'badge-delivered' : 'badge-cancelled') + '">' + (p.is_active ? 'Active' : 'Inactive') + '</span></td>' +
             '<td style="display:flex;gap:6px;">' +
-                '<button class="btn btn-ghost btn-sm" onclick=\'editPromo(' + JSON.stringify(p).replace(/'/g,"&apos;") + ')\'>✏️</button>' +
-                '<button class="btn btn-danger btn-sm" onclick="deletePromo(\'' + p.id + '\')">🗑️</button>' +
+                '<button class="btn btn-ghost btn-sm" onclick=\'editPromo(' + JSON.stringify(p).replace(/'/g,"&apos;") + ')\'><i data-lucide="edit-3" class="lucide-icon icon-hover-pulse"></i></button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deletePromo(\'' + p.id + '\')"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i></button>' +
             '</td></tr>';
     });
     document.getElementById('promoBody').innerHTML = html;
@@ -142,7 +143,7 @@ function savePromo() {
     var req = editingId ? sb.from('promos').update(payload).eq('id', editingId) : sb.from('promos').insert([payload]);
     req.then(function(r) {
         if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
-        showToast('✅ Saved!', 'success'); closeModal(); loadPromos();
+        showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadPromos();
     });
 }
 
@@ -155,5 +156,15 @@ function deletePromo(id) {
 }
 function closeModal() { document.getElementById('promoModal').classList.remove('show'); }
 </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>

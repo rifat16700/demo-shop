@@ -32,6 +32,7 @@
         .video-wrap iframe { width: 100%; height: 100%; border: none; }
         @media (max-width: 768px) { .product-page { grid-template-columns: 1fr; gap: 20px; } }
     </style>
+    <link rel="stylesheet" href="assets/css/premium-icons.css">
 </head>
 <body>
 <div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
@@ -40,7 +41,7 @@
     <a href="shop.html" class="nav-icon-btn">←</a>
     <a href="index.html" class="navbar-brand"><span id="navBrand">Shop</span></a>
     <div class="navbar-actions" style="margin-left:auto;">
-        <a href="cart.html" class="nav-icon-btn">🛒<span class="cart-badge" id="cartBadge" style="display:none;">0</span></a>
+        <a href="cart.html" class="nav-icon-btn"><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i><span class="cart-badge" id="cartBadge" style="display:none;">0</span></a>
     </div>
 </nav>
 
@@ -107,7 +108,7 @@
 
             <!-- Buttons -->
             <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
-                <button class="btn btn-primary btn-full btn-lg" id="addToCartBtn" onclick="addToCart()">🛒 Add to Cart</button>
+                <button class="btn btn-primary btn-full btn-lg" id="addToCartBtn" onclick="addToCart()"><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i> Add to Cart</button>
                 <a href="cart.html" class="btn btn-outline btn-full" onclick="addToCart()">⚡ Buy Now</a>
                 <button class="btn btn-whatsapp btn-full" id="waBtn" style="display:none;" onclick="orderWhatsApp()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.917 1.049 5.59 2.773 7.664L1.92 23.07a1 1 0 001.258 1.258l3.406-.853C8.401 24.938 10.15 25.5 12 25.5 18.627 25.5 24 20.127 24 13.5S18.627 2 12 2z"/></svg>
@@ -118,7 +119,7 @@
             <!-- Product Meta -->
             <div style="background:var(--bg-light);border-radius:12px;padding:14px;font-size:13px;">
                 <div style="display:flex;gap:20px;flex-wrap:wrap;">
-                    <div>🚚 Fast Delivery</div>
+                    <div><i data-lucide="truck" class="lucide-icon icon-bounce"></i> Fast Delivery</div>
                     <div>🔒 Secure Payment</div>
                     <div>↩️ Easy Return</div>
                 </div>
@@ -128,7 +129,7 @@
 
     <!-- Reviews Section -->
     <div id="reviewsSection" style="background:#fff;border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;border:1px solid #eee;">
-        <h2 style="font-size:18px;font-weight:800;margin-bottom:16px;">⭐ Customer Reviews</h2>
+        <h2 style="font-size:18px;font-weight:800;margin-bottom:16px;"><i data-lucide="star" class="lucide-icon icon-warning"></i> Customer Reviews</h2>
         <div id="reviewsList"></div>
         <hr style="margin:20px 0;border-color:#f0f0f0;">
         <h3 style="font-size:15px;font-weight:700;margin-bottom:14px;">Write a Review</h3>
@@ -269,7 +270,7 @@ function renderSizes(sizes) {
     var html = sizes.map(function(s, i) {
         var outOfStock = s.stock <= 0;
         return '<button class="size-btn' + (outOfStock?' disabled':'') + '" onclick="selectSize(' + i + ')" data-si="' + i + '"' + (outOfStock?' disabled':'') + '>' +
-            s.size + (outOfStock ? ' <span style="font-size:10px;">❌</span>' : '') + '</button>';
+            s.size + (outOfStock ? ' <span style="font-size:10px;"><i data-lucide="x-circle" class="lucide-icon icon-danger"></i></span>' : '') + '</button>';
     }).join('');
     document.getElementById('sizeBtns').innerHTML = html;
     if (sizes.length > 0 && sizes[0].stock > 0) selectSize(0);
@@ -347,12 +348,12 @@ function orderWhatsApp() {
     var price = base - flashDiscount + extra;
 
     var msg = 'Hello! I want to order:\n\n' +
-              '🛍️ Product: ' + product.name + '\n' +
-              (color ? '🎨 Color: ' + color + '\n' : '') +
+              '<i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> Product: ' + product.name + '\n' +
+              (color ? '<i data-lucide="palette" class="lucide-icon icon-pulse"></i> Color: ' + color + '\n' : '') +
               (size  ? '📏 Size: '  + size  + '\n' : '') +
               '🔢 Qty: ' + currentQty + '\n' +
-              '💰 Price: ৳' + price + '\n\n' +
-              '📦 Please confirm my order.';
+              '<i data-lucide="badge-dollar-sign" class="lucide-icon icon-bounce"></i> Price: ৳' + price + '\n\n' +
+              '<i data-lucide="package" class="lucide-icon icon-bounce"></i> Please confirm my order.';
 
     var wanum = settings.whatsapp_number || '';
     window.open('https://wa.me/' + wanum + '?text=' + encodeURIComponent(msg), '_blank');
@@ -407,7 +408,7 @@ function submitReview() {
         rating: rating, review_text: text, review_image: img || null, is_approved: false
     }]).then(function(r) {
         if (r.error) { alert('Failed to submit review. Please try again.'); return; }
-        document.getElementById('reviewForm').innerHTML = '<div style="text-align:center;padding:24px;color:#22C55E;font-size:15px;font-weight:700;">✅ Review submitted! It will appear after admin approval.</div>';
+        document.getElementById('reviewForm').innerHTML = '<div style="text-align:center;padding:24px;color:#22C55E;font-size:15px;font-weight:700;"><i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Review submitted! It will appear after admin approval.</div>';
     });
 }
 
@@ -419,5 +420,15 @@ function updateCartBadge() {
     if (b) { b.textContent = count; b.style.display = count > 0 ? 'flex' : 'none'; }
 }
 </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="assets/js/offline-handler.js"></script>
 </body>
 </html>

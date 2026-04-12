@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No Connection — Freelancing By Rifat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/premium-icons.css">
+    <!-- Using inline CSS to guarantee offline rendering even if external CSS fails -->
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0A0A0E 0%, #17111A 100%);
+            color: #FAF8F8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .offline-glass {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+            animation: floatUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .offline-icon-wrap {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 59, 48, 0.1);
+            color: #FF3B30;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 24px auto;
+            font-size: 36px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            background: linear-gradient(to right, #FFFFFF, #B0B0B0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+             font-size: 15px; color: #8E8E93; line-height: 1.5; margin-bottom: 28px;
+        }
+
+        .btn-retry {
+            background: #FFFFFF;
+            color: #0A0A0A;
+            border: none;
+            padding: 14px 28px;
+            font-size: 15px;
+            font-weight: 700;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-retry:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.15);
+        }
+        
+        .btn-retry:active { transform: translateY(0); }
+
+        .loading-spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(0,0,0,0.2);
+            border-top-color: #000;
+            border-radius: 50%;
+            animation: spinner 0.8s linear infinite;
+            display: none;
+        }
+
+        @keyframes floatUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spinner {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="offline-glass">
+        <div class="offline-icon-wrap">
+            <i data-lucide="wifi-off" class="icon-pulse"></i>
+        </div>
+        <h1>Connection Lost</h1>
+        <p id="statusMsg">It looks like you are offline. Please check your internet connection and try again. We will automatically reconnect you when you're back online.</p>
+        
+        <button class="btn-retry" onclick="manualRetry()" id="retryBtn">
+            <span id="retryText">Retry Connection</span>
+            <div class="loading-spinner" id="retrySpinner"></div>
+        </button>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        // Check if online on load
+        if(navigator.onLine && window.location.hash !== '#simulate') {
+            window.location.href = '/';
+        }
+
+        // Listen for connection restored
+        window.addEventListener('online', function() {
+            document.getElementById('statusMsg').innerHTML = '<span style="color:#34C759;">Connection restored! Redirecting...</span>';
+            document.querySelector('.offline-icon-wrap').style.background = 'rgba(52, 199, 89, 0.1)';
+            document.querySelector('.offline-icon-wrap').style.color = '#34C759';
+            document.querySelector('.offline-icon-wrap').innerHTML = '<i data-lucide="wifi" class="icon-bounce"></i>';
+            lucide.createIcons();
+            
+            setTimeout(function() {
+                // Return to home page or previous page natively
+                var params = new URLSearchParams(window.location.search);
+                var redirect = params.get('redirect') || '/';
+                window.location.href = redirect;
+            }, 1500);
+        });
+
+        function manualRetry() {
+            var btnText = document.getElementById('retryText');
+            var spinner = document.getElementById('retrySpinner');
+            
+            btnText.style.display = 'none';
+            spinner.style.display = 'block';
+
+            // Artificial delay to simulate checking
+            setTimeout(function() {
+                if(navigator.onLine && window.location.hash !== '#simulate') {
+                    window.location.href = '/';
+                } else {
+                    btnText.style.display = 'block';
+                    spinner.style.display = 'none';
+                    // Optional shake animation on button
+                    var btn = document.getElementById('retryBtn');
+                    btn.style.transform = 'translateX(5px)';
+                    setTimeout(()=>btn.style.transform='', 100);
+                }
+            }, 800);
+        }
+    </script>
+</body>
+</html>

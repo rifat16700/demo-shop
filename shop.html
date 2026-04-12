@@ -17,6 +17,7 @@
         .price-range-row { display: flex; gap: 8px; align-items: center; }
         @media (max-width: 768px) { .shop-layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
     </style>
+    <link rel="stylesheet" href="assets/css/premium-icons.css">
 </head>
 <body>
 <div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
@@ -25,13 +26,13 @@
     <a href="index.html" class="nav-icon-btn">←</a>
     <a href="index.html" class="navbar-brand"><span id="navBrand">Shop</span></a>
     <div class="navbar-search">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon"><i data-lucide="search" class="lucide-icon"></i></span>
         <input type="text" placeholder="Search products..." id="searchInput" oninput="applyFilters()">
     </div>
     <div class="navbar-actions">
-        <a href="track.html" class="nav-icon-btn" title="Track">📦</a>
+        <a href="track.html" class="nav-icon-btn" title="Track"><i data-lucide="package" class="lucide-icon icon-bounce"></i></a>
         <a href="cart.html" class="nav-icon-btn" id="cartBtn">
-            🛒<span class="cart-badge" id="cartBadge" style="display:none;">0</span>
+            <i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i><span class="cart-badge" id="cartBadge" style="display:none;">0</span>
         </a>
     </div>
 </nav>
@@ -48,7 +49,7 @@
                 </div>
             </div>
             <div>
-                <h3>💰 Price Range</h3>
+                <h3><i data-lucide="badge-dollar-sign" class="lucide-icon icon-bounce"></i> Price Range</h3>
                 <div class="price-range-row">
                     <input class="form-input" id="minPrice" type="number" placeholder="Min ৳" oninput="applyFilters()" style="font-size:13px;padding:9px 10px;">
                     <span>—</span>
@@ -94,7 +95,7 @@
 
             <!-- Empty state -->
             <div id="emptyState" style="display:none;text-align:center;padding:80px 20px;color:#999;">
-                <div style="font-size:56px;margin-bottom:14px;">🔍</div>
+                <div style="font-size:56px;margin-bottom:14px;"><i data-lucide="search" class="lucide-icon"></i></div>
                 <div style="font-size:18px;font-weight:700;color:var(--text-dark);margin-bottom:6px;">No products found</div>
                 <div>Try different filters or <a href="shop.html" style="color:var(--primary);font-weight:700;">reset all</a></div>
             </div>
@@ -206,7 +207,7 @@ function productCardHtml(p) {
 
     return '<a href="product.html?id=' + p.id + '" class="product-card">' +
         '<div class="product-img-wrap">' +
-            (img ? '<img src="' + img + '" alt="' + p.name + '" loading="lazy">' : '<div style="height:200px;background:linear-gradient(135deg,#f0f0f5,#e0e0ea);display:flex;align-items:center;justify-content:center;font-size:40px;">🛍️</div>') +
+            (img ? '<img src="' + img + '" alt="' + p.name + '" loading="lazy">' : '<div style="height:200px;background:linear-gradient(135deg,#f0f0f5,#e0e0ea);display:flex;align-items:center;justify-content:center;font-size:40px;"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i></div>') +
             '<div class="product-badges">' +
                 (p.flash_sale_price > 0 ? '<span class="product-badge badge-sale">SALE</span>' : '') +
             '</div>' +
@@ -234,7 +235,7 @@ function quickAdd(e, id) {
     if (ex) ex.quantity++;
     else cart.push({ key: key, productId: p.id, productName: p.name, price: finalPrice, color: color, size: size, quantity: 1, image: img });
     saveCart(cart); updateCartBadge();
-    e.target.textContent = '✅ Added!';
+    e.target.textContent = '<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Added!';
     setTimeout(function() { e.target.textContent = '+ Add to Cart'; }, 1500);
 }
 
@@ -246,5 +247,15 @@ function updateCartBadge() {
     if (b) { b.textContent = count; b.style.display = count > 0 ? 'flex' : 'none'; }
 }
 </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="assets/js/offline-handler.js"></script>
 </body>
 </html>

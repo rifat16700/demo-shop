@@ -48,6 +48,7 @@
             .best-sellers-card { grid-column: 1; }
         }
     </style>
+    <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
 <body>
     <!-- Page loader -->
@@ -67,7 +68,7 @@
                 </div>
             </div>
             <div class="header-right">
-                <a href="orders.html" class="btn btn-primary btn-sm">📦 View Orders</a>
+                <a href="orders.html" class="btn btn-primary btn-sm"><i data-lucide="package" class="lucide-icon icon-bounce"></i> View Orders</a>
             </div>
         </header>
 
@@ -81,7 +82,7 @@
                         <div class="stat-value" id="statTotal">—</div>
                         <div class="stat-sub">All time</div>
                     </div>
-                    <div class="stat-icon-box blue">📦</div>
+                    <div class="stat-icon-box blue"><i data-lucide="package" class="lucide-icon icon-bounce"></i></div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-info">
@@ -89,7 +90,7 @@
                         <div class="stat-value" id="statToday">—</div>
                         <div class="stat-sub" id="todayDate">—</div>
                     </div>
-                    <div class="stat-icon-box green">🗓️</div>
+                    <div class="stat-icon-box green"><i data-lucide="calendar" class="lucide-icon"></i></div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-info">
@@ -97,7 +98,7 @@
                         <div class="stat-value" id="statPending" style="color:var(--warning);">—</div>
                         <div class="stat-sub">Awaiting action</div>
                     </div>
-                    <div class="stat-icon-box orange">⏳</div>
+                    <div class="stat-icon-box orange"><i data-lucide="hourglass" class="lucide-icon icon-spin icon-warning"></i></div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-info">
@@ -105,7 +106,7 @@
                         <div class="stat-value" id="statRevenue" style="color:var(--success);">—</div>
                         <div class="stat-sub">All confirmed orders</div>
                     </div>
-                    <div class="stat-icon-box green">💰</div>
+                    <div class="stat-icon-box green"><i data-lucide="badge-dollar-sign" class="lucide-icon icon-bounce"></i></div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-info">
@@ -113,7 +114,7 @@
                         <div class="stat-value" id="statProducts">—</div>
                         <div class="stat-sub">Active listings</div>
                     </div>
-                    <div class="stat-icon-box purple">🛍️</div>
+                    <div class="stat-icon-box purple"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i></div>
                 </div>
             </div>
 
@@ -122,7 +123,7 @@
 
                 <!-- Revenue Chart -->
                 <div class="card recent-orders-card">
-                    <div class="card-title">📈 Last 7 Days Revenue</div>
+                    <div class="card-title"><i data-lucide="trending-up" class="lucide-icon icon-pulse"></i> Last 7 Days Revenue</div>
                     <div class="chart-wrap">
                         <canvas id="revenueChart"></canvas>
                     </div>
@@ -130,7 +131,7 @@
 
                 <!-- Best Sellers -->
                 <div class="card best-sellers-card">
-                    <div class="card-title">🏆 Best Selling Products</div>
+                    <div class="card-title"><i data-lucide="trophy" class="lucide-icon icon-bounce icon-warning"></i> Best Selling Products</div>
                     <div id="bestSellersList">
                         <div style="color:#8E8E93;font-size:13px;text-align:center;padding:30px 0;">Loading...</div>
                     </div>
@@ -140,7 +141,7 @@
             <!-- Recent Orders -->
             <div class="card">
                 <div class="card-title" style="justify-content:space-between;">
-                    <span>📋 Recent Orders</span>
+                    <span><i data-lucide="clipboard-list" class="lucide-icon"></i> Recent Orders</span>
                     <a href="orders.html" class="btn btn-ghost btn-sm">View All →</a>
                 </div>
                 <div class="table-wrap">
@@ -174,7 +175,7 @@
 
         // Greeting
         var hour = new Date().getHours();
-        var greet = hour < 12 ? 'Good morning! ☀️' : hour < 18 ? 'Good afternoon! 🌤️' : 'Good evening! 🌙';
+        var greet = hour < 12 ? 'Good morning! <i data-lucide="sun" class="lucide-icon icon-spin icon-warning"></i>' : hour < 18 ? 'Good afternoon! <i data-lucide="cloud-sun" class="lucide-icon"></i>' : 'Good evening! <i data-lucide="moon" class="lucide-icon"></i>';
         document.getElementById('dashGreeting').textContent = greet;
         document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-BD', {day:'2-digit',month:'long',year:'numeric'});
     });
@@ -351,7 +352,7 @@
         }).sort(function(a, b) { return b.count - a.count; }).slice(0, 5);
 
         var rankClasses = ['gold', 'silver', 'bronze', '', ''];
-        var rankLabels  = ['🥇', '🥈', '🥉', '4', '5'];
+        var rankLabels  = ['<i data-lucide="medal" class="lucide-icon icon-warning"></i>', '<i data-lucide="medal" class="lucide-icon"></i>', '<i data-lucide="medal" class="lucide-icon"></i>', '4', '5'];
 
         var html = '';
         if (!sorted.length) {
@@ -369,5 +370,15 @@
         document.getElementById('bestSellersList').innerHTML = html;
     }
     </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>

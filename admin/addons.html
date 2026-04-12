@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/config.js"></script><script src="../assets/js/supabase-init.js"></script>
     <script src="assets/js/admin-common.js"></script>
+    <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
 <body>
 <div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
@@ -25,7 +26,7 @@
         <div class="card" style="margin-bottom:16px;background:rgba(0,122,255,0.06);border-color:rgba(0,122,255,0.2);">
             <div style="font-size:13px;color:#8E8E93;">
                 <b style="color:#007AFF;">Add-ons</b> হলো checkout এ extra items যা user চাইলে add করতে পারবে।
-                উদাহরণ: Gift Wrap 🎁 (+৳50), Extra Box 📦 (+৳30)
+                উদাহরণ: Gift Wrap <i data-lucide="gift" class="lucide-icon icon-bounce"></i> (+৳50), Extra Box <i data-lucide="package" class="lucide-icon icon-bounce"></i> (+৳30)
             </div>
         </div>
         <div class="card" style="padding:0;">
@@ -48,7 +49,7 @@
         <div class="form-row">
             <div class="form-group">
                 <label class="form-label">Icon (Emoji) *</label>
-                <input class="form-input" id="aIcon" placeholder="🎁" style="font-size:22px;text-align:center;" maxlength="4">
+                <input class="form-input" id="aIcon" placeholder="<i data-lucide="gift" class="lucide-icon icon-bounce"></i>" style="font-size:22px;text-align:center;" maxlength="4">
             </div>
             <div class="form-group">
                 <label class="form-label">Price (৳) *</label>
@@ -91,13 +92,13 @@ function renderAddons() {
     if (!allAddons.length) { html = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8E8E93;">No add-ons yet</td></tr>'; }
     allAddons.forEach(function(a) {
         html += '<tr>' +
-            '<td style="font-size:24px;">' + (a.icon||'🎁') + '</td>' +
+            '<td style="font-size:24px;">' + (a.icon||'<i data-lucide="gift" class="lucide-icon icon-bounce"></i>') + '</td>' +
             '<td style="font-weight:700;">' + a.name + '</td>' +
             '<td style="font-weight:700;color:#007AFF;">+৳' + a.price + '</td>' +
             '<td><span class="badge ' + (a.is_active ? 'badge-delivered' : 'badge-cancelled') + '">' + (a.is_active ? 'Active' : 'Inactive') + '</span></td>' +
             '<td style="display:flex;gap:6px;">' +
-                '<button class="btn btn-ghost btn-sm" onclick=\'editAddon(' + JSON.stringify(a).replace(/'/g,"&apos;") + ')\'>✏️</button>' +
-                '<button class="btn btn-danger btn-sm" onclick="deleteAddon(\'' + a.id + '\')">🗑️</button>' +
+                '<button class="btn btn-ghost btn-sm" onclick=\'editAddon(' + JSON.stringify(a).replace(/'/g,"&apos;") + ')\'><i data-lucide="edit-3" class="lucide-icon icon-hover-pulse"></i></button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deleteAddon(\'' + a.id + '\')"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i></button>' +
             '</td></tr>';
     });
     document.getElementById('addonsBody').innerHTML = html;
@@ -114,7 +115,7 @@ function openModal() {
 function editAddon(a) {
     editingId = a.id; aActive = a.is_active !== false;
     document.getElementById('addonModalTitle').textContent = 'Edit Add-on';
-    document.getElementById('aIcon').value  = a.icon || '🎁';
+    document.getElementById('aIcon').value  = a.icon || '<i data-lucide="gift" class="lucide-icon icon-bounce"></i>';
     document.getElementById('aName').value  = a.name || '';
     document.getElementById('aPrice').value = a.price || '';
     setToggle('aActive', aActive);
@@ -131,11 +132,11 @@ function saveAddon() {
     var name = document.getElementById('aName').value.trim();
     var price = parseInt(document.getElementById('aPrice').value) || 0;
     if (!name || !price) { showToast('Name and price required', 'error'); return; }
-    var payload = { name: name, icon: document.getElementById('aIcon').value.trim() || '🎁', price: price, is_active: aActive };
+    var payload = { name: name, icon: document.getElementById('aIcon').value.trim() || '<i data-lucide="gift" class="lucide-icon icon-bounce"></i>', price: price, is_active: aActive };
     var req = editingId ? sb.from('addons').update(payload).eq('id', editingId) : sb.from('addons').insert([payload]);
     req.then(function(r) {
         if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
-        showToast('✅ Saved!', 'success'); closeModal(); loadAddons();
+        showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadAddons();
     });
 }
 
@@ -148,5 +149,15 @@ function deleteAddon(id) {
 }
 function closeModal() { document.getElementById('addonModal').classList.remove('show'); }
 </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>

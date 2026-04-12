@@ -20,15 +20,16 @@
         .invoice-table th { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; padding: 8px 0; border-bottom: 1px solid #eee; text-align: left; }
         .invoice-table td { padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
     </style>
+    <link rel="stylesheet" href="assets/css/premium-icons.css">
 </head>
 <body>
 <div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
 
 <nav class="navbar" style="background:rgba(255,255,255,0.9);">
-    <a href="index.html" class="navbar-brand">🛍️ <span id="navBrand">Home</span></a>
+    <a href="index.html" class="navbar-brand"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> <span id="navBrand">Home</span></a>
     <div style="margin-left:auto;display:flex;gap:8px;">
         <button class="btn btn-ghost btn-sm" onclick="downloadPDF()">📥 Download Invoice</button>
-        <a href="track.html" class="btn btn-ghost btn-sm">📦 Track Order</a>
+        <a href="track.html" class="btn btn-ghost btn-sm"><i data-lucide="package" class="lucide-icon icon-bounce"></i> Track Order</a>
     </div>
 </nav>
 
@@ -47,11 +48,11 @@
 
     <div style="display:flex;gap:10px;margin-bottom:20px;">
         <button class="btn btn-primary btn-full" onclick="downloadPDF()">📥 Download Invoice</button>
-        <a href="shop.html" class="btn btn-outline btn-full">🛍️ Continue Shopping</a>
+        <a href="shop.html" class="btn btn-outline btn-full"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> Continue Shopping</a>
     </div>
 
     <div style="text-align:center;margin-bottom:20px;">
-        <a href="track.html?id=" id="trackLink" class="btn btn-ghost">📦 Track Your Order</a>
+        <a href="track.html?id=" id="trackLink" class="btn btn-ghost"><i data-lucide="package" class="lucide-icon icon-bounce"></i> Track Your Order</a>
     </div>
 </div>
 
@@ -92,7 +93,7 @@ function renderOrder(order) {
     var payIndicator = order.payment_method === 'COD' ? '💵 Cash on Delivery' :
                        order.payment_method === 'Hybrid COD' ? '💵 Hybrid COD (Partial Advance)' :
                        order.payment_method === 'bKash' ? '💜 bKash' :
-                       order.payment_method === 'Nagad' ? '🧡 Nagad' : '🌐 Online Payment';
+                       order.payment_method === 'Nagad' ? '🧡 Nagad' : '<i data-lucide="globe" class="lucide-icon icon-spin"></i> Online Payment';
 
     var html =
         '<div class="info-card">' +
@@ -107,7 +108,7 @@ function renderOrder(order) {
         '</div>' +
 
         '<div class="info-card">' +
-            '<div style="font-size:14px;font-weight:800;margin-bottom:14px;">🛍️ Order Items</div>' +
+            '<div style="font-size:14px;font-weight:800;margin-bottom:14px;"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> Order Items</div>' +
             '<table class="invoice-table">' +
                 '<thead><tr><th>Product</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Price</th><th style="text-align:right;">Total</th></tr></thead>' +
                 '<tbody>' + itemsHtml + '</tbody>' +
@@ -123,9 +124,9 @@ function renderOrder(order) {
         '</div>' +
 
         '<div class="info-card" style="text-align:center;background:linear-gradient(135deg,rgba(0,122,255,0.05),rgba(0,122,255,0.02));">' +
-            '<div style="font-size:14px;font-weight:700;margin-bottom:8px;">📦 What happens next?</div>' +
+            '<div style="font-size:14px;font-weight:700;margin-bottom:8px;"><i data-lucide="package" class="lucide-icon icon-bounce"></i> What happens next?</div>' +
             '<div style="font-size:13px;color:#666;line-height:1.7;">' +
-                (order.payment_status === 'Unpaid' ? '1. ✅ Your order is confirmed\n2. 🔍 Our team is reviewing it\n3. 📦 We\'ll call you before shipping\n4. 🚚 Delivery in 2-5 business days' : '1. ✅ Payment received\n2. 📦 We\'re preparing your order\n3. 🚚 Delivery in 2-5 business days') +
+                (order.payment_status === 'Unpaid' ? '1. <i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Your order is confirmed\n2. <i data-lucide="search" class="lucide-icon"></i> Our team is reviewing it\n3. <i data-lucide="package" class="lucide-icon icon-bounce"></i> We\'ll call you before shipping\n4. <i data-lucide="truck" class="lucide-icon icon-bounce"></i> Delivery in 2-5 business days' : '1. <i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Payment received\n2. <i data-lucide="package" class="lucide-icon icon-bounce"></i> We\'re preparing your order\n3. <i data-lucide="truck" class="lucide-icon icon-bounce"></i> Delivery in 2-5 business days') +
             '</div>' +
         '</div>';
 
@@ -144,5 +145,15 @@ function downloadPDF() {
     html2pdf().set(opt).from(element).save();
 }
 </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="assets/js/offline-handler.js"></script>
 </body>
 </html>

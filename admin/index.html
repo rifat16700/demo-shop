@@ -309,6 +309,7 @@
         }
 
     </style>
+    <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
 <body>
 
@@ -428,13 +429,23 @@
             });
 
             if (error) {
-                showToast('❌ Login Error: ' + error.message, 'error');
+                showToast('<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Login Error: ' + error.message, 'error');
                 btn.disabled = false;
                 btn.innerHTML = originalHTML;
             }
             // If successful, Supabase redirects the browser to Google
         }
     </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>
 

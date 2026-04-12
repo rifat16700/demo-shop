@@ -15,6 +15,7 @@
         .banner-body { padding: 12px; }
         .banner-footer { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); }
     </style>
+    <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
 <body>
 <div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
@@ -84,7 +85,7 @@ function loadBanners() {
 function renderBanners() {
     var grid = document.getElementById('bannerGrid');
     if (!allBanners.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:#8E8E93;"><div style="font-size:40px;margin-bottom:12px;">🖼️</div><div>No banners yet</div></div>';
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:#8E8E93;"><div style="font-size:40px;margin-bottom:12px;"><i data-lucide="image" class="lucide-icon icon-hover-pulse"></i></div><div>No banners yet</div></div>';
         return;
     }
     grid.innerHTML = '';
@@ -98,8 +99,8 @@ function renderBanners() {
                 '<div style="font-size:11px;color:#8E8E93;margin-top:4px;">Sort: ' + (b.sort_order||0) + ' | <span class="' + (b.is_active?'':'') + '" style="color:' + (b.is_active?'#34C759':'#FF3B30') + ';">' + (b.is_active?'Active':'Inactive') + '</span></div>' +
             '</div>' +
             '<div class="banner-footer">' +
-                '<button class="btn btn-ghost btn-sm" style="flex:1;" onclick=\'editBanner(' + JSON.stringify(b).replace(/'/g,"&apos;") + ')\'>✏️ Edit</button>' +
-                '<button class="btn btn-danger btn-sm" onclick="deleteBanner(\'' + b.id + '\')">🗑️</button>' +
+                '<button class="btn btn-ghost btn-sm" style="flex:1;" onclick=\'editBanner(' + JSON.stringify(b).replace(/'/g,"&apos;") + ')\'><i data-lucide="edit-3" class="lucide-icon icon-hover-pulse"></i> Edit</button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deleteBanner(\'' + b.id + '\')"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i></button>' +
             '</div>';
         grid.appendChild(card);
     });
@@ -147,7 +148,7 @@ function saveBanner() {
     var req = editingId ? sb.from('banners').update(payload).eq('id', editingId) : sb.from('banners').insert([payload]);
     req.then(function(r) {
         if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
-        showToast('✅ Saved!', 'success'); closeModal(); loadBanners();
+        showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadBanners();
     });
 }
 
@@ -160,5 +161,15 @@ function deleteBanner(id) {
 }
 function closeModal() { document.getElementById('bannerModal').classList.remove('show'); }
 </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>

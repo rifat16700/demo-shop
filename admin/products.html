@@ -32,6 +32,7 @@
         .size-item { display: grid; grid-template-columns: 80px 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
         .gallery-url-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
     </style>
+    <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
 <body>
     <div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
@@ -53,7 +54,7 @@
         <div class="admin-content">
             <div class="filter-bar">
                 <div class="search-box">
-                    <span>🔍</span>
+                    <span><i data-lucide="search" class="lucide-icon"></i></span>
                     <input type="text" id="prodSearch" placeholder="Search products..." oninput="filterProducts()">
                 </div>
                 <select class="form-select" id="catFilter" onchange="filterProducts()" style="width:auto;min-width:160px;">
@@ -132,14 +133,14 @@
 
             <!-- Gallery Images -->
             <div class="form-group">
-                <label class="form-label">🖼️ Gallery Images (URL links)</label>
+                <label class="form-label"><i data-lucide="image" class="lucide-icon icon-hover-pulse"></i> Gallery Images (URL links)</label>
                 <div id="galleryWrap"></div>
                 <button type="button" class="btn btn-ghost btn-sm" onclick="addGalleryUrl()" style="margin-top:8px;">+ Add Image URL</button>
                 <div class="form-hint">প্রতিটি image এর direct URL দাও। Color variant এর image আলাদা Variant section এ দিতে হবে।</div>
             </div>
 
             <div class="form-group">
-                <label class="form-label">🎬 Video URL (Optional)</label>
+                <label class="form-label"><i data-lucide="film" class="lucide-icon"></i> Video URL (Optional)</label>
                 <input class="form-input" id="pVideoUrl" placeholder="YouTube / video direct link">
                 <div class="form-hint">YouTube embed link বা direct video URL দাও।</div>
             </div>
@@ -148,7 +149,7 @@
 
             <!-- Variant Builder -->
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-                <label class="form-label" style="margin:0;">🎨 Color Variants</label>
+                <label class="form-label" style="margin:0;"><i data-lucide="palette" class="lucide-icon icon-pulse"></i> Color Variants</label>
                 <button type="button" class="btn btn-ghost btn-sm" onclick="addVariant()">+ Add Color</button>
             </div>
             <div id="variantsWrap"></div>
@@ -212,7 +213,7 @@
     function renderProducts(products) {
         var grid = document.getElementById('productGrid');
         if (!products.length) {
-            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:#8E8E93;"><div style="font-size:40px;margin-bottom:12px;">🛍️</div><div>No products found</div></div>';
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px;color:#8E8E93;"><div style="font-size:40px;margin-bottom:12px;"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i></div><div>No products found</div></div>';
             return;
         }
         grid.innerHTML = '';
@@ -247,9 +248,9 @@
                     '</div>' +
                 '</div>' +
                 '<div class="product-card-footer">' +
-                    '<button class="btn btn-ghost btn-sm" style="flex:1;" onclick=\'editProduct(' + JSON.stringify(p).replace(/'/g,"\\'") + ')\'>✏️ Edit</button>' +
-                    '<button class="btn btn-danger btn-sm" onclick="deleteProduct(\'' + p.id + '\')">🗑️</button>' +
-                    '<button class="btn btn-ghost btn-sm" onclick="toggleActive(\'' + p.id + '\',' + p.is_active + ')">' + (p.is_active ? '🔴 Hide' : '🟢 Show') + '</button>' +
+                    '<button class="btn btn-ghost btn-sm" style="flex:1;" onclick=\'editProduct(' + JSON.stringify(p).replace(/'/g,"\\'") + ')\'><i data-lucide="edit-3" class="lucide-icon icon-hover-pulse"></i> Edit</button>' +
+                    '<button class="btn btn-danger btn-sm" onclick="deleteProduct(\'' + p.id + '\')"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i></button>' +
+                    '<button class="btn btn-ghost btn-sm" onclick="toggleActive(\'' + p.id + '\',' + p.is_active + ')">' + (p.is_active ? '<i data-lucide="circle-dot" class="lucide-icon icon-danger"></i> Hide' : '<i data-lucide="check-circle" class="lucide-icon icon-success"></i> Show') + '</button>' +
                 '</div>';
             grid.appendChild(card);
         });
@@ -381,7 +382,7 @@
             }
         }
         renderVariants();
-        showToast('✅ Copied image and sizes to all other variants!', 'success');
+        showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Copied image and sizes to all other variants!', 'success');
     }
 
     function renderVariants() {
@@ -405,8 +406,8 @@
                     '<div class="color-preview" id="cprev-' + vi + '" style="background:' + (v.colorHex||'#888') + ';"></div>' +
                     '<input class="form-input" placeholder="Color Name" value="' + (v.colorName||'') + '" data-vf="' + vi + '" data-ff="colorName" style="flex:1;">' +
                     '<input type="color" value="' + (v.colorHex||'#007AFF') + '" data-vf="' + vi + '" data-ff="colorHex" title="Color Hex" style="width:44px;height:38px;border-radius:8px;border:none;cursor:pointer;background:none;" oninput="document.getElementById(\'cprev-' + vi + '\').style.background=this.value">' +
-                    '<button type="button" class="btn btn-ghost btn-sm" onclick="applyVariantToAll(' + vi + ')" title="Copy image & sizes to all other colors" style="padding:0 8px;font-size:12.5px;">📋 Apply to All</button>' +
-                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeVariant(' + vi + ')">🗑️</button>' +
+                    '<button type="button" class="btn btn-ghost btn-sm" onclick="applyVariantToAll(' + vi + ')" title="Copy image & sizes to all other colors" style="padding:0 8px;font-size:12.5px;"><i data-lucide="clipboard-list" class="lucide-icon"></i> Apply to All</button>' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeVariant(' + vi + ')"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i></button>' +
                 '</div>' +
                 '<div class="form-group" style="margin-bottom:10px;">' +
                     '<label class="form-label">Color Image URL</label>' +
@@ -472,7 +473,7 @@
         req.then(function(r) {
             setBtnLoading(btn, false, '💾 Save Product');
             if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
-            showToast('✅ Product saved!', 'success');
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Product saved!', 'success');
             closeModal('productModal');
             loadProducts();
         });
@@ -499,5 +500,15 @@
 
     function closeModal(id) { document.getElementById(id).classList.remove('show'); }
     </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>

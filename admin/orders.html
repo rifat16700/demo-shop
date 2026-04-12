@@ -23,6 +23,7 @@
         .order-item-img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: var(--bg-card); flex-shrink: 0; }
         @media (max-width: 700px) { .detail-grid { grid-template-columns: 1fr 1fr; } }
     </style>
+    <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
 <body>
     <div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
@@ -42,17 +43,17 @@
             <!-- Filter Bar -->
             <div class="filter-bar">
                 <div class="search-box">
-                    <span>🔍</span>
+                    <span><i data-lucide="search" class="lucide-icon"></i></span>
                     <input type="text" id="searchInput" placeholder="Search by Order ID, Name, Phone..." oninput="filterOrders()">
                 </div>
                 <select class="form-select" id="statusFilter" onchange="filterOrders()" style="width:auto;min-width:160px;">
                     <option value="">All Status</option>
-                    <option value="Pending">⏳ Pending</option>
-                    <option value="Confirmed">✅ Confirmed</option>
+                    <option value="Pending"><i data-lucide="hourglass" class="lucide-icon icon-spin icon-warning"></i> Pending</option>
+                    <option value="Confirmed"><i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Confirmed</option>
                     <option value="Processing">🔄 Processing</option>
-                    <option value="Shipped">🚚 Shipped</option>
+                    <option value="Shipped"><i data-lucide="truck" class="lucide-icon icon-bounce"></i> Shipped</option>
                     <option value="Delivered">🎉 Delivered</option>
-                    <option value="Cancelled">❌ Cancelled</option>
+                    <option value="Cancelled"><i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Cancelled</option>
                 </select>
                 <select class="form-select" id="payFilter" onchange="filterOrders()" style="width:auto;min-width:150px;">
                     <option value="">All Payment</option>
@@ -97,7 +98,7 @@
         <div class="modal-box modal-box-lg">
             <div class="modal-header">
                 <div>
-                    <div class="modal-title">📦 Order Details</div>
+                    <div class="modal-title"><i data-lucide="package" class="lucide-icon icon-bounce"></i> Order Details</div>
                     <div style="font-size:12px;color:#8E8E93;" id="modalOrderId">—</div>
                 </div>
                 <button class="modal-close" onclick="closeModal('orderModal')">✕</button>
@@ -217,7 +218,7 @@
             '</div>' +
 
             '<div style="background:rgba(0,122,255,0.08);border:1px solid rgba(0,122,255,0.15);border-radius:12px;padding:14px;margin-top:12px;">' +
-                '<div style="font-size:12px;font-weight:700;color:#007AFF;margin-bottom:8px;">💳 Payment Info</div>' +
+                '<div style="font-size:12px;font-weight:700;color:#007AFF;margin-bottom:8px;"><i data-lucide="credit-card" class="lucide-icon icon-bounce"></i> Payment Info</div>' +
                 '<div style="font-size:13px;"><b>Method:</b> ' + (o.payment_method||'—') + ' | <b>Status:</b> ' + (o.payment_status||'—') + '</div>' +
                 (o.payment_sender ? '<div style="font-size:13px;margin-top:4px;"><b>Sender:</b> <code>' + o.payment_sender + '</code></div>' : '') +
                 (o.payment_trx_id ? '<div style="font-size:13px;margin-top:4px;"><b>TrxID:</b> <code>' + o.payment_trx_id + '</code></div>' : '') +
@@ -225,7 +226,7 @@
 
             // Tracking section
             '<div style="border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:12px;">' +
-                '<div style="font-size:12px;font-weight:700;color:#8E8E93;margin-bottom:10px;">🚚 Tracking & Status Update</div>' +
+                '<div style="font-size:12px;font-weight:700;color:#8E8E93;margin-bottom:10px;"><i data-lucide="truck" class="lucide-icon icon-bounce"></i> Tracking & Status Update</div>' +
                 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
                     '<select class="form-select" id="updateStatus">' +
                     ['Pending','Confirmed','Processing','Shipped','Delivered','Cancelled'].map(function(s) {
@@ -262,7 +263,7 @@
         sb.from('orders').update(payload).eq('id', orderId).then(function(r) {
             if (r.error) { showToast('Update failed: ' + r.error.message, 'error'); return; }
 
-            showToast('✅ Order updated!', 'success');
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Order updated!', 'success');
             closeModal('orderModal');
 
             // Update local data
@@ -276,5 +277,15 @@
         document.getElementById(id).classList.remove('show');
     }
     </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>

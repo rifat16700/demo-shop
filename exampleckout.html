@@ -315,7 +315,7 @@
 
         <div id="chkStatusLoader" class="chk-full-loader" style="display: none;">
             <span
-                style="font-size:40px; display:block; margin-bottom:15px; animation: spin 1s infinite linear;">⚙️</span>
+                style="font-size:40px; display:block; margin-bottom:15px; animation: spin 1s infinite linear;"><i data-lucide="settings" class="lucide-icon icon-hover-spin"></i></span>
             <div id="chkStatusText" style="color:#007AFF; font-size:18px;">Verifying payment securely...</div>
             <p style="font-size:13px; margin-top:10px;">Please wait, do not close this window.</p>
         </div>
@@ -331,7 +331,7 @@
 
 
             <div class="chk-step-content active" id="chkStep1">
-                <div class="chk-section-title">📦 Order Items</div>
+                <div class="chk-section-title"><i data-lucide="package" class="lucide-icon icon-bounce"></i> Order Items</div>
                 <div id="chkCartList"></div>
 
                 <div class="chk-section-title">👤 Personal Info</div>
@@ -353,7 +353,7 @@
                 </div>
 
                 <div class="chk-btn-group">
-                    <button type="button" class="chk-action-btn cart" onclick="closeEmbeddedCheckout()">🛒 Keep in
+                    <button type="button" class="chk-action-btn cart" onclick="closeEmbeddedCheckout()"><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i> Keep in
                         Cart</button>
                     <button type="button" class="chk-action-btn" onclick="chkGoToStep(2)">Next Step ➔</button>
                 </div>
@@ -398,7 +398,7 @@
                 </div>
 
                 <div id="chkExtrasSection" style="display: none;">
-                    <div class="chk-section-title">✨ Addons</div>
+                    <div class="chk-section-title"><i data-lucide="sparkles" class="lucide-icon icon-pulse"></i> Addons</div>
                     <div id="chkAddonsContainer"></div>
                 </div>
 
@@ -419,11 +419,11 @@
 
 
             <div class="chk-step-content" id="chkStep3">
-                <div class="chk-section-title">💳 Payment Method</div>
+                <div class="chk-section-title"><i data-lucide="credit-card" class="lucide-icon icon-bounce"></i> Payment Method</div>
                 <div class="chk-form-group">
                     <select class="chk-select" id="chkPayMethod" onchange="chkTogglePay()">
                         <option value="COD" id="chkCodOpt">💵 Cash on Delivery (COD)</option>
-                        <option value="Online">🌐 Online Payment</option>
+                        <option value="Online"><i data-lucide="globe" class="lucide-icon icon-spin"></i> Online Payment</option>
                         <option value="bKash">🟣 bKash</option>
                         <option value="Nagad">🟠 Nagad</option>
                     </select>
@@ -775,10 +775,10 @@
         if (chkValidPromos[c]) {
             chkPromoDiscount = chkValidPromos[c].discount;
             chkPromoCode = c;
-            alert("✅ Promo Applied Successfully!");
+            alert("<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Promo Applied Successfully!");
             chkCalc();
         } else {
-            alert("❌ Invalid Promo Code!");
+            alert("<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Invalid Promo Code!");
             chkPromoDiscount = 0;
             chkCalc();
         }
@@ -990,12 +990,12 @@
 
         for (let i = 0; i < chkCartData.length; i++) {
             let item = chkCartData[i];
-            tItems += `\n📦 <b>Item ${i + 1}:</b> ${item.productName}\n ├ <b>Color:</b> ${item.color}\n ├ <b>Size:</b> ${item.size}\n └ <b>Qty:</b> ${item.quantity}\n`;
+            tItems += `\n<i data-lucide="package" class="lucide-icon icon-bounce"></i> <b>Item ${i + 1}:</b> ${item.productName}\n ├ <b>Color:</b> ${item.color}\n ├ <b>Size:</b> ${item.size}\n └ <b>Qty:</b> ${item.quantity}\n`;
         }
 
         let customerName = document.getElementById('chkName').value || 'Unknown';
 
-        let t = `⚠️ <b>DRAFT ORDER (CART)!</b>\n━━━━━━━━━━━━━━${tItems}\n👤 <b>Name:</b> ${customerName}\n📱 <b>Phone:</b> <code>${ph}</code>`;
+        let t = `⚠️ <b>DRAFT ORDER (CART)!</b>\n━━━━━━━━━━━━━━${tItems}\n👤 <b>Name:</b> ${customerName}\n<i data-lucide="smartphone" class="lucide-icon"></i> <b>Phone:</b> <code>${ph}</code>`;
 
         fetch(`https://api.telegram.org/bot${chkDraftBot}/sendMessage`, {
             method: 'POST',
@@ -1133,11 +1133,11 @@
             let tItems = "";
             for (let i = 0; i < chkCartData.length; i++) {
                 let item = chkCartData[i];
-                tItems += `\n📦 <b>Item ${i + 1}:</b> ${item.productName}\n ├ <b>Color:</b> ${item.color}\n ├ <b>Size:</b> ${item.size}\n └ <b>Qty:</b> ${item.quantity}\n`;
+                tItems += `\n<i data-lucide="package" class="lucide-icon icon-bounce"></i> <b>Item ${i + 1}:</b> ${item.productName}\n ├ <b>Color:</b> ${item.color}\n ├ <b>Size:</b> ${item.size}\n └ <b>Qty:</b> ${item.quantity}\n`;
             }
 
             let addonsText = selAddons.length > 0 ? selAddons.join(',') : 'None';
-            let tgT = `🛍️ <b>NEW CART ORDER!</b>\n━━━━━━━━━━━━━━\n📦 <b>ID:</b> <code>${orderId}</code>\n<b>ITEMS:</b>${tItems}▪️ <b>Add-ons:</b> ${addonsText}\n\n👤 <b>CUSTOMER:</b>\n ├ <b>Name:</b> ${orderData.customer.name}\n ├ <b>Phone:</b> <code>${orderData.customer.phone}</code>\n └ <b>Addr:</b> ${orderData.customer.address}, ${orderData.customer.area}\n\n💳 <b>PAYMENT:</b> ${fpm} (৳${cst.finalTotal})`;
+            let tgT = `<i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> <b>NEW CART ORDER!</b>\n━━━━━━━━━━━━━━\n<i data-lucide="package" class="lucide-icon icon-bounce"></i> <b>ID:</b> <code>${orderId}</code>\n<b>ITEMS:</b>${tItems}▪️ <b>Add-ons:</b> ${addonsText}\n\n👤 <b>CUSTOMER:</b>\n ├ <b>Name:</b> ${orderData.customer.name}\n ├ <b>Phone:</b> <code>${orderData.customer.phone}</code>\n └ <b>Addr:</b> ${orderData.customer.address}, ${orderData.customer.area}\n\n<i data-lucide="credit-card" class="lucide-icon icon-bounce"></i> <b>PAYMENT:</b> ${fpm} (৳${cst.finalTotal})`;
 
             if (snd) {
                 tgT += `\n ├ Sender: <code>${snd}</code>\n └ TrxID: <code>${trx}</code>`;
@@ -1163,7 +1163,7 @@
     });
 
     // ============================================================================
-    // 🔍 AUTO PAYMENT VERIFICATION (When Returning from Gateway)
+    // <i data-lucide="search" class="lucide-icon"></i> AUTO PAYMENT VERIFICATION (When Returning from Gateway)
     // ============================================================================
     window.addEventListener('load', async () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -1246,10 +1246,10 @@
                         let tItems = "";
                         for (let i = 0; i < oData.items.cartItems.length; i++) {
                             let item = oData.items.cartItems[i];
-                            tItems += `\n📦 <b>Item ${i + 1}:</b> ${item.productName}\n ├ <b>Color:</b> ${item.color}\n ├ <b>Size:</b> ${item.size}\n └ <b>Qty:</b> ${item.quantity}\n`;
+                            tItems += `\n<i data-lucide="package" class="lucide-icon icon-bounce"></i> <b>Item ${i + 1}:</b> ${item.productName}\n ├ <b>Color:</b> ${item.color}\n ├ <b>Size:</b> ${item.size}\n └ <b>Qty:</b> ${item.quantity}\n`;
                         }
 
-                        let tgT = `🛍️ <b>NEW CART ORDER (VERIFIED)!</b>\n━━━━━━━━━━━━━━\n📦 <b>ID:</b> <code>${orderId}</code>\n<b>ITEMS:</b>${tItems}▪️ <b>Add-ons:</b> ${oData.items.addons}\n\n👤 <b>CUSTOMER:</b>\n ├ <b>Name:</b> ${oData.customer.name}\n ├ <b>Phone:</b> <code>${oData.customer.phone}</code>\n └ <b>Addr:</b> ${oData.customer.address}, ${oData.customer.area}\n\n💳 <b>PAYMENT:</b> ${oData.payment.method} (৳${oData.pricing.finalTotal})\n └ TrxID: <code>${trxId}</code>`;
+                        let tgT = `<i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> <b>NEW CART ORDER (VERIFIED)!</b>\n━━━━━━━━━━━━━━\n<i data-lucide="package" class="lucide-icon icon-bounce"></i> <b>ID:</b> <code>${orderId}</code>\n<b>ITEMS:</b>${tItems}▪️ <b>Add-ons:</b> ${oData.items.addons}\n\n👤 <b>CUSTOMER:</b>\n ├ <b>Name:</b> ${oData.customer.name}\n ├ <b>Phone:</b> <code>${oData.customer.phone}</code>\n └ <b>Addr:</b> ${oData.customer.address}, ${oData.customer.area}\n\n<i data-lucide="credit-card" class="lucide-icon icon-bounce"></i> <b>PAYMENT:</b> ${oData.payment.method} (৳${oData.pricing.finalTotal})\n └ TrxID: <code>${trxId}</code>`;
 
                         for (let i = 0; i < chkMainChats.length; i++) {
                             let chatId = chkMainChats[i];
@@ -1312,7 +1312,7 @@
                 <div style="background:rgba(0,0,0,0.05); padding:15px; border-radius:15px; margin:20px 0;">
                     Order ID: <b style="color:#007AFF; font-size:18px;">${id}</b>
                     <br>
-                    <button onclick="chkCopyId('${id}')" style="margin-top:10px; padding:8px 15px; border-radius:10px; border:none; background:#007AFF; color:white; font-weight:bold; cursor:pointer;">📋 Copy ID</button>
+                    <button onclick="chkCopyId('${id}')" style="margin-top:10px; padding:8px 15px; border-radius:10px; border:none; background:#007AFF; color:white; font-weight:bold; cursor:pointer;"><i data-lucide="clipboard-list" class="lucide-icon"></i> Copy ID</button>
                 </div>
                 <button onclick="chkDownloadPDF('${id}')" style="width:100%; padding:15px; background:#1C1C1E; color:white; border-radius:15px; border:none; font-weight:bold; font-size:16px; margin-bottom:10px; cursor:pointer;">📥 Download PDF Invoice</button>
                 <button onclick="window.location.reload()" style="width:100%; padding:15px; background:rgba(0,0,0,0.1); border-radius:15px; border:none; font-weight:bold; font-size:16px; cursor:pointer; color:var(--ios-text);">Return to Shop</button>
@@ -1634,7 +1634,8 @@
                         .invoice-container { margin: 0; padding: 20px; box-shadow: none; max-width: 100%; }
                     }
                 </style>
-            </head>
+                <link rel="stylesheet" href="assets/css/premium-icons.css">
+</head>
             <body>
                 <div class="invoice-container">
                     <div class="header">
@@ -1703,7 +1704,17 @@
                     // Page load howar 1 second por automatic print option ashbe
                     setTimeout(() => { window.print(); }, 1000);
                 <\/script>
-            </body>
+            
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="assets/js/offline-handler.js"></script>
+</body>
             </html>
         `;
 
@@ -1777,7 +1788,7 @@
 
 <script>
     // ========================================================
-    // ⚙️ কনফিগারেশন সেটিং (আপনার প্রয়োজন মতো true বা false করুন)
+    // <i data-lucide="settings" class="lucide-icon icon-hover-spin"></i> কনফিগারেশন সেটিং (আপনার প্রয়োজন মতো true বা false করুন)
     // ========================================================
 
     // ১. এই পুরো ফান বক্স ফিচারটি চালু বা বন্ধ করতে চান?
@@ -1872,7 +1883,7 @@
                             
                             <!-- Tooltip Container 2 -->
                             <div id="funTooltip2" style="position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%) translateY(-10px); opacity: 0; visibility: hidden; background: #007AFF; color: white; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: bold; white-space: nowrap; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 6px 15px rgba(0, 122, 255, 0.25); z-index: 100;">
-                                ধন্যবাদ! 🚚
+                                ধন্যবাদ! <i data-lucide="truck" class="lucide-icon icon-bounce"></i>
                                 <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); border-width: 6px; border-style: solid; border-color: transparent transparent #007AFF transparent;"></div>
                             </div>
                         `;

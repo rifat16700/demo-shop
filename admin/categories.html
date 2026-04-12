@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/config.js"></script><script src="../assets/js/supabase-init.js"></script>
     <script src="assets/js/admin-common.js"></script>
+    <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
 <body>
 <div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
@@ -84,8 +85,8 @@ function renderCats() {
             '<td>' + (c.sort_order || 0) + '</td>' +
             '<td><span class="badge ' + (c.is_active ? 'badge-delivered' : 'badge-cancelled') + '">' + (c.is_active ? 'Active' : 'Inactive') + '</span></td>' +
             '<td style="display:flex;gap:6px;">' +
-                '<button class="btn btn-ghost btn-sm" onclick=\'editCat(' + JSON.stringify(c).replace(/'/g,"&apos;") + ')\'>✏️ Edit</button>' +
-                '<button class="btn btn-danger btn-sm" onclick="deleteCat(\'' + c.id + '\')">🗑️</button>' +
+                '<button class="btn btn-ghost btn-sm" onclick=\'editCat(' + JSON.stringify(c).replace(/'/g,"&apos;") + ')\'><i data-lucide="edit-3" class="lucide-icon icon-hover-pulse"></i> Edit</button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deleteCat(\'' + c.id + '\')"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i></button>' +
             '</td></tr>';
     });
     document.getElementById('catBody').innerHTML = html;
@@ -125,7 +126,7 @@ function saveCat() {
     var req = editingId ? sb.from('categories').update(payload).eq('id', editingId) : sb.from('categories').insert([payload]);
     req.then(function(r) {
         if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
-        showToast('✅ Saved!', 'success'); closeModal(); loadCats();
+        showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadCats();
     });
 }
 
@@ -139,5 +140,15 @@ function deleteCat(id) {
 
 function closeModal() { document.getElementById('catModal').classList.remove('show'); }
 </script>
+
+    <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    </script>
+
+    <script src="../assets/js/offline-handler.js"></script>
 </body>
 </html>

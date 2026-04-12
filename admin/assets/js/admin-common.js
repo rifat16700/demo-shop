@@ -100,8 +100,26 @@ function adminInit(activePage) {
             return;
         }
 
+        // --- Admin Email Guard ---
+        // Replace this array with your actual admin Gmail address(es)
+        var ALLOWED_ADMIN_EMAILS = [
+            'rifatrabbil10@gmail.com', 
+            'admin@freelancingbyrifat.com'
+        ];
+
+        var userEmail = session.user.email || '';
+        
+        // Check if the logged in Google user's email is an allowed admin
+        if (!ALLOWED_ADMIN_EMAILS.includes(userEmail)) {
+            alert('Access Denied: You are not authorized as an Admin (' + userEmail + '). Logging out...');
+            sb.auth.signOut().then(function() {
+                window.location.href = 'index.html';
+            });
+            return;
+        }
+
         // Set user info in sidebar
-        var email = session.user.email || 'admin@admin.com';
+        var email = userEmail;
         var initial = email.charAt(0).toUpperCase() || 'A';
 
         var emailEl = document.getElementById('adminUserEmail');

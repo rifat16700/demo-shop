@@ -359,9 +359,9 @@
                 </div>
             </div>
 
-            <!-- Password -->
+            <!-- Password / PIN -->
             <div class="form-group">
-                <label class="form-label" for="loginPass">Password</label>
+                <label class="form-label" for="loginPass">Security PIN</label>
                 <div class="input-wrap">
                     <span class="input-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
@@ -371,7 +371,7 @@
                         </svg>
                     </span>
                     <input type="password" id="loginPass" class="form-input"
-                           placeholder="••••••••" required autocomplete="current-password">
+                           placeholder="Enter Admin PIN" required autocomplete="current-password">
                     <button type="button" class="pass-toggle" id="passToggle" onclick="togglePass()" aria-label="Show/hide password">
                         <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
                              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -444,11 +444,13 @@
             }, 3500);
         }
 
+        // ══ SECURITY PIN (CHANGE THIS TO YOUR PREFERRED PIN) ══
+        var MASTER_PIN = "2025"; 
+
         // ── Check session automatically ─────────────────────────
-        async function checkSession() {
-            if (!sb) return;
-            const { data: { session } } = await sb.auth.getSession();
-            if (session) {
+        function checkSession() {
+            var isAuth = localStorage.getItem('fbr_admin_auth');
+            if (isAuth === 'true') {
                 document.getElementById('loginForm').style.display = 'none';
                 document.getElementById('redirectMsg').classList.add('show');
                 window.location.href = 'dashboard.html';
@@ -457,63 +459,61 @@
         
         // Wait for DOM
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("DOM Loaded - Login UI ready");
+            console.log("DOM Loaded - Local Auth UI ready");
             checkSession();
+
+            // Hide email field if already saved previously
+            var savedEmail = localStorage.getItem('fbr_admin_email');
+            if (savedEmail) {
+                var emailInput = document.getElementById('loginEmail');
+                if (emailInput) {
+                    emailInput.value = savedEmail;
+                    emailInput.closest('.form-group').style.display = 'none'; // hide the email section
+                    document.querySelector('.login-sub').textContent = "Welcome back, " + savedEmail;
+                }
+            }
         });
 
         // ══ Login Click Handler ──────────────────────────────────
-        async function doLogin() {
-            console.log("Login button clicked!");
-
-            if (!sb) {
-                console.error("Auth System is null");
-                showToast('❌ Authentication system not ready. Please refresh.', 'error');
-                return;
-            }
-
+        function doLogin() {
             var email      = document.getElementById('loginEmail').value.trim();
-            var pass       = document.getElementById('loginPass').value;
+            var pass       = document.getElementById('loginPass').value.trim();
             var btn        = document.getElementById('loginBtn');
             var btnContent = document.getElementById('loginBtnContent');
             var originalHTML = btnContent.innerHTML;
 
-            if(!email || !pass) {
-                showToast('Please enter both email and password.', 'error');
+            // Only email is required on first time
+            if (!localStorage.getItem('fbr_admin_email') && !email) {
+                showToast('Please enter your email.', 'error');
                 return;
             }
 
-            console.log("Attempting login for:", email);
+            if (!pass) {
+                showToast('Please enter the Security PIN.', 'error');
+                return;
+            }
 
             btn.disabled = true;
-            btnContent.innerHTML = '<div class="spinner"></div><span>Logging in...</span>';
+            btnContent.innerHTML = '<div class="spinner"></div><span>Verifying...</span>';
 
-            try {
-                const { data, error } = await sb.auth.signInWithPassword({
-                    email: email,
-                    password: pass,
-                });
-
-                if (error) {
-                    console.error("Supabase login error:", error);
-                    showToast('❌ ' + (error.message || 'Login failed.'), 'error');
-                    btn.disabled = false;
-                    btnContent.innerHTML = originalHTML;
-                    return;
-                }
-
-                if (data && data.session) {
-                    console.log("Login successful, redirecting.");
-                    showToast('✅ Login successful! Redirecting...', 'success');
+            // Verify PIN instantly without Supabase
+            setTimeout(function() {
+                if (pass === MASTER_PIN) {
+                    // Success
+                    localStorage.setItem('fbr_admin_auth', 'true');
+                    if (email) localStorage.setItem('fbr_admin_email', email);
+                    
+                    showToast('✅ Login successful!', 'success');
                     document.getElementById('loginForm').style.display = 'none';
                     document.getElementById('redirectMsg').classList.add('show');
-                    setTimeout(function() { window.location.href = 'dashboard.html'; }, 800);
+                    setTimeout(function() { window.location.href = 'dashboard.html'; }, 600);
+                } else {
+                    // Fail
+                    showToast('❌ Incorrect Security PIN.', 'error');
+                    btn.disabled = false;
+                    btnContent.innerHTML = originalHTML;
                 }
-            } catch (err) {
-                console.error("Unexpected JS crash during login:", err);
-                showToast('❌ Unexpected error occurred.', 'error');
-                btn.disabled = false;
-                btnContent.innerHTML = originalHTML;
-            }
+            }, 500); // small delay to simulate processing and feel secure
         }
     </script>
 </body>

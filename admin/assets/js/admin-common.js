@@ -91,17 +91,21 @@ function adminInit(activePage) {
     document.body.insertAdjacentHTML('afterbegin', SIDEBAR_HTML);
     document.body.insertAdjacentHTML('beforeend', TOAST_HTML);
 
-    // Auth guard
+    // Auth guard & Local PIN System
     sb.auth.getSession().then(function(res) {
         var session = res.data && res.data.session;
-        if (!session) {
+        var localAuth = localStorage.getItem('fbr_admin_auth') === 'true';
+
+        if (!session && !localAuth) {
             window.location.href = 'index.html';
             return;
         }
 
         // Set user info in sidebar
-        var user = session.user;
-        var email = user.email || '';
+        var email = '';
+        if (session && session.user) email = session.user.email;
+        else email = localStorage.getItem('fbr_admin_email') || 'admin@admin.com';
+        
         var initial = email.charAt(0).toUpperCase();
 
         var emailEl = document.getElementById('adminUserEmail');
@@ -160,7 +164,15 @@ function adminLoadBadges() {
 // ── Logout ───────────────────────────────────────────────────
 function adminLogout() {
     if (!confirm('লগআউট করবেন?')) return;
+    
+    // Clear local auth
+    localStorage.removeItem('fbr_admin_auth');
+    localStorage.removeItem('fbr_admin_email');
+    
+    // Clear supabase
     sb.auth.signOut().then(function() {
+        window.location.href = 'index.html';
+    }).catch(function(){
         window.location.href = 'index.html';
     });
 }

@@ -8,6 +8,8 @@
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/config.js"></script>
+    <script src="../assets/js/supabase-init.js"></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -407,26 +409,7 @@
     </div>
 
     <script>
-        // ══ CONFIGURATION ══
-        var SUPABASE_URL      = 'https://qdkppbwjgkkxzgzgsykv.supabase.co';
-        var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFka3BwYndqZ2treHpnemdzeWt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzY2NjgsImV4cCI6MjA5MDgxMjY2OH0.i1x16UGnM_4C2hVGZS9JreM2FJDxsIYeiHkA4BMOfrk';
-
-        // ══ ERROR DISPLAY (For Debugging) ══
-        window.onerror = function(msg, url, line) {
-            showToast("JS Error: " + msg, "error");
-            return false;
-        };
-
-        // ══ SUPABASE INIT ══
-        var sb = null;
-        try {
-            if (typeof supabase !== 'undefined') {
-                sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            }
-        } catch(e) {
-            console.error("Supabase init failed", e);
-            showToast("Failed to connect to authentication server.", "error");
-        }
+        // Use global `CONFIG` and `sb` from ../assets/js/ config files
 
         var passVisible = false;
 

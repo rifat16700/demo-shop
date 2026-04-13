@@ -95,11 +95,13 @@ function trackOrder() {
     btn.disabled = true; btn.textContent = 'Tracking...';
 
     sb.from('orders').select('*').eq('id', orderId).eq('customer_phone', phone).single().then(function(r) {
-        btn.disabled = false; btn.textContent = '<i data-lucide="search" class="lucide-icon"></i> Track Order';
+        btn.disabled = false; btn.innerHTML = '<i data-lucide="search" class="lucide-icon"></i> Track Order';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
 
         if (r.error || !r.data) {
-            errEl.textContent = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Order not found. Please check your Order ID and phone number.';
+            errEl.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Order not found. Please check your Order ID and phone number.';
             errEl.style.display = 'block';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
             return;
         }
 
@@ -180,6 +182,7 @@ function renderTrackResult(order) {
                 '<a href="index.html" class="btn btn-ghost btn-full btn-sm"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> Shop More</a>' +
             '</div>' +
         '</div>';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function getStatusClass(s) {

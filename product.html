@@ -9,9 +9,14 @@
     <style>
         .product-page { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 24px 0; }
         .gallery-main { position: relative; aspect-ratio: 1; border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-light); }
-        .gallery-main img { width: 100%; height: 100%; object-fit: cover; }
+        .gallery-main img, .gallery-main iframe { width: 100%; height: 100%; object-fit: cover; border: none; }
+        .gallery-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.8); border: none; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10; transition: var(--transition); }
+        .gallery-btn:hover { background: #fff; box-shadow: 0 6px 16px rgba(0,0,0,0.15); color: var(--primary); }
+        .prev-btn { left: 10px; }
+        .next-btn { right: 10px; }
         .gallery-thumbs { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-        .gallery-thumb { width: 70px; height: 70px; border-radius: 10px; object-fit: cover; cursor: pointer; border: 2px solid transparent; transition: var(--transition); }
+        .gallery-thumb-wrap { position: relative; width: 70px; height: 70px; }
+        .gallery-thumb { width: 100%; height: 100%; border-radius: 10px; object-fit: cover; cursor: pointer; border: 2px solid transparent; transition: var(--transition); }
         .gallery-thumb.active { border-color: var(--primary); }
         .color-swatches { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
         .color-swatch { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: var(--transition); position: relative; }
@@ -28,8 +33,6 @@
         .qty-num2 { width: 48px; text-align: center; font-size: 16px; font-weight: 800; border: none; outline: none; font-family: inherit; background: #fff; }
         .price-tag { font-size: 32px; font-weight: 900; color: var(--primary); }
         .price-old  { font-size: 16px; color: var(--text-muted); text-decoration: line-through; margin-left: 8px; }
-        .video-wrap { margin-top: 20px; aspect-ratio: 16/9; border-radius: var(--radius-md); overflow: hidden; background: #000; }
-        .video-wrap iframe { width: 100%; height: 100%; border: none; }
         @media (max-width: 768px) { .product-page { grid-template-columns: 1fr; gap: 20px; } }
     </style>
     <link rel="stylesheet" href="assets/css/premium-icons.css">
@@ -50,13 +53,14 @@
 
         <!-- Left: Gallery -->
         <div>
-            <div class="gallery-main">
-                <img id="mainImg" src="" alt="">
+            <div class="gallery-main" id="galleryMain">
+                <button class="gallery-btn prev-btn" id="galleryPrev" style="display:none;" onclick="changeMedia(-1)"><i data-lucide="chevron-left" class="lucide-icon"></i></button>
+                <button class="gallery-btn next-btn" id="galleryNext" style="display:none;" onclick="changeMedia(1)"><i data-lucide="chevron-right" class="lucide-icon"></i></button>
+                <div id="mediaContainer" style="width:100%;height:100%;">
+                    <img id="mainImg" src="" alt="">
+                </div>
             </div>
             <div class="gallery-thumbs" id="thumbsRow"></div>
-            <div class="video-wrap" id="videoWrap" style="display:none;">
-                <iframe id="videoFrame" allowfullscreen></iframe>
-            </div>
         </div>
 
         <!-- Right: Info -->
@@ -212,28 +216,38 @@ function renderProduct(p) {
     // Set initial price
     updatePrice(null);
 
-    // Gallery
+    // Media Gallery
+    var allMedia = [];
     var allImages = [];
     if (variants.length && variants[0].imageUrl) allImages.push(variants[0].imageUrl);
     gallery.forEach(function(img) { if (!allImages.includes(img)) allImages.push(img); });
+    
+    allImages.forEach(function(img) { allMedia.push({type: 'image', src: img}); });
 
-    if (allImages.length) {
-        document.getElementById('mainImg').src = allImages[0];
-    }
-
-    var thumbsHtml = allImages.map(function(img, i) {
-        return '<img src="' + img + '" class="gallery-thumb' + (i===0?' active':'') + '" onclick="setMainImg(this,\'' + img + '\')">';
-    }).join('');
-    document.getElementById('thumbsRow').innerHTML = thumbsHtml;
-
-    // Video
     if (p.video_url) {
         var src = p.video_url;
         if (src.includes('youtube.com/watch?v=')) src = src.replace('watch?v=', 'embed/');
-        if (src.includes('youtu.be/')) src = 'https://www.youtube.com/embed/' + src.split('youtu.be/')[1];
-        document.getElementById('videoFrame').src = src;
-        document.getElementById('videoWrap').style.display = 'block';
+        if (src.includes('youtu.be/')) src = 'https://www.youtube.com/embed/' + src.split('youtu.be/')[1] + '?autoplay=0';
+        allMedia.push({type: 'video', src: src});
     }
+
+    window.productMedia = allMedia;
+    window.currentMediaIndex = 0;
+
+    var thumbsHtml = allMedia.map(function(m, i) {
+        var thumbSrc = m.type === 'image' ? m.src : 'https://img.youtube.com/vi/' + (m.src.split('embed/')[1] || '').split('?')[0] + '/default.jpg';
+        var iconStr = m.type === 'video' ? '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,77,77,0.9);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.2);"><i data-lucide="play" style="width:14px;height:14px;margin-left:2px;"></i></div>' : '';
+        return '<div style="position:relative;" class="gallery-thumb-wrap"><img src="' + thumbSrc + '" class="gallery-thumb' + (i===0?' active':'') + '" onclick="setMedia(' + i + ')" onerror="this.src=\'https://via.placeholder.com/70?text=Video\'">' + iconStr + '</div>';
+    }).join('');
+    
+    document.getElementById('thumbsRow').innerHTML = thumbsHtml;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    if (allMedia.length > 0) setMedia(0);
+    else document.getElementById('mediaContainer').innerHTML = '';
+
+    document.getElementById('galleryPrev').style.display = allMedia.length > 1 ? 'flex' : 'none';
+    document.getElementById('galleryNext').style.display = allMedia.length > 1 ? 'flex' : 'none';
 
     // Colors
     if (variants.length) {
@@ -259,7 +273,10 @@ function selectColor(vi) {
     document.querySelectorAll('.color-swatch').forEach(function(el, i) { el.classList.toggle('selected', i === vi); });
 
     // Update main image with color image
-    if (selectedColor.imageUrl) setMainImg(null, selectedColor.imageUrl);
+    if (selectedColor.imageUrl && window.productMedia) {
+        var idx = window.productMedia.findIndex(function(m) { return m.src === selectedColor.imageUrl; });
+        if (idx !== -1) setMedia(idx);
+    }
 
     // Render sizes
     renderSizes(selectedColor.sizes || []);
@@ -301,10 +318,28 @@ function updatePrice(size) {
     }
 }
 
-function setMainImg(el, src) {
-    document.getElementById('mainImg').src = src;
-    document.querySelectorAll('.gallery-thumb').forEach(function(t) { t.classList.remove('active'); });
-    if (el) el.classList.add('active');
+function setMedia(index) {
+    if (!window.productMedia || !window.productMedia.length) return;
+    window.currentMediaIndex = index;
+    var m = window.productMedia[index];
+    var container = document.getElementById('mediaContainer');
+    if (m.type === 'image') {
+        container.innerHTML = '<img id="mainImg" src="' + m.src + '" alt="">';
+    } else {
+        container.innerHTML = '<iframe src="' + m.src + '" allowfullscreen style="width:100%;height:100%;border:none;background:#000;"></iframe>';
+    }
+
+    document.querySelectorAll('.gallery-thumb').forEach(function(t, i) {
+        t.classList.toggle('active', i === index);
+    });
+}
+
+function changeMedia(delta) {
+    if (!window.productMedia) return;
+    var len = window.productMedia.length;
+    if (len <= 1) return;
+    var newIdx = (window.currentMediaIndex + delta + len) % len;
+    setMedia(newIdx);
 }
 
 function changeQty(delta) {
@@ -409,6 +444,7 @@ function submitReview() {
     }]).then(function(r) {
         if (r.error) { alert('Failed to submit review. Please try again.'); return; }
         document.getElementById('reviewForm').innerHTML = '<div style="text-align:center;padding:24px;color:#22C55E;font-size:15px;font-weight:700;"><i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Review submitted! It will appear after admin approval.</div>';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     });
 }
 

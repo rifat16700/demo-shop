@@ -525,12 +525,13 @@ function applyPromo() {
     if (!code) return;
     var promo = allPromos.find(function(p){ return p.code === code && p.is_active; });
     var msg = document.getElementById('promoMsg');
-    if (!promo) { msg.textContent = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Invalid or expired promo code'; msg.style.color = 'var(--danger)'; return; }
-    if (promo.expires_at && new Date(promo.expires_at) < new Date()) { msg.textContent = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Promo code expired'; msg.style.color='var(--danger)'; return; }
+    if (!promo) { msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Invalid or expired promo code'; msg.style.color = 'var(--danger)'; if (typeof lucide !== 'undefined') lucide.createIcons(); return; }
+    if (promo.expires_at && new Date(promo.expires_at) < new Date()) { msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Promo code expired'; msg.style.color='var(--danger)'; if (typeof lucide !== 'undefined') lucide.createIcons(); return; }
     promoDiscount = promo.discount;
     promoCode     = promo.code;
-    msg.textContent = '<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Discount of ৳' + promo.discount + ' applied!';
+    msg.innerHTML = '<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Discount of ৳' + promo.discount + ' applied!';
     msg.style.color = 'var(--success)';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
     updateSummaryTotals();
 }
 
@@ -599,7 +600,7 @@ function placeOrder() {
     btn.textContent = 'Placing Order...';
 
     sb.from('orders').insert([orderData]).then(function(r) {
-        if (r.error) { btn.disabled = false; btn.textContent = '<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order'; alert('Error: ' + r.error.message); return; }
+        if (r.error) { btn.disabled = false; btn.innerHTML = '<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order'; if (typeof lucide !== 'undefined') lucide.createIcons(); alert('Error: ' + r.error.message); return; }
         sendOrderNotification(orderData);
         localStorage.removeItem(CONFIG.CART_KEY);
         window.location.href = 'success.html?id=' + orderId;

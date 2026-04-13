@@ -85,6 +85,7 @@ function renderCart() {
             '<a href="shop.html" class="btn btn-primary btn-lg"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> Start Shopping</a>' +
             '</div>';
         updateSummary(cart);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
         return;
     }
 
@@ -112,6 +113,7 @@ function renderCart() {
     }).join('');
 
     updateSummary(cart);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function changeQty(i, delta) {

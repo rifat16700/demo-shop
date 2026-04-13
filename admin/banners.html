@@ -45,13 +45,46 @@
         </div>
         <div class="form-group"><label class="form-label">Banner Image URL *</label>
             <input class="form-input" id="bImg" placeholder="https://...banner.jpg" oninput="updatePreview()">
-            <img id="bPreview" src="" style="width:100%;height:120px;object-fit:cover;border-radius:10px;margin-top:8px;display:none;" alt="preview"></div>
+            <div id="previewWrap" style="position:relative;width:100%;height:140px;border-radius:10px;margin-top:12px;display:none;overflow:hidden;border:1px solid var(--border);">
+                <img id="bPreview" src="" style="width:100%;height:100%;object-fit:cover;" alt="preview">
+                <div id="areaBox" style="position:absolute;top:0;left:0;width:100%;height:100%;border:2px dashed #00FF00;background:rgba(0,255,0,0.3);display:none;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);"></div>
+            </div>
+        </div>
         <div class="form-group"><label class="form-label">Title (optional)</label>
             <input class="form-input" id="bTitle" placeholder="Banner headline"></div>
         <div class="form-group"><label class="form-label">Subtitle (optional)</label>
             <input class="form-input" id="bSub" placeholder="Banner subtitle"></div>
+            
+        <div class="form-group"><label class="form-label">Link Type</label>
+            <select class="form-select" id="bLinkType" onchange="toggleAreaTools()">
+                <option value="full">Full Banner Link</option>
+                <option value="area">Specific Area Link</option>
+            </select>
+        </div>
         <div class="form-group"><label class="form-label">Link URL (optional)</label>
             <input class="form-input" id="bLink" placeholder="https://...shop.html"></div>
+            
+        <div id="areaTools" style="display:none;background:var(--bg-secondary);padding:14px;border-radius:10px;border:1px solid var(--border);margin-bottom:14px;">
+            <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text-dark);">Adjust Clickable Area</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div>
+                    <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;">Left: <span id="lblX">0</span>%</label>
+                    <input type="range" id="areaX" min="0" max="100" value="0" style="width:100%;" oninput="updateAreaPreview()">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;">Top: <span id="lblY">0</span>%</label>
+                    <input type="range" id="areaY" min="0" max="100" value="0" style="width:100%;" oninput="updateAreaPreview()">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;">Width: <span id="lblW">100</span>%</label>
+                    <input type="range" id="areaW" min="5" max="100" value="100" style="width:100%;" oninput="updateAreaPreview()">
+                </div>
+                <div>
+                    <label style="font-size:11px;color:#888;display:block;margin-bottom:4px;">Height: <span id="lblH">100</span>%</label>
+                    <input type="range" id="areaH" min="5" max="100" value="100" style="width:100%;" oninput="updateAreaPreview()">
+                </div>
+            </div>
+        </div>
         <div class="form-group"><label class="form-label">Sort Order</label>
             <input class="form-input" id="bSort" type="number" value="0"></div>
         <div class="toggle-wrap" onclick="toggleBActive()" style="margin-bottom:20px;">
@@ -108,8 +141,38 @@ function renderBanners() {
 
 function updatePreview() {
     var url = document.getElementById('bImg').value.trim();
+    var wrap = document.getElementById('previewWrap');
     var prev = document.getElementById('bPreview');
-    if (url) { prev.src = url; prev.style.display = 'block'; } else { prev.style.display = 'none'; }
+    if (url) { prev.src = url; wrap.style.display = 'block'; } else { wrap.style.display = 'none'; }
+    updateAreaPreview();
+}
+
+function toggleAreaTools() {
+    var type = document.getElementById('bLinkType').value;
+    document.getElementById('areaTools').style.display = type === 'area' ? 'block' : 'none';
+    document.getElementById('areaBox').style.display = type === 'area' ? 'block' : 'none';
+    updateAreaPreview();
+}
+
+function updateAreaPreview() {
+    var type = document.getElementById('bLinkType').value;
+    if (type !== 'area') return;
+    
+    var x = document.getElementById('areaX').value;
+    var y = document.getElementById('areaY').value;
+    var w = document.getElementById('areaW').value;
+    var h = document.getElementById('areaH').value;
+    
+    document.getElementById('lblX').textContent = x;
+    document.getElementById('lblY').textContent = y;
+    document.getElementById('lblW').textContent = w;
+    document.getElementById('lblH').textContent = h;
+    
+    var box = document.getElementById('areaBox');
+    box.style.left = x + '%';
+    box.style.top = y + '%';
+    box.style.width = w + '%';
+    box.style.height = h + '%';
 }
 
 function openModal() {
@@ -117,7 +180,13 @@ function openModal() {
     document.getElementById('bannerModalTitle').textContent = 'Add Banner';
     ['bImg','bTitle','bSub','bLink'].forEach(function(id) { document.getElementById(id).value = ''; });
     document.getElementById('bSort').value = 0;
-    document.getElementById('bPreview').style.display = 'none';
+    document.getElementById('previewWrap').style.display = 'none';
+    
+    document.getElementById('bLinkType').value = 'full';
+    document.getElementById('areaX').value = 0; document.getElementById('areaY').value = 0;
+    document.getElementById('areaW').value = 100; document.getElementById('areaH').value = 100;
+    toggleAreaTools();
+    
     setToggle('bActive', true);
     document.getElementById('bannerModal').classList.add('show');
 }
@@ -128,8 +197,29 @@ function editBanner(b) {
     document.getElementById('bImg').value   = b.image_url || '';
     document.getElementById('bTitle').value = b.title || '';
     document.getElementById('bSub').value   = b.subtitle || '';
-    document.getElementById('bLink').value  = b.link_url || '';
     document.getElementById('bSort').value  = b.sort_order || 0;
+    
+    var rawLink = (b.link_url || '').trim();
+    var linkData = null;
+    if (rawLink.startsWith('{') && rawLink.endsWith('}')) {
+        try { linkData = JSON.parse(rawLink); } catch(e){}
+    }
+    
+    if (linkData && linkData.type === 'area') {
+        document.getElementById('bLinkType').value = 'area';
+        document.getElementById('bLink').value = linkData.url || '';
+        document.getElementById('areaX').value = linkData.x || 0;
+        document.getElementById('areaY').value = linkData.y || 0;
+        document.getElementById('areaW').value = linkData.w || 100;
+        document.getElementById('areaH').value = linkData.h || 100;
+    } else {
+        document.getElementById('bLinkType').value = 'full';
+        document.getElementById('bLink').value = rawLink;
+        document.getElementById('areaX').value = 0; document.getElementById('areaY').value = 0;
+        document.getElementById('areaW').value = 100; document.getElementById('areaH').value = 100;
+    }
+    
+    toggleAreaTools();
     setToggle('bActive', bActive);
     updatePreview();
     document.getElementById('bannerModal').classList.add('show');
@@ -144,7 +234,20 @@ function toggleBActive() { bActive = !bActive; setToggle('bActive', bActive); }
 function saveBanner() {
     var img = document.getElementById('bImg').value.trim();
     if (!img) { showToast('Image URL required', 'error'); return; }
-    var payload = { image_url: img, title: document.getElementById('bTitle').value.trim(), subtitle: document.getElementById('bSub').value.trim(), link_url: document.getElementById('bLink').value.trim(), sort_order: parseInt(document.getElementById('bSort').value)||0, is_active: bActive };
+    
+    var type = document.getElementById('bLinkType').value;
+    var userLink = document.getElementById('bLink').value.trim();
+    var finalLink = userLink;
+    
+    if (type === 'area') {
+        var x = parseInt(document.getElementById('areaX').value) || 0;
+        var y = parseInt(document.getElementById('areaY').value) || 0;
+        var w = parseInt(document.getElementById('areaW').value) || 100;
+        var h = parseInt(document.getElementById('areaH').value) || 100;
+        finalLink = JSON.stringify({ url: userLink, type: 'area', x: x, y: y, w: w, h: h });
+    }
+    
+    var payload = { image_url: img, title: document.getElementById('bTitle').value.trim(), subtitle: document.getElementById('bSub').value.trim(), link_url: finalLink, sort_order: parseInt(document.getElementById('bSort').value)||0, is_active: bActive };
     var req = editingId ? sb.from('banners').update(payload).eq('id', editingId) : sb.from('banners').insert([payload]);
     req.then(function(r) {
         if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }

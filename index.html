@@ -214,17 +214,36 @@ function renderHero(banners) {
     if (!banners.length) { section.style.display = 'none'; return; }
 
     var slidesHtml = banners.map(function(b) {
-        var inner = b.link_url ? '<a href="' + b.link_url + '">' : '<div>';
-        var closeTag = b.link_url ? '</a>' : '</div>';
-        return '<div class="slide">' +
-            '<img src="' + b.image_url + '" alt="' + (b.title||'') + '" loading="lazy">' +
-            '<div class="slide-content">' +
-                inner +
-                (b.title ? '<div class="slide-headline">' + b.title + '</div>' : '') +
-                (b.subtitle ? '<div class="slide-sub">' + b.subtitle + '</div>' : '') +
-                closeTag +
-            '</div>' +
+        var rawLink = (b.link_url || '').trim();
+        var linkData = null;
+        if (rawLink.startsWith('{') && rawLink.endsWith('}')) {
+            try { linkData = JSON.parse(rawLink); } catch(e){}
+        }
+
+        var fullUrl = rawLink;
+        var isArea = false;
+        if (linkData) {
+            fullUrl = linkData.url || '';
+            isArea = linkData.type === 'area';
+        }
+
+        if (fullUrl && !fullUrl.startsWith('http') && !fullUrl.startsWith('/') && !fullUrl.startsWith('.')) fullUrl = 'https://' + fullUrl;
+
+        var slideInner = '<img src="' + b.image_url + '" alt="' + (b.title||'') + '" loading="lazy">';
+        slideInner += '<div class="slide-content" style="pointer-events:none;">' +
+            (b.title ? '<div class="slide-headline">' + b.title + '</div>' : '') +
+            (b.subtitle ? '<div class="slide-sub">' + b.subtitle + '</div>' : '') +
         '</div>';
+
+        if (isArea && fullUrl) {
+            var areaStyle = 'position:absolute;top:'+linkData.y+'%;left:'+linkData.x+'%;width:'+linkData.w+'%;height:'+linkData.h+'%;z-index:20;display:block;';
+            slideInner += '<a href="' + fullUrl + '" style="' + areaStyle + '"></a>';
+        } else if (fullUrl) {
+            var areaStyle = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:20;display:block;';
+            slideInner += '<a href="' + fullUrl + '" style="' + areaStyle + '"></a>';
+        }
+
+        return '<div class="slide" style="position:relative;">' + slideInner + '</div>';
     }).join('');
 
     var dotsHtml = banners.map(function(b, i) {
@@ -362,7 +381,8 @@ function liveSearch() {
     if (!q) { renderProducts(allProducts); return; }
     var results = allProducts.filter(function(p) { return (p.name||'').toLowerCase().includes(q); });
     renderProducts(results);
-    document.getElementById('productsTitle').textContent = '<i data-lucide="search" class="lucide-icon"></i> Search: "' + document.getElementById('searchInput').value + '"';
+    document.getElementById('productsTitle').innerHTML = '<i data-lucide="search" class="lucide-icon"></i> Search: "' + document.getElementById('searchInput').value + '"';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 // ── Quick Add to Cart ─────────────────────────────────────────

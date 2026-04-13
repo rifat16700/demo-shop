@@ -235,8 +235,9 @@ function quickAdd(e, id) {
     if (ex) ex.quantity++;
     else cart.push({ key: key, productId: p.id, productName: p.name, price: finalPrice, color: color, size: size, quantity: 1, image: img });
     saveCart(cart); updateCartBadge();
-    e.target.textContent = '<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Added!';
-    setTimeout(function() { e.target.textContent = '+ Add to Cart'; }, 1500);
+    e.target.innerHTML = '<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Added!';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    setTimeout(function() { e.target.innerHTML = '+ Add to Cart'; }, 1500);
 }
 
 function getCart() { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY)||'[]'); } catch(e) { return []; } }

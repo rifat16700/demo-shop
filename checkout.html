@@ -327,14 +327,17 @@ function loadBdDivisions() {
     }).catch(function(){});
 }
 
+var bdDivisionData = [];
+
 function loadDistricts() {
     var div = document.getElementById('divSelect').value;
     if (!div) return;
     var sel = document.getElementById('distSelect');
     sel.innerHTML = '<option value="">Loading...</option>';
-    fetch('https://bdapis.com/api/v1.1/division/' + div).then(function(r){return r.json();}).then(function(d) {
+    fetch('https://bdapis.com/api/v1.1/division/' + div.toLowerCase()).then(function(r){return r.json();}).then(function(d) {
+        bdDivisionData = d.data || [];
         sel.innerHTML = '<option value="">Select District</option>';
-        (d.data || []).forEach(function(dist) {
+        bdDivisionData.forEach(function(dist) {
             sel.innerHTML += '<option value="' + dist.district + '">' + dist.district + '</option>';
         });
     }).catch(function(){});
@@ -344,20 +347,17 @@ function loadUpazilas() {
     var dist = document.getElementById('distSelect').value;
     if (!dist) return;
     var sel = document.getElementById('upaSelect');
-    sel.innerHTML = '<option value="">Loading...</option>';
-    fetch('https://bdapis.com/api/v1.1/district/' + dist).then(function(r){return r.json();}).then(function(d) {
-        sel.innerHTML = '<option value="">Select Upazila</option>';
-        if (d.data && d.data.length > 0) {
-            var upaList = d.data[0].upazilla || d.data[0].upazillas || d.data[0].upazila || [];
-            if (Array.isArray(upaList)) {
-                upaList.forEach(function(u) {
-                    sel.innerHTML += '<option value="' + u + '">' + u + '</option>';
-                });
-            } else {
-                sel.innerHTML += '<option value="' + upaList + '">' + upaList + '</option>';
-            }
+    sel.innerHTML = '<option value="">Select Upazila</option>';
+    
+    var distData = bdDivisionData.find(function(d){ return d.district === dist; });
+    if (distData) {
+        var upaList = distData.upazilla || distData.upazillas || distData.upazila || [];
+        if (Array.isArray(upaList)) {
+            upaList.forEach(function(u) {
+                sel.innerHTML += '<option value="' + u + '">' + u + '</option>';
+            });
         }
-    }).catch(function(){});
+    }
     calcDelivery();
 }
 

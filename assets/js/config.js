@@ -15,7 +15,7 @@ var CONFIG = {
     // mypay.freelancingbyrifat.top — PHP cPanel proxy (active)
     GATEWAY_PROXY_URL: 'https://mypay.freelancingbyrifat.top/api_proxy.php',
     // Gateway API Key — Admin panel settings থেকে override হবে
-    GATEWAY_API_KEY: '',
+    GATEWAY_API_KEY: '8QFIJJNzDGGw1qmhdCJcK5xcvuh8PwRXviUfDlLatVhgkjXlZv',
 
     // ── App Defaults (settings table থেকে override হবে) ─────
     STORE_NAME: 'Freelancing By Rifat',

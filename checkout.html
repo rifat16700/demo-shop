@@ -205,10 +205,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!cart.length) { window.location.href = 'cart.html'; return; }
 
     // Check if returning from gateway payment
-    var urlParams = new URLSearchParams(window.location.search);
-    var pyStatus  = urlParams.get('status');
-    var pyOrderId = urlParams.get('order_id');
-    var pyTrxId   = urlParams.get('transaction_id');
+    // We use robust regex matching instead of URLSearchParams because some gateways malform the URL by using '?' instead of '&'
+    var hrefStr = window.location.href;
+    var getParam = function(key1, key2) {
+        var rx = new RegExp("[?&](?:" + key1 + (key2 ? "|" + key2 : "") + ")=([^&?#]+)", "i");
+        var m = hrefStr.match(rx);
+        return m ? decodeURIComponent(m[1]) : null;
+    };
+    
+    var pyStatus  = getParam('status');
+    var pyOrderId = getParam('order_id', 'orderId');
+    var pyTrxId   = getParam('transaction_id', 'transactionId') || getParam('trx_id', 'tran_id');
 
     var p1 = sb.from('settings').select('*').eq('id',1).single();
     var p2 = sb.from('delivery_zones').select('*');
@@ -229,8 +236,12 @@ document.addEventListener('DOMContentLoaded', function() {
         loadBdDivisions();
 
         // If returning from payment gateway
-        if (pyStatus === 'completed' && pyOrderId) {
+        var checkStatus = (pyStatus || '').toLowerCase();
+        if ((checkStatus === 'completed' || checkStatus === 'success') && pyOrderId) {
             verifyGatewayPayment(pyOrderId, pyTrxId);
+        } else if (checkStatus === 'cancel' || checkStatus === 'failed') {
+            alert('Payment was cancelled or failed.');
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
     });
 
@@ -606,7 +617,7 @@ function initiateGatewayPayment(orderId, total, orderData) {
 
     var baseUrl  = window.location.href.split('?')[0];
     var sUrl = baseUrl + '?status=completed&order_id=' + orderId;
-    var cUrl = baseUrl + '?status=cancel';
+    var cUrl = baseUrl + '?status=cancel&order_id=' + orderId;
 
     var reqBody = {
         cus_name:    name,
@@ -637,8 +648,11 @@ function initiateGatewayPayment(orderId, total, orderData) {
 }
 
 function verifyGatewayPayment(orderId, trxId) {
-    var proxyUrl = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;
-    var apiKey   = settings.gateway_api_key   || CONFIG.GATEWAY_API_KEY;
+    var rawProxy = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;
+    var rawKey   = settings.gateway_api_key || CONFIG.GATEWAY_API_KEY;
+    
+    var proxyUrl = (rawProxy || '').trim();
+    var apiKey   = (rawKey || '').trim();
 
     // Show verifying state
     document.getElementById('pageLoader').style.display = 'flex';
@@ -647,7 +661,10 @@ function verifyGatewayPayment(orderId, trxId) {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'API-KEY': apiKey },
         body: JSON.stringify({ transaction_id: trxId })
-    }).then(function(r) { return r.json(); }).then(function(res) {
+    }).then(function(r) { 
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json(); 
+    }).then(function(res) {
         var vStatus = (res.status || '').toUpperCase();
         var isSuccess = vStatus === 'COMPLETED' || vStatus === 'SUCCESS' || vStatus === 'VALID';
 
@@ -660,7 +677,7 @@ function verifyGatewayPayment(orderId, trxId) {
                     payment_status:  newPayStatus,
                     payment_trx_id:  trxId || 'AUTO',
                     status:          'Confirmed'
-                }).eq('id', orderId).then(function() {
+                }).eq('id', orderId).then(function(upRes) {
                     if (oRes.data) sendOrderNotification(oRes.data);
                     localStorage.removeItem(CONFIG.CART_KEY);
                     // Clean URL then redirect
@@ -670,11 +687,11 @@ function verifyGatewayPayment(orderId, trxId) {
             });
         } else {
             document.getElementById('pageLoader').style.display = 'none';
-            alert('⚠️ Payment Verification Failed!\nStatus: ' + (res.status || 'Unknown') + '\n\nContact support with Order ID: ' + orderId);
+            alert('⚠️ Payment Verification Rejected!\nProxy Status: ' + (res.status || 'Unknown') + '\nMessage: ' + (res.message || 'No msg') + '\nExtracted TrxID: ' + trxId);
         }
-    }).catch(function() {
+    }).catch(function(err) {
         document.getElementById('pageLoader').style.display = 'none';
-        alert('Verification failed. Please contact support with Order ID: ' + orderId);
+        alert('Verification Request Failed (Network/Error)!\nError: ' + err.message + '\nExtracted TrxID: ' + trxId);
     });
 }
 

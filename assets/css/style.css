@@ -469,10 +469,26 @@ input, select, textarea { font-family: inherit; }
 
 /* ── Page Loader ────────────────────────────────────────────── */
 .page-loader {
-    position: fixed; inset: 0; background: #fff;
+    position: fixed; inset: 0; 
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     display: flex; align-items: center; justify-content: center;
-    z-index: 9999; flex-direction: column; gap: 14px;
+    z-index: 9999; flex-direction: column; gap: 0;
 }
+
+.page-loader dotlottie-wc {
+    width: 280px !important;
+    height: 280px !important;
+}
+
+@media (max-width: 768px) {
+    .page-loader dotlottie-wc {
+        width: 220px !important;
+        height: 220px !important;
+    }
+}
+
 .spinner    { width: 38px; height: 38px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
 .spinner-sm { width: 18px; height: 18px; border-width: 2px; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -507,6 +523,67 @@ input, select, textarea { font-family: inherit; }
 .mobile-menu.open { transform: translateX(0); }
 .mobile-overlay   { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 599; display: none; backdrop-filter: blur(3px); }
 .mobile-overlay.show { display: block; }
+
+/* ── Custom Context Menu ────────────────────────────────────── */
+#customContextMenu {
+    position: fixed;
+    z-index: 99999;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    padding: 8px 0;
+    min-width: 180px;
+    display: none;
+    border: 1px solid var(--border-light);
+}
+
+#customContextMenu a, #customContextMenu div {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-dark);
+    transition: var(--transition);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+#customContextMenu a:hover, #customContextMenu div:hover {
+    background: var(--primary-soft);
+}
+
+#customContextMenu a:first-child:hover {
+    border-radius: 12px 12px 0 0;
+}
+
+#customContextMenu div:last-child:hover {
+    border-radius: 0 0 12px 12px;
+}
+
+#customContextMenu hr {
+    margin: 6px 0;
+    border-color: var(--border-light);
+    border-style: solid;
+    border-width: 1px 0 0 0;
+}
+
+/* Disable default context menu and long press */
+* {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+}
 
 /* ── Helper Classes ─────────────────────────────────────────── */
 .color-swatch    { position: relative; overflow: visible !important; }

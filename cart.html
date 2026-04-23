@@ -14,8 +14,14 @@
         @media (max-width: 768px) { .cart-layout { grid-template-columns: 1fr; } .order-summary { position: static; } }
     </style>
     <link rel="stylesheet" href="assets/css/premium-icons.css">
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
 <body>
+<div class="page-loader" id="pageLoader">
+    <dotlottie-wc src="https://lottie.host/a9162a6d-bee0-4ebd-adda-d4a43f0bea2b/Nq6NiivYlE.lottie" autoplay loop></dotlottie-wc>
+    <div style="font-size:14px;color:#8B1A1A;font-weight:600;margin-top:-30px;" id="storeName">Loading...</div>
+</div>
+
 <nav class="navbar">
     <a href="shop.html" class="nav-icon-btn">←</a>
     <a href="index.html" class="navbar-brand"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> <span id="navBrand">Cart</span></a>

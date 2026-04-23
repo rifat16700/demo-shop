@@ -36,9 +36,13 @@
         @media (max-width: 768px) { .product-page { grid-template-columns: 1fr; gap: 20px; } }
     </style>
     <link rel="stylesheet" href="assets/css/premium-icons.css">
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
 <body>
-<div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
+<div class="page-loader" id="pageLoader">
+    <dotlottie-wc src="https://lottie.host/a9162a6d-bee0-4ebd-adda-d4a43f0bea2b/Nq6NiivYlE.lottie" autoplay loop></dotlottie-wc>
+    <div style="font-size:14px;color:#8B1A1A;font-weight:600;margin-top:-30px;" id="storeName">Loading...</div>
+</div>
 
 <nav class="navbar">
     <a href="shop.html" class="nav-icon-btn">←</a>
@@ -113,7 +117,7 @@
             <!-- Buttons -->
             <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
                 <button class="btn btn-primary btn-full btn-lg" id="addToCartBtn" onclick="addToCart()"><i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i> Add to Cart</button>
-                <a href="cart.html" class="btn btn-outline btn-full" onclick="addToCart()">⚡ Buy Now</a>
+                <button class="btn btn-outline btn-full" onclick="directOrder()">⚡ Buy Now</button>
                 <button class="btn btn-whatsapp btn-full" id="waBtn" style="display:none;" onclick="orderWhatsApp()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.917 1.049 5.59 2.773 7.664L1.92 23.07a1 1 0 001.258 1.258l3.406-.853C8.401 24.938 10.15 25.5 12 25.5 18.627 25.5 24 20.127 24 13.5S18.627 2 12 2z"/></svg>
                     Order via WhatsApp
@@ -224,30 +228,109 @@ function renderProduct(p) {
     
     allImages.forEach(function(img) { allMedia.push({type: 'image', src: img}); });
 
-    if (p.video_url) {
-        var src = p.video_url;
-        if (src.includes('youtube.com/watch?v=')) src = src.replace('watch?v=', 'embed/');
-        if (src.includes('youtu.be/')) src = 'https://www.youtube.com/embed/' + src.split('youtu.be/')[1] + '?autoplay=0';
-        allMedia.push({type: 'video', src: src});
+    // Process video URLs - support all popular platforms
+    function parseVideoUrl(url) {
+        if (!url) return null;
+        var src = url.trim();
+        
+        // YouTube
+        if (src.includes('youtube.com/watch?v=')) {
+            var vid = src.split('v=')[1].split('&')[0];
+            return {type: 'video', src: 'https://www.youtube.com/embed/' + vid + '?autoplay=0&rel=0'};
+        }
+        if (src.includes('youtu.be/')) {
+            var vid = src.split('youtu.be/')[1].split('?')[0];
+            return {type: 'video', src: 'https://www.youtube.com/embed/' + vid + '?autoplay=0&rel=0'};
+        }
+        
+        // TikTok
+        if (src.includes('tiktok.com/')) {
+            var parts = src.split('/video/');
+            if (parts.length > 1) {
+                var vid = parts[1].split('?')[0];
+                return {type: 'video', src: 'https://www.tiktok.com/embed/v2/' + vid};
+            }
+        }
+        
+        // Facebook
+        if (src.includes('facebook.com/') || src.includes('fb.com/')) {
+            return {type: 'video', src: 'https://www.facebook.com/plugins/video.php?href=' + encodeURIComponent(src) + '&show_text=0&autoplay=0'};
+        }
+        
+        // Instagram
+        if (src.includes('instagram.com/p/') || src.includes('instagram.com/reel/')) {
+            var parts = src.split('/p/')[1] || src.split('/reel/')[1];
+            if (parts) {
+                var vid = parts.split('/')[0];
+                return {type: 'video', src: 'https://www.instagram.com/p/' + vid + '/embed/'};
+            }
+        }
+        
+        // Vimeo
+        if (src.includes('vimeo.com/')) {
+            var vid = src.split('vimeo.com/')[1].split('?')[0];
+            return {type: 'video', src: 'https://player.vimeo.com/video/' + vid + '?autoplay=0'};
+        }
+        
+        // Dailymotion
+        if (src.includes('dailymotion.com/video/')) {
+            var vid = src.split('video/')[1].split('?')[0];
+            return {type: 'video', src: 'https://www.dailymotion.com/embed/video/' + vid + '?autoplay=0'};
+        }
+        
+        // Direct video file (mp4, webm, etc)
+        if (src.match(/\.(mp4|webm|ogg|mov)$/i)) {
+            return {type: 'video', src: src};
+        }
+        
+        return null;
+    }
+    
+    var videoData = parseVideoUrl(p.video_url);
+    if (videoData) {
+        allMedia.push(videoData);
     }
 
     window.productMedia = allMedia;
-    window.currentMediaIndex = 0;
+    
+    // Always default to FIRST image, NOT video - unless there are no images
+    var defaultIndex = 0;
+    // Find first image
+    for (var i = 0; i < allMedia.length; i++) {
+        if (allMedia[i].type === 'image') {
+            defaultIndex = i;
+            break;
+        }
+    }
+    window.currentMediaIndex = defaultIndex;
 
     var thumbsHtml = allMedia.map(function(m, i) {
-        var thumbSrc = m.type === 'image' ? m.src : 'https://img.youtube.com/vi/' + (m.src.split('embed/')[1] || '').split('?')[0] + '/default.jpg';
-        var iconStr = m.type === 'video' ? '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,77,77,0.9);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.2);"><i data-lucide="play" style="width:14px;height:14px;margin-left:2px;"></i></div>' : '';
-        return '<div style="position:relative;" class="gallery-thumb-wrap"><img src="' + thumbSrc + '" class="gallery-thumb' + (i===0?' active':'') + '" onclick="setMedia(' + i + ')" onerror="this.src=\'https://via.placeholder.com/70?text=Video\'">' + iconStr + '</div>';
+        var thumbSrc = m.src;
+        if (m.type === 'video') {
+            // YouTube thumbnail
+            if (m.src.includes('youtube.com/embed/')) {
+                var vid = m.src.split('embed/')[1].split('?')[0];
+                thumbSrc = 'https://img.youtube.com/vi/' + vid + '/default.jpg';
+            }
+            // Vimeo thumbnail (use placeholder for now)
+            else if (m.src.includes('vimeo.com')) {
+                thumbSrc = 'https://via.placeholder.com/70?text=Vimeo';
+            }
+            // Others use generic video placeholder
+            else {
+                thumbSrc = 'https://via.placeholder.com/70?text=Video';
+            }
+        }
+        
+        var iconStr = m.type === 'video' ? '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(139,26,26,0.9);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.2);"><i data-lucide="play" style="width:14px;height:14px;margin-left:2px;"></i></div>' : '';
+        return '<div style="position:relative;" class="gallery-thumb-wrap"><img src="' + thumbSrc + '" class="gallery-thumb' + (i===0?' active':'') + '" onclick="setMedia(' + i + ')" onerror="this.src=\'https://via.placeholder.com/70?text=Media\'">' + iconStr + '</div>';
     }).join('');
     
     document.getElementById('thumbsRow').innerHTML = thumbsHtml;
     if (typeof lucide !== 'undefined') lucide.createIcons();
 
-    if (allMedia.length > 0) setMedia(0);
+    if (allMedia.length > 0) setMedia(defaultIndex);
     else document.getElementById('mediaContainer').innerHTML = '';
-
-    document.getElementById('galleryPrev').style.display = allMedia.length > 1 ? 'flex' : 'none';
-    document.getElementById('galleryNext').style.display = allMedia.length > 1 ? 'flex' : 'none';
 
     // Colors
     if (variants.length) {
@@ -323,15 +406,21 @@ function setMedia(index) {
     window.currentMediaIndex = index;
     var m = window.productMedia[index];
     var container = document.getElementById('mediaContainer');
+    
     if (m.type === 'image') {
-        container.innerHTML = '<img id="mainImg" src="' + m.src + '" alt="">';
+        container.innerHTML = '<img id="mainImg" src="' + m.src + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain;">';
     } else {
-        container.innerHTML = '<iframe src="' + m.src + '" allowfullscreen style="width:100%;height:100%;border:none;background:#000;"></iframe>';
+        container.innerHTML = '<iframe src="' + m.src + '" allowfullscreen style="width:100%;height:100%;border:none;background:#000;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>';
     }
 
     document.querySelectorAll('.gallery-thumb').forEach(function(t, i) {
         t.classList.toggle('active', i === index);
     });
+    
+    // Show/hide navigation buttons
+    var showNav = window.productMedia.length > 1;
+    document.getElementById('galleryPrev').style.display = showNav ? 'flex' : 'none';
+    document.getElementById('galleryNext').style.display = showNav ? 'flex' : 'none';
 }
 
 function changeMedia(delta) {
@@ -371,6 +460,44 @@ function addToCart() {
 
     saveCart(cart);
     updateCartBadge();
+}
+
+function directOrder() {
+    var variants = product.variants || [];
+    if (variants.length && !selectedColor) { alert('Please select a color'); return; }
+    if (selectedColor && selectedColor.sizes && selectedColor.sizes.length && !selectedSize) { alert('Please select a size'); return; }
+
+    var base = product.base_price;
+    var extra = selectedSize ? (selectedSize.extraPrice || 0) : 0;
+    var flashDiscount = product.flash_sale_price || 0;
+    var finalPrice = base - flashDiscount + extra;
+
+    var allImgs = product.gallery_images || [];
+    var img = (selectedColor && selectedColor.imageUrl) ? selectedColor.imageUrl : (allImgs.length ? allImgs[0] : '');
+    var color = selectedColor ? selectedColor.colorName : '';
+    var size  = selectedSize ? selectedSize.size : '';
+    var key   = product.id + '-' + color + '-' + size;
+
+    // Clear existing cart completely - DIRECT ORDER ONLY
+    var cart = [];
+    
+    // Add only this single product
+    cart.push({ 
+        key: key, 
+        productId: product.id, 
+        productName: product.name, 
+        price: finalPrice, 
+        color: color, 
+        size: size, 
+        quantity: currentQty, 
+        image: img 
+    });
+
+    saveCart(cart);
+    updateCartBadge();
+    
+    // Redirect to cart page
+    window.location.href = 'cart.html';
 }
 
 function orderWhatsApp() {

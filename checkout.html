@@ -27,9 +27,13 @@
         @media (max-width: 900px) { .checkout-layout { grid-template-columns: 1fr; } }
     </style>
     <link rel="stylesheet" href="assets/css/premium-icons.css">
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
 <body>
-<div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
+<div class="page-loader" id="pageLoader">
+    <dotlottie-wc src="https://lottie.host/a9162a6d-bee0-4ebd-adda-d4a43f0bea2b/Nq6NiivYlE.lottie" autoplay loop></dotlottie-wc>
+    <div style="font-size:14px;color:#8B1A1A;font-weight:600;margin-top:-30px;" id="storeName">Loading...</div>
+</div>
 
 <nav class="navbar">
     <a href="cart.html" class="nav-icon-btn">←</a>

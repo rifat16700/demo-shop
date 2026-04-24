@@ -510,12 +510,12 @@ function orderWhatsApp() {
     var price = base - flashDiscount + extra;
 
     var msg = 'Hello! I want to order:\n\n' +
-              '<i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> Product: ' + product.name + '\n' +
-              (color ? '<i data-lucide="palette" class="lucide-icon icon-pulse"></i> Color: ' + color + '\n' : '') +
+              '🛍️ Product: ' + product.name + '\n' +
+              (color ? '🎨 Color: ' + color + '\n' : '') +
               (size  ? '📏 Size: '  + size  + '\n' : '') +
               '🔢 Qty: ' + currentQty + '\n' +
-              '<i data-lucide="badge-dollar-sign" class="lucide-icon icon-bounce"></i> Price: ৳' + price + '\n\n' +
-              '<i data-lucide="package" class="lucide-icon icon-bounce"></i> Please confirm my order.';
+              '💰 Price: ৳' + price + '\n\n' +
+              '📦 Please confirm my order.';
 
     var wanum = settings.whatsapp_number || '';
     window.open('https://wa.me/' + wanum + '?text=' + encodeURIComponent(msg), '_blank');

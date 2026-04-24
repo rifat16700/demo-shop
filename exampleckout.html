@@ -775,10 +775,10 @@
         if (chkValidPromos[c]) {
             chkPromoDiscount = chkValidPromos[c].discount;
             chkPromoCode = c;
-            alert("<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Promo Applied Successfully!");
+            alert("✅ Promo Applied Successfully!");
             chkCalc();
         } else {
-            alert("<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Invalid Promo Code!");
+            alert("❌ Invalid Promo Code!");
             chkPromoDiscount = 0;
             chkCalc();
         }
@@ -990,17 +990,17 @@
 
         for (let i = 0; i < chkCartData.length; i++) {
             let item = chkCartData[i];
-            tItems += `\n<i data-lucide="package" class="lucide-icon icon-bounce"></i> <b>Item ${i + 1}:</b> ${item.productName}\n ├ <b>Color:</b> ${item.color}\n ├ <b>Size:</b> ${item.size}\n └ <b>Qty:</b> ${item.quantity}\n`;
+            tItems += `\n📦 Item ${i + 1}: ${item.productName}\n ├ Color: ${item.color}\n ├ Size: ${item.size}\n └ Qty: ${item.quantity}\n`;
         }
 
         let customerName = document.getElementById('chkName').value || 'Unknown';
 
-        let t = `⚠️ <b>DRAFT ORDER (CART)!</b>\n━━━━━━━━━━━━━━${tItems}\n👤 <b>Name:</b> ${customerName}\n<i data-lucide="smartphone" class="lucide-icon"></i> <b>Phone:</b> <code>${ph}</code>`;
+        let t = `⚠️ *DRAFT ORDER (CART)!*\n━━━━━━━━━━━━━━${tItems}\n👤 *Name:* ${customerName}\n📞 *Phone:* \`${ph}\``;
 
         fetch(`https://api.telegram.org/bot${chkDraftBot}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chkDraftChat, text: t, parse_mode: 'HTML' })
+            body: JSON.stringify({ chat_id: chkDraftChat, text: t, parse_mode: 'MarkdownV2' })
         }).catch(e => {
             console.log("Draft sending failed", e);
         });
@@ -1133,14 +1133,14 @@
             let tItems = "";
             for (let i = 0; i < chkCartData.length; i++) {
                 let item = chkCartData[i];
-                tItems += `\n<i data-lucide="package" class="lucide-icon icon-bounce"></i> <b>Item ${i + 1}:</b> ${item.productName}\n ├ <b>Color:</b> ${item.color}\n ├ <b>Size:</b> ${item.size}\n └ <b>Qty:</b> ${item.quantity}\n`;
+                tItems += `\n📦 Item ${i + 1}: ${item.productName}\n ├ Color: ${item.color}\n ├ Size: ${item.size}\n └ Qty: ${item.quantity}\n`;
             }
 
             let addonsText = selAddons.length > 0 ? selAddons.join(',') : 'None';
-            let tgT = `<i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> <b>NEW CART ORDER!</b>\n━━━━━━━━━━━━━━\n<i data-lucide="package" class="lucide-icon icon-bounce"></i> <b>ID:</b> <code>${orderId}</code>\n<b>ITEMS:</b>${tItems}▪️ <b>Add-ons:</b> ${addonsText}\n\n👤 <b>CUSTOMER:</b>\n ├ <b>Name:</b> ${orderData.customer.name}\n ├ <b>Phone:</b> <code>${orderData.customer.phone}</code>\n └ <b>Addr:</b> ${orderData.customer.address}, ${orderData.customer.area}\n\n<i data-lucide="credit-card" class="lucide-icon icon-bounce"></i> <b>PAYMENT:</b> ${fpm} (৳${cst.finalTotal})`;
+            let tgT = `🛍️ *NEW CART ORDER!*\n━━━━━━━━━━━━━━\n📦 *ID:* \`${orderId}\`\n*ITEMS:*${tItems}▪️ *Add-ons:* ${addonsText}\n\n👤 *CUSTOMER:*\n ├ *Name:* ${orderData.customer.name}\n ├ *Phone:* \`${orderData.customer.phone}\`\n └ *Addr:* ${orderData.customer.address}, ${orderData.customer.area}\n\n💳 *PAYMENT:* ${fpm} (৳${cst.finalTotal})`;
 
             if (snd) {
-                tgT += `\n ├ Sender: <code>${snd}</code>\n └ TrxID: <code>${trx}</code>`;
+                tgT += `\n ├ Sender: \`${snd}\`\n └ TrxID: \`${trx}\``;
             }
 
             for (let i = 0; i < chkMainChats.length; i++) {
@@ -1148,7 +1148,7 @@
                 await fetch(`https://api.telegram.org/bot${chkMainBot}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: chatId, text: tgT, parse_mode: 'HTML' })
+                    body: JSON.stringify({ chat_id: chatId, text: tgT, parse_mode: 'MarkdownV2' })
                 }).catch(e => { });
             }
 
@@ -1163,7 +1163,7 @@
     });
 
     // ============================================================================
-    // <i data-lucide="search" class="lucide-icon"></i> AUTO PAYMENT VERIFICATION (When Returning from Gateway)
+    // 🔍 AUTO PAYMENT VERIFICATION (When Returning from Gateway)
     // ============================================================================
     window.addEventListener('load', async () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -1246,10 +1246,10 @@
                         let tItems = "";
                         for (let i = 0; i < oData.items.cartItems.length; i++) {
                             let item = oData.items.cartItems[i];
-                            tItems += `\n<i data-lucide="package" class="lucide-icon icon-bounce"></i> <b>Item ${i + 1}:</b> ${item.productName}\n ├ <b>Color:</b> ${item.color}\n ├ <b>Size:</b> ${item.size}\n └ <b>Qty:</b> ${item.quantity}\n`;
+                            tItems += `\n📦 Item ${i + 1}: ${item.productName}\n ├ Color: ${item.color}\n ├ Size: ${item.size}\n └ Qty: ${item.quantity}\n`;
                         }
 
-                        let tgT = `<i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> <b>NEW CART ORDER (VERIFIED)!</b>\n━━━━━━━━━━━━━━\n<i data-lucide="package" class="lucide-icon icon-bounce"></i> <b>ID:</b> <code>${orderId}</code>\n<b>ITEMS:</b>${tItems}▪️ <b>Add-ons:</b> ${oData.items.addons}\n\n👤 <b>CUSTOMER:</b>\n ├ <b>Name:</b> ${oData.customer.name}\n ├ <b>Phone:</b> <code>${oData.customer.phone}</code>\n └ <b>Addr:</b> ${oData.customer.address}, ${oData.customer.area}\n\n<i data-lucide="credit-card" class="lucide-icon icon-bounce"></i> <b>PAYMENT:</b> ${oData.payment.method} (৳${oData.pricing.finalTotal})\n └ TrxID: <code>${trxId}</code>`;
+                        let tgT = `🛍️ *NEW CART ORDER (VERIFIED)!*\n━━━━━━━━━━━━━━\n📦 *ID:* \`${orderId}\`\n*ITEMS:*${tItems}▪️ *Add-ons:* ${oData.items.addons}\n\n👤 *CUSTOMER:*\n ├ *Name:* ${oData.customer.name}\n ├ *Phone:* \`${oData.customer.phone}\`\n └ *Addr:* ${oData.customer.address}, ${oData.customer.area}\n\n💳 *PAYMENT:* ${oData.payment.method} (৳${oData.pricing.finalTotal})\n └ TrxID: \`${trxId}\``;
 
                         for (let i = 0; i < chkMainChats.length; i++) {
                             let chatId = chkMainChats[i];

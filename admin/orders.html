@@ -48,12 +48,12 @@
                 </div>
                 <select class="form-select" id="statusFilter" onchange="filterOrders()" style="width:auto;min-width:160px;">
                     <option value="">All Status</option>
-                    <option value="Pending"><i data-lucide="hourglass" class="lucide-icon icon-spin icon-warning"></i> Pending</option>
-                    <option value="Confirmed"><i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Confirmed</option>
+                    <option value="Pending">⌛ Pending</option>
+                    <option value="Confirmed">✅ Confirmed</option>
                     <option value="Processing">🔄 Processing</option>
-                    <option value="Shipped"><i data-lucide="truck" class="lucide-icon icon-bounce"></i> Shipped</option>
+                    <option value="Shipped">🚚 Shipped</option>
                     <option value="Delivered">🎉 Delivered</option>
-                    <option value="Cancelled"><i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Cancelled</option>
+                    <option value="Cancelled">❌ Cancelled</option>
                 </select>
                 <select class="form-select" id="payFilter" onchange="filterOrders()" style="width:auto;min-width:150px;">
                     <option value="">All Payment</option>
@@ -288,7 +288,7 @@
         sb.from('orders').update(payload).eq('id', orderId).then(function(r) {
             if (r.error) { showToast('Update failed: ' + r.error.message, 'error'); return; }
 
-            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Order updated!', 'success');
+            showToast('Order updated!', 'success');
             closeModal('orderModal');
 
             // Update local data

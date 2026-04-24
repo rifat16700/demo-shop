@@ -737,13 +737,13 @@ function sendOrderNotification(order) {
     var chats = settings.telegram_main_chats || [];
     if (typeof chats === 'string') chats = chats.split(',');
 
-    var msg = '<i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> *NEW ORDER* — #' + order.id + '\n\n' +
-              '👤 ' + order.customer_name + ' | <i data-lucide="phone" class="lucide-icon icon-hover-bounce"></i> ' + order.customer_phone + '\n' +
-              '<i data-lucide="map-pin" class="lucide-icon icon-bounce"></i> ' + order.district + ', ' + order.division + '\n' +
-              '<i data-lucide="credit-card" class="lucide-icon icon-bounce"></i> Method: ' + order.payment_method + '\n' +
-              '<i data-lucide="badge-dollar-sign" class="lucide-icon icon-bounce"></i> Total: ৳' + order.grand_total + '\n' +
+    var msg = '🛍️ *NEW ORDER* — #' + order.id + '\n\n' +
+              '👤 ' + order.customer_name + ' | 📞 ' + order.customer_phone + '\n' +
+              '📍 ' + order.district + ', ' + order.division + '\n' +
+              '💳 Method: ' + order.payment_method + '\n' +
+              '💰 Total: ৳' + order.grand_total + '\n' +
               (order.payment_trx_id ? '🔑 TrxID: `' + order.payment_trx_id + '`\n' : '') +
-              '<i data-lucide="package" class="lucide-icon icon-bounce"></i> Items: ' + (Array.isArray(order.items) ? order.items.map(function(i){return i.productName;}).join(', ') : '—');
+              '📦 Items: ' + (Array.isArray(order.items) ? order.items.map(function(i){return i.productName;}).join(', ') : '—');
 
     chats.forEach(function(chatId) {
         if (!chatId) return;
@@ -763,9 +763,9 @@ function sendDraftNotification() {
 
     var msg = '⚠️ *DRAFT ORDER* — Tab switched!\n\n' +
               (name  ? '👤 ' + name  + '\n' : '') +
-              (phone ? '<i data-lucide="phone" class="lucide-icon icon-hover-bounce"></i> ' + phone + '\n' : '') +
-              '<i data-lucide="shopping-cart" class="lucide-icon icon-bounce"></i> Items: ' + cart.length + '\n' +
-              '<i data-lucide="badge-dollar-sign" class="lucide-icon icon-bounce"></i> Cart Value: ৳' + subtotal;
+              (phone ? '📞 ' + phone + '\n' : '') +
+              '🛒 Items: ' + cart.length + '\n' +
+              '💰 Cart Value: ৳' + subtotal;
 
     fetch('https://api.telegram.org/bot' + settings.telegram_draft_bot + '/sendMessage', {
         method: 'POST',

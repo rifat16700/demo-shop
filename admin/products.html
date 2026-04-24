@@ -141,8 +141,26 @@
 
             <div class="form-group">
                 <label class="form-label"><i data-lucide="film" class="lucide-icon"></i> Video URL (Optional)</label>
-                <input class="form-input" id="pVideoUrl" placeholder="YouTube / video direct link">
-                <div class="form-hint">YouTube embed link বা direct video URL দাও।</div>
+                <input class="form-input" id="pVideoUrl" placeholder="YouTube / TikTok / Facebook / any video link">
+                <div class="form-hint">যেকোনো ভিডিও লিঙ্ক দাও — Auto-detect করবে। না হলে নিচ থেকে Platform সিলেক্ট করো।</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Video Platform</label>
+                <select class="form-select" id="pVideoType">
+                    <option value="auto">🔍 Auto Detect</option>
+                    <option value="youtube">▶️ YouTube</option>
+                    <option value="facebook">📘 Facebook</option>
+                    <option value="tiktok">🎵 TikTok</option>
+                    <option value="instagram">📸 Instagram</option>
+                    <option value="vimeo">🎬 Vimeo</option>
+                    <option value="dailymotion">📺 Dailymotion</option>
+                    <option value="twitter">🐦 Twitter / X</option>
+                    <option value="loom">🔴 Loom</option>
+                    <option value="streamable">📡 Streamable</option>
+                    <option value="direct">🎞️ Direct File (mp4/webm)</option>
+                    <option value="other">🌐 Other (iframe embed)</option>
+                </select>
+                <div class="form-hint">Auto Detect কাজ না করলে manually platform select করো।</div>
             </div>
 
             <hr class="section-divider">
@@ -268,6 +286,7 @@
         document.getElementById('pFlashPrice').value= '';
         document.getElementById('pFlashEnd').value  = '';
         document.getElementById('pVideoUrl').value  = '';
+        document.getElementById('pVideoType').value = 'auto';
         document.getElementById('pCategory').value  = '';
         setToggle('pActive', true);
         setToggle('pFeatured', false);
@@ -288,6 +307,7 @@
         document.getElementById('pFlashPrice').value = p.flash_sale_price || '';
         document.getElementById('pFlashEnd').value   = p.flash_sale_end ? p.flash_sale_end.substring(0,16) : '';
         document.getElementById('pVideoUrl').value   = p.video_url || '';
+        document.getElementById('pVideoType').value  = p.video_type || 'auto';
         document.getElementById('pCategory').value   = p.category_id || '';
         setToggle('pActive',   p.is_active);
         setToggle('pFeatured', p.is_featured);
@@ -456,6 +476,7 @@
             flash_sale_price: parseInt(document.getElementById('pFlashPrice').value) || 0,
             flash_sale_end:   document.getElementById('pFlashEnd').value || null,
             video_url:        document.getElementById('pVideoUrl').value.trim(),
+            video_type:       document.getElementById('pVideoType').value,
             category_id:      document.getElementById('pCategory').value || null,
             is_active:        document.getElementById('pActive').classList.contains('on'),
             is_featured:      document.getElementById('pFeatured').classList.contains('on'),

@@ -24,4 +24,9 @@ var CONFIG = {
 
     // ── Admin Panel ───────────────────────────────────────────
     ADMIN_PATH: '/admin',
+
+    // ── ImgBB Image Upload ────────────────────────────────────
+    // imgbb.com/api → API Key নিয়ে এখানে দাও
+    // অথবা Admin → Settings → ImgBB API Key থেকে সেট করো
+    IMGBB_API_KEY: '', // 'your_imgbb_api_key_here'
 };

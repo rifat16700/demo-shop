@@ -10,6 +10,7 @@
     <script src="../assets/js/config.js"></script>
     <script src="../assets/js/supabase-init.js"></script>
     <script src="assets/js/admin-common.js"></script>
+    <script src="../assets/js/imgbb-uploader.js"></script>
     <style>
         .settings-section { margin-bottom: 28px; }
         .settings-section-title {
@@ -63,11 +64,23 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Logo URL</label>
-                    <input class="form-input" id="logoUrl" placeholder="https://...logo.png">
+                    <div class="imgbb-upload-row">
+                        <input class="form-input" id="logoUrl" placeholder="https://...logo.png" oninput="previewSettingImg('logoUrl','logoPreview')">
+                        <button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" id="logoUploadBtn" title="ImgBB তে আপলোড করো">📤 Upload</button>
+                    </div>
+                    <div id="logoPreview" class="imgbb-preview-wrap" style="height:70px;margin-top:8px;display:none;">
+                        <img class="imgbb-img-preview" src="" alt="logo preview" onerror="this.parentElement.style.display='none'">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Favicon URL</label>
-                    <input class="form-input" id="faviconUrl" placeholder="https://...favicon.ico">
+                    <div class="imgbb-upload-row">
+                        <input class="form-input" id="faviconUrl" placeholder="https://...favicon.ico" oninput="previewSettingImg('faviconUrl','faviconPreview')">
+                        <button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" id="faviconUploadBtn" title="ImgBB তে আপলোড করো">📤 Upload</button>
+                    </div>
+                    <div id="faviconPreview" class="imgbb-preview-wrap" style="height:50px;width:50px;margin-top:8px;display:none;">
+                        <img class="imgbb-img-preview" src="" alt="favicon preview" onerror="this.parentElement.style.display='none'">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Footer Text</label>
@@ -237,6 +250,17 @@
                 </div>
             </div>
 
+            <!-- ImgBB API Key -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="settings-section-title"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> ImgBB Image Upload</div>
+                <div class="form-group">
+                    <label class="form-label">ImgBB API Key</label>
+                    <input class="form-input" id="imgbbApiKey" type="password" placeholder="আপনার imgbb.com API Key দাও">
+                    <div class="form-hint">imgbb.com → Account → API → API Key পাবে। এই Key দিয়ে সরাসরি ছবি আপলোড করা যাবে।</div>
+                </div>
+                <a href="https://api.imgbb.com/" target="_blank" class="btn btn-ghost btn-sm" style="margin-top:4px;">🔗 imgbb.com/api থেকে Key নাও</a>
+            </div>
+
             <!-- Save Button -->
             <button class="btn btn-primary btn-full btn-lg" onclick="saveSettings()">
                 💾 Save All Settings
@@ -250,6 +274,31 @@
     <script>
     var settingsData = {};
     var mainChatIds = [];
+
+    // ImgBB Key — localStorage থেকে পড়ো
+    function loadImgbbKey() {
+        var k = localStorage.getItem('imgbb_api_key') || (typeof CONFIG !== 'undefined' ? CONFIG.IMGBB_API_KEY : '') || '';
+        document.getElementById('imgbbApiKey').value = k;
+    }
+    function saveImgbbKey() {
+        var k = document.getElementById('imgbbApiKey').value.trim();
+        if (k) localStorage.setItem('imgbb_api_key', k);
+        else localStorage.removeItem('imgbb_api_key');
+    }
+
+    // Settings image preview helper
+    function previewSettingImg(inputId, previewId) {
+        var url = document.getElementById(inputId).value.trim();
+        var wrap = document.getElementById(previewId);
+        if (!wrap) return;
+        if (url) {
+            var img = wrap.querySelector('img');
+            if (img) { img.src = url; }
+            wrap.style.display = 'flex';
+        } else {
+            wrap.style.display = 'none';
+        }
+    }
     var codEnabled = true;
     var msgOrderEnabled = false;
     var pickupEnabled = false;
@@ -279,6 +328,59 @@
     document.addEventListener('DOMContentLoaded', function() {
         adminInit('settings');
         loadSettings();
+        loadImgbbKey();
+
+        // Logo upload button
+        var logoBtn = document.getElementById('logoUploadBtn');
+        if (logoBtn) {
+            logoBtn.addEventListener('click', function() {
+                var apiKey = getImgbbKey();
+                if (!apiKey) { showToast('⚠️ ImgBB API Key সেট করো আগে!', 'warning'); return; }
+                var input = document.createElement('input');
+                input.type = 'file'; input.accept = 'image/*';
+                input.onchange = function() {
+                    if (!input.files[0]) return;
+                    logoBtn.textContent = '⏳ Uploading...';
+                    logoBtn.disabled = true;
+                    imgbbUpload(input.files[0], apiKey)
+                        .then(function(r) {
+                            document.getElementById('logoUrl').value = r.url;
+                            previewSettingImg('logoUrl','logoPreview');
+                            logoBtn.textContent = '✅ Done';
+                            setTimeout(function(){ logoBtn.textContent='📤 Upload'; logoBtn.disabled=false; }, 1500);
+                            showToast('Logo আপলোড সফল! Save করতে ভুলো না।', 'success');
+                        })
+                        .catch(function(e) { showToast('❌ ' + e.message, 'error'); logoBtn.textContent='📤 Upload'; logoBtn.disabled=false; });
+                };
+                input.click();
+            });
+        }
+
+        // Favicon upload button
+        var faviconBtn = document.getElementById('faviconUploadBtn');
+        if (faviconBtn) {
+            faviconBtn.addEventListener('click', function() {
+                var apiKey = getImgbbKey();
+                if (!apiKey) { showToast('⚠️ ImgBB API Key সেট করো আগে!', 'warning'); return; }
+                var input = document.createElement('input');
+                input.type = 'file'; input.accept = 'image/*';
+                input.onchange = function() {
+                    if (!input.files[0]) return;
+                    faviconBtn.textContent = '⏳ Uploading...';
+                    faviconBtn.disabled = true;
+                    imgbbUpload(input.files[0], apiKey)
+                        .then(function(r) {
+                            document.getElementById('faviconUrl').value = r.url;
+                            previewSettingImg('faviconUrl','faviconPreview');
+                            faviconBtn.textContent = '✅ Done';
+                            setTimeout(function(){ faviconBtn.textContent='📤 Upload'; faviconBtn.disabled=false; }, 1500);
+                            showToast('Favicon আপলোড সফল! Save করতে ভুলো না।', 'success');
+                        })
+                        .catch(function(e) { showToast('❌ ' + e.message, 'error'); faviconBtn.textContent='📤 Upload'; faviconBtn.disabled=false; });
+                };
+                input.click();
+            });
+        }
     });
 
     function loadSettings() {
@@ -295,6 +397,10 @@
             setVal('logoUrl',     s.logo_url    || '');
             setVal('faviconUrl',  s.favicon_url || '');
             setVal('footerText',  s.footer_text || '© ' + new Date().getFullYear() + ' ' + CONFIG.STORE_NAME + '. All rights reserved.');
+
+            // Logo/Favicon preview যদি URL থাকে
+            if (s.logo_url)    previewSettingImg('logoUrl',    'logoPreview');
+            if (s.favicon_url) previewSettingImg('faviconUrl', 'faviconPreview');
 
             // Social
             setVal('whatsappNumber', s.whatsapp_number || '');
@@ -436,7 +542,9 @@
                 showToast('<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Save failed: ' + r.error.message, 'error');
                 return;
             }
-            showToast('Settings saved successfully!', 'success');
+            // ImgBB key আলাদাভাবে localStorage এ সেভ করো
+            saveImgbbKey();
+            showToast('✅ Settings saved!', 'success');
         });
     }
 

@@ -168,10 +168,26 @@
 <!-- Messaging Bottom Sheet -->
 <div id="msgSheet" style="display:none;position:fixed;inset:0;z-index:9999;">
     <div onclick="closeMsgSheet()" style="position:absolute;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);"></div>
-    <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 32px;max-height:70vh;overflow-y:auto;animation:slideUp 0.3s ease;">
+    <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 32px;max-height:85vh;overflow-y:auto;animation:slideUp 0.3s ease;">
         <div style="width:40px;height:4px;background:#ddd;border-radius:99px;margin:0 auto 16px;"></div>
         <h3 style="font-size:16px;font-weight:800;margin-bottom:4px;text-align:center;">💬 Order by Message</h3>
-        <p style="font-size:13px;color:#888;text-align:center;margin-bottom:16px;">Choose your preferred app to place order</p>
+        <p style="font-size:13px;color:#888;text-align:center;margin-bottom:16px;">নিচে তথ্য দাও, তারপর পছন্দের অ্যাপে পাঠাও</p>
+
+        <!-- Customer Info Form -->
+        <div style="background:var(--bg-light);border-radius:14px;padding:16px;margin-bottom:16px;border:1px solid var(--border-light);">
+            <div style="font-size:13px;font-weight:700;color:var(--text-dark);margin-bottom:12px;">📋 তোমার তথ্য দাও</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+                <input class="form-input" id="msgCustomerName" placeholder="তোমার নাম *" style="font-size:13px;padding:10px 12px;">
+                <input class="form-input" id="msgCustomerPhone" placeholder="মোবাইল নম্বর *" type="tel" style="font-size:13px;padding:10px 12px;">
+            </div>
+            <textarea class="form-textarea" id="msgCustomerAddress" placeholder="ডেলিভারি ঠিকানা লিখো — বাসা নং, এলাকা, জেলা *" style="font-size:13px;padding:10px 12px;min-height:70px;margin-bottom:0;"></textarea>
+        </div>
+
+        <!-- Order Summary Preview -->
+        <div id="msgOrderSummary" style="background:rgba(139,26,26,0.05);border:1px solid rgba(139,26,26,0.15);border-radius:12px;padding:12px;margin-bottom:16px;font-size:13px;line-height:1.8;"></div>
+
+        <!-- App Buttons -->
+        <div style="font-size:12px;font-weight:700;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">👇 যেকোনো অ্যাপে পাঠাও</div>
         <div id="msgAppsList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;"></div>
     </div>
 </div>
@@ -553,7 +569,7 @@ function orderWhatsApp() {
     window.open('https://wa.me/' + wanum + '?text=' + encodeURIComponent(msg), '_blank');
 }
 
-function buildOrderMsg() {
+function buildOrderMsg(customerName, customerPhone, customerAddress) {
     var color = selectedColor ? selectedColor.colorName : '';
     var size  = selectedSize ? selectedSize.size : '';
     var base = product.base_price;
@@ -561,14 +577,21 @@ function buildOrderMsg() {
     var flashDiscount = product.flash_sale_price || 0;
     var price = base - flashDiscount + extra;
 
-    return 'Hello! I want to order:\n\n' +
-        '🛍️ Product: ' + product.name + '\n' +
-        (color ? '🎨 Color: ' + color + '\n' : '') +
-        (size  ? '📏 Size: '  + size  + '\n' : '') +
-        '🔢 Qty: ' + currentQty + '\n' +
-        '💰 Price: ৳' + price + '\n\n' +
-        '📦 Please confirm my order.';
+    var msg = 'হ্যালো! আমি একটি অর্ডার করতে চাই:\n\n';
+    msg += '🛒 *অর্ডার বিস্তারিত:*\n';
+    msg += '🛍️ পণ্য: ' + product.name + '\n';
+    if (color) msg += '🎨 রঙ: ' + color + '\n';
+    if (size)  msg += '📏 সাইজ: ' + size + '\n';
+    msg += '🔢 পরিমাণ: ' + currentQty + '\n';
+    msg += '💰 দাম: ৳' + (price * currentQty) + '\n\n';
+    msg += '👤 *কাস্টমার তথ্য:*\n';
+    if (customerName)    msg += '👤 নাম: '    + customerName    + '\n';
+    if (customerPhone)   msg += '📞 ফোন: '   + customerPhone   + '\n';
+    if (customerAddress) msg += '📍 ঠিকানা: ' + customerAddress + '\n';
+    msg += '\n📦 অনুগ্রহ করে আমার অর্ডার কনফার্ম করুন।';
+    return msg;
 }
+
 
 // Messaging Apps URL patterns
 var MSG_URL_PATTERNS = {
@@ -613,34 +636,64 @@ var MSG_APP_ICONS = {
 
 function openMsgSheet() {
     var variants = product.variants || [];
-    if (variants.length && !selectedColor) { alert('Please select a color'); return; }
-    if (selectedColor && selectedColor.sizes && selectedColor.sizes.length && !selectedSize) { alert('Please select a size'); return; }
+    if (variants.length && !selectedColor) { alert('রঙ সিলেক্ট করো'); return; }
+    if (selectedColor && selectedColor.sizes && selectedColor.sizes.length && !selectedSize) { alert('সাইজ সিলেক্ট করো'); return; }
 
     addToCart();
-    var msg = buildOrderMsg();
+
+    // Order summary preview
+    var color = selectedColor ? selectedColor.colorName : '';
+    var size  = selectedSize  ? selectedSize.size : '';
+    var base = product.base_price;
+    var extra = selectedSize ? (selectedSize.extraPrice || 0) : 0;
+    var flashDiscount = product.flash_sale_price || 0;
+    var price = base - flashDiscount + extra;
+
+    var summaryHtml = '<b>🛍️ ' + product.name + '</b><br>';
+    if (color) summaryHtml += '🎨 রঙ: ' + color + '<br>';
+    if (size)  summaryHtml += '📏 সাইজ: ' + size + '<br>';
+    summaryHtml += '🔢 পরিমাণ: ' + currentQty + '&nbsp;&nbsp;|&nbsp;&nbsp;<b style="color:var(--primary);">৳' + (price * currentQty) + '</b>';
+    document.getElementById('msgOrderSummary').innerHTML = summaryHtml;
+
+    // App buttons
     var apps = settings.messaging_apps || [];
     var enabled = apps.filter(function(a) { return a.enabled && a.contact; });
-
     var list = document.getElementById('msgAppsList');
     list.innerHTML = '';
 
     if (!enabled.length) {
-        list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#999;">No messaging apps configured</div>';
+        list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#999;">কোনো messaging app configure করা নেই</div>';
     }
 
     enabled.forEach(function(app) {
-        var pattern = MSG_URL_PATTERNS[app.key] || 'https://wa.me/{contact}?text={msg}';
-        var url = pattern.replace('{contact}', encodeURIComponent(app.contact)).replace('{msg}', encodeURIComponent(msg)).replace('{subject}', encodeURIComponent('Order: ' + product.name));
         var icon = MSG_APP_ICONS[app.key] || '';
-        var a = document.createElement('a');
-        a.className = 'msg-app-btn';
-        a.href = url;
-        a.target = '_blank';
-        a.innerHTML = '<img src="' + icon + '" onerror="this.style.display=\'none\'"><span>' + (app.name || app.key) + '</span>';
-        list.appendChild(a);
+        var btn = document.createElement('button');
+        btn.className = 'msg-app-btn';
+        btn.type = 'button';
+        btn.innerHTML = '<img src="' + icon + '" onerror="this.style.display=\'none\'"><span>' + (app.name || app.key) + '</span>';
+        btn.addEventListener('click', function() { sendMsgToApp(app); });
+        list.appendChild(btn);
     });
 
     document.getElementById('msgSheet').style.display = 'block';
+}
+
+function sendMsgToApp(app) {
+    var name    = (document.getElementById('msgCustomerName')    || {}).value || '';
+    var phone   = (document.getElementById('msgCustomerPhone')   || {}).value || '';
+    var address = (document.getElementById('msgCustomerAddress') || {}).value || '';
+
+    if (!name.trim())    { alert('নাম দাও'); document.getElementById('msgCustomerName').focus(); return; }
+    if (!phone.trim())   { alert('মোবাইল নম্বর দাও'); document.getElementById('msgCustomerPhone').focus(); return; }
+    if (!address.trim()) { alert('ডেলিভারি ঠিকানা দাও'); document.getElementById('msgCustomerAddress').focus(); return; }
+
+    var msg = buildOrderMsg(name.trim(), phone.trim(), address.trim());
+    var pattern = MSG_URL_PATTERNS[app.key] || 'https://wa.me/{contact}?text={msg}';
+    var url = pattern
+        .replace('{contact}', encodeURIComponent(app.contact))
+        .replace('{msg}', encodeURIComponent(msg))
+        .replace('{subject}', encodeURIComponent('Order: ' + product.name));
+    window.open(url, '_blank');
 }
 
 function closeMsgSheet() {

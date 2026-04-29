@@ -66,6 +66,11 @@
                     <option value="oldest">Oldest First</option>
                     <option value="highest">Highest Amount</option>
                 </select>
+                <select class="form-select" id="typeFilter" onchange="filterOrders()" style="width:auto;min-width:140px;">
+                    <option value="">All Types</option>
+                    <option value="delivery">🚚 Delivery</option>
+                    <option value="pickup">🚶 Pickup</option>
+                </select>
                 <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--text-secondary); font-size:13px; font-weight:600; padding:0 10px; white-space:nowrap;">
                     <input type="checkbox" id="failedFilter" onchange="filterOrders()" style="width:16px;height:16px;cursor:pointer;accent-color:#ff3b30;">
                     <span>Show Failed/Unconfirmed (Auto Payment)</span>
@@ -141,6 +146,7 @@
         var status = document.getElementById('statusFilter').value;
         var pay    = document.getElementById('payFilter').value;
         var sort   = document.getElementById('sortFilter').value;
+        var oType  = document.getElementById('typeFilter').value;
         var showFailed = document.getElementById('failedFilter').checked;
 
         var filtered = allOrders.filter(function(o) {
@@ -149,6 +155,7 @@
                          (o.customer_phone || '').toLowerCase().includes(q);
             var matchS = !status || o.status === status;
             var matchP = !pay    || o.payment_status === pay;
+            var matchT = !oType  || (o.order_type || 'delivery') === oType;
             
             // Logic to identify failed/unconfirmed auto-payments
             var isManual = false;
@@ -164,7 +171,7 @@
             
             var matchFailedShow = showFailed ? true : !isFailedOrUnconfirmedAuto;
 
-            return matchQ && matchS && matchP && matchFailedShow;
+            return matchQ && matchS && matchP && matchT && matchFailedShow;
         });
 
         if (sort === 'oldest')  filtered.sort(function(a,b) { return new Date(a.created_at) - new Date(b.created_at); });
@@ -187,8 +194,9 @@
         var html = '';
         orders.forEach(function(o) {
             var itemCount = Array.isArray(o.items) ? o.items.length : '?';
+            var typeBadge = (o.order_type === 'pickup') ? '<span class="badge" style="background:rgba(255,149,0,0.15);color:#FF9500;font-size:10px;padding:2px 6px;">🚶 Pickup</span>' : '';
             html += '<tr>' +
-                '<td><code style="color:#007AFF;font-size:12px;">' + o.id + '</code></td>' +
+                '<td><code style="color:#007AFF;font-size:12px;">' + o.id + '</code> ' + typeBadge + '</td>' +
                 '<td>' +
                     '<div style="font-weight:600;">' + (o.customer_name || '—') + '</div>' +
                     '<div style="font-size:12px;color:#8E8E93;">' + (o.customer_phone || '') + '</div>' +
@@ -228,7 +236,8 @@
                 '<div class="detail-block"><label>Email</label><span>' + (o.customer_email||'—') + '</span></div>' +
                 '<div class="detail-block"><label>Division</label><span>' + (o.division||'—') + '</span></div>' +
                 '<div class="detail-block"><label>District</label><span>' + (o.district||'—') + '</span></div>' +
-                '<div class="detail-block"><label>Upazila</label><span>' + (o.upazila||'—') + '</span></div>' +
+            '<div class="detail-block"><label>Upazila</label><span>' + (o.upazila||'—') + '</span></div>' +
+                '<div class="detail-block"><label>Order Type</label><span style="font-weight:700;color:' + (o.order_type === 'pickup' ? '#FF9500' : '#007AFF') + ';">' + ((o.order_type === 'pickup') ? '🚶 Pickup from Store' : '🚚 Delivery') + '</span></div>' +
                 '<div class="detail-block" style="grid-column:1/-1"><label>Address</label><span>' + (o.address||'—') + '</span></div>' +
             '</div>' +
 

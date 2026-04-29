@@ -118,7 +118,7 @@
                 </div>
 
                 <div style="display:flex;gap:10px;margin-top:4px;">
-                    <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+                    <button class="btn btn-ghost" id="backBtn" onclick="goStep(1)">← Back</button>
                     <button class="btn btn-primary" style="flex:1;" onclick="goStep3()">Continue to Payment →</button>
                 </div>
             </div>
@@ -126,6 +126,12 @@
             <!-- STEP 3: Payment -->
             <div id="step3" class="section-card" style="display:none;">
                 <div class="section-card-title"><i data-lucide="credit-card" class="lucide-icon icon-bounce"></i> Step 3: Payment Method</div>
+
+                <!-- Pickup Info -->
+                <div id="pickupInfo" class="adv-box" style="display:none;background:rgba(255,149,0,0.06);border-color:rgba(255,149,0,0.3);margin-bottom:16px;">
+                    <div style="font-size:13px;font-weight:700;color:#FF9500;"><i data-lucide="footprints" class="lucide-icon icon-bounce"></i> Pickup from Store</div>
+                    <div id="storeAddrText" style="font-size:12px;margin-top:4px;color:var(--text-secondary);"></div>
+                </div>
 
                 <!-- Advance payment info -->
                 <div id="advanceSection" class="adv-box" style="display:none;">
@@ -202,14 +208,21 @@ var advancePayable = 0;
 var selectedPayMethod = '';
 var allPromos = [];
 var draftSent = false;
+var isPickup = new URLSearchParams(window.location.search).get('pickup') === '1';
 
 // ── Init ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
     cart = getCart();
     if (!cart.length) { window.location.href = 'cart.html'; return; }
 
-    // Check if returning from gateway payment
-    // We use robust regex matching instead of URLSearchParams because some gateways malform the URL by using '?' instead of '&'
+    if (isPickup) {
+        deliveryCharge = 0;
+        document.getElementById('step2dot').style.display = 'none';
+        document.getElementById('line12').style.width = '100%';
+        document.getElementById('line23').style.display = 'none';
+        document.getElementById('backBtn').setAttribute('onclick', 'goStep(1)');
+    }
+
     var hrefStr = window.location.href;
     var getParam = function(key1, key2) {
         var rx = new RegExp("[?&](?:" + key1 + (key2 ? "|" + key2 : "") + ")=([^&?#]+)", "i");
@@ -239,7 +252,6 @@ document.addEventListener('DOMContentLoaded', function() {
         renderAddons();
         loadBdDivisions();
 
-        // If returning from payment gateway
         var checkStatus = (pyStatus || '').toLowerCase();
         if ((checkStatus === 'completed' || checkStatus === 'success') && pyOrderId) {
             verifyGatewayPayment(pyOrderId, pyTrxId);
@@ -249,7 +261,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Draft notification on tab leave
     document.addEventListener('visibilitychange', function() {
         if (document.hidden && !draftSent && cart.length) {
             sendDraftNotification();
@@ -366,6 +377,11 @@ function loadUpazilas() {
 }
 
 function calcDelivery() {
+    if (isPickup) {
+        deliveryCharge = 0;
+        updateSummaryTotals();
+        return;
+    }
     var district = document.getElementById('distSelect').value;
     if (!district) return;
 
@@ -414,7 +430,13 @@ function goStep2() {
     var phone = document.getElementById('custPhone').value.trim();
     if (!name)  { alert('Please enter your name'); return; }
     if (!phone || phone.length < 11) { alert('Please enter a valid phone number'); return; }
-    goStep(2);
+    
+    if (isPickup) {
+        buildPaymentOptions();
+        goStep(3);
+    } else {
+        goStep(2);
+    }
 }
 
 function goStep3() {
@@ -434,13 +456,12 @@ function buildPaymentOptions() {
     var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
     var total = subtotal + addonTotal + deliveryCharge - promoDiscount;
 
-    // Calculate advance
     var advAmt = settings.advance_amount || 0;
     if (advAmt === -1) advancePayable = deliveryCharge;
     else if (advAmt > 0) advancePayable = advAmt;
     else advancePayable = 0;
 
-    var showAdvance = advancePayable > 0 && settings.allow_cod;
+    var showAdvance = advancePayable > 0 && settings.allow_cod && !isPickup;
     var advSection = document.getElementById('advanceSection');
     if (showAdvance) {
         advSection.style.display = 'block';
@@ -452,26 +473,28 @@ function buildPaymentOptions() {
         document.getElementById('smCod').textContent = '৳' + (total - advancePayable);
     } else { advSection.style.display = 'none'; }
 
-    var opts = '';
+    if (isPickup && settings.store_address) {
+        document.getElementById('pickupInfo').style.display = 'block';
+        document.getElementById('storeAddrText').textContent = settings.store_address;
+    } else {
+        document.getElementById('pickupInfo').style.display = 'none';
+    }
 
-    // Auto gateway — settings DB থেকে, না থাকলে CONFIG থেকে
+    var opts = '';
     var proxyUrl = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;
     if (proxyUrl) {
         opts += payOpt('auto_gateway', '<i data-lucide="globe" class="lucide-icon icon-spin"></i>', 'Pay Online', 'bKash/Rocket/Card via payment gateway (instant)', '');
     }
 
-    // Manual bKash
     if (settings.bkash_number) {
         opts += payOpt('manual_bkash', '💜', 'bKash', 'Send to ' + settings.bkash_number, 'personal');
     }
 
-    // Manual Nagad
     if (settings.nagad_number) {
         opts += payOpt('manual_nagad', '🧡', 'Nagad', 'Send to ' + settings.nagad_number, 'personal');
     }
 
-    // COD
-    if (settings.allow_cod) {
+    if (settings.allow_cod && !isPickup) {
         var codLabel = advancePayable > 0 ? 'Hybrid COD (Advance + Delivery)' : 'Cash on Delivery';
         var codDesc = advancePayable > 0 ? 'Pay ৳' + advancePayable + ' advance via bKash/Nagad, rest on delivery' : 'Pay when product is received';
         opts += payOpt('cod', '💵', codLabel, codDesc, '');
@@ -504,8 +527,7 @@ function selectPayment(value) {
     var payAmt = (value === 'cod' && advancePayable > 0) ? advancePayable : (value.startsWith('manual') ? total : 0);
 
     if (value === 'manual_bkash' || (value === 'cod' && advancePayable > 0 && settings.advance_method === 'manual')) {
-        var num = (value === 'manual_bkash') ? settings.bkash_number : settings.bkash_number;
-        document.getElementById('manualPayNumber').textContent  = num || '';
+        document.getElementById('manualPayNumber').textContent  = settings.bkash_number || '';
         document.getElementById('manualPayMethodName').textContent = 'bKash';
         document.getElementById('manualPayAmt').textContent     = '৳' + (value === 'manual_bkash' ? total : advancePayable);
         manualBox.style.display = 'block';
@@ -546,15 +568,14 @@ function placeOrder() {
     var name  = document.getElementById('custName').value.trim();
     var phone = document.getElementById('custPhone').value.trim();
     var email = document.getElementById('custEmail').value.trim();
-    var div   = document.getElementById('divSelect').value;
-    var dist  = document.getElementById('distSelect').value;
-    var upa   = document.getElementById('upaSelect').value;
-    var addr  = document.getElementById('custAddress').value.trim();
+    var div   = isPickup ? 'Pickup' : document.getElementById('divSelect').value;
+    var dist  = isPickup ? 'Pickup' : document.getElementById('distSelect').value;
+    var upa   = isPickup ? 'Pickup' : document.getElementById('upaSelect').value;
+    var addr  = isPickup ? (settings.store_address || 'Store Pickup') : document.getElementById('custAddress').value.trim();
 
     var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
     var total    = subtotal + addonTotal + deliveryCharge - promoDiscount;
 
-    // Manual payment validation
     var senderNum = '', trxId = '';
     var manualBox = document.getElementById('manualPayBox');
     if (manualBox.style.display !== 'none') {
@@ -591,9 +612,9 @@ function placeOrder() {
         payment_trx_id: trxId || null,
         payment_sender: senderNum || null,
         status:         'Pending',
+        order_type:     isPickup ? 'pickup' : 'delivery'
     };
 
-    // Auto gateway redirect
     if (selectedPayMethod === 'auto_gateway') {
         initiateGatewayPayment(orderId, total, orderData);
         return;
@@ -618,7 +639,6 @@ function initiateGatewayPayment(orderId, total, orderData) {
     var name     = document.getElementById('custName').value.trim();
     var phone    = document.getElementById('custPhone').value.trim();
     var email    = document.getElementById('custEmail').value.trim() || (phone + '@linko.com');
-    var address  = document.getElementById('custAddress').value.trim();
 
     var baseUrl  = window.location.href.split('?')[0];
     var sUrl = baseUrl + '?status=completed&order_id=' + orderId;
@@ -632,7 +652,6 @@ function initiateGatewayPayment(orderId, total, orderData) {
         cancel_url:  cUrl
     };
 
-    // Save order to DB first (Pending/Unpaid), then redirect
     sb.from('orders').insert([Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' })]).then(function(r) {
         if (r.error) { alert('Order save failed: ' + r.error.message); return; }
 
@@ -733,26 +752,33 @@ function verifyGatewayPayment(orderId, trxId) {
 
 // ── Telegram Notifications ────────────────────────────────────
 function sendOrderNotification(order) {
-    if (!settings.telegram_main_bot) return;
-    var chats = settings.telegram_main_chats || [];
-    if (typeof chats === 'string') chats = chats.split(',');
-
     var msg = '🛍️ *NEW ORDER* — #' + order.id + '\n\n' +
-              '👤 ' + order.customer_name + ' | 📞 ' + order.customer_phone + '\n' +
-              '📍 ' + order.district + ', ' + order.division + '\n' +
-              '💳 Method: ' + order.payment_method + '\n' +
-              '💰 Total: ৳' + order.grand_total + '\n' +
+              '👤 ' + (order.customer_name || '—') + ' | 📞 ' + (order.customer_phone || '—') + '\n' +
+              '📍 ' + (order.district || '—') + ', ' + (order.division || '—') + '\n' +
+              '📝 Type: ' + (order.order_type === 'pickup' ? '🚶 Pickup' : '🚚 Delivery') + '\n' +
+              '💳 Method: ' + (order.payment_method || '—') + '\n' +
+              '💰 Total: ৳' + (order.grand_total || 0) + '\n' +
               (order.payment_trx_id ? '🔑 TrxID: `' + order.payment_trx_id + '`\n' : '') +
               '📦 Items: ' + (Array.isArray(order.items) ? order.items.map(function(i){return i.productName;}).join(', ') : '—');
 
-    chats.forEach(function(chatId) {
-        if (!chatId) return;
-        fetch('https://api.telegram.org/bot' + settings.telegram_main_bot + '/sendMessage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' })
-        }).catch(function(){});
-    });
+    if (order.order_type === 'pickup' && settings.pickup_bot_token && settings.pickup_chat_id) {
+        sendTelegram(settings.pickup_bot_token, settings.pickup_chat_id, msg);
+    } else if (settings.telegram_main_bot && settings.telegram_main_chats) {
+        var chats = settings.telegram_main_chats;
+        if (typeof chats === 'string') chats = JSON.parse(chats || '[]');
+        chats.forEach(function(cid) {
+            sendTelegram(settings.telegram_main_bot, cid, msg);
+        });
+    }
+}
+
+function sendTelegram(token, chatId, text) {
+    if (!token || !chatId) return;
+    fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'Markdown' })
+    }).catch(function(e){ console.error('Telegram error:', e); });
 }
 
 function sendDraftNotification() {

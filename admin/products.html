@@ -10,6 +10,7 @@
     <script src="../assets/js/config.js"></script>
     <script src="../assets/js/supabase-init.js"></script>
     <script src="assets/js/admin-common.js"></script>
+    <script src="../assets/js/imgbb-uploader.js"></script>
     <style>
         .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
         .product-card {
@@ -111,10 +112,8 @@
                     <input class="form-input" id="pFlashEnd" type="datetime-local">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Category</label>
-                    <select class="form-select" id="pCategory">
-                        <option value="">No Category</option>
-                    </select>
+                    <label class="form-label">Categories (Select Multiple)</label>
+                    <div id="pCategoryList" class="category-checkbox-list"></div>
                 </div>
             </div>
 
@@ -133,10 +132,10 @@
 
             <!-- Gallery Images -->
             <div class="form-group">
-                <label class="form-label"><i data-lucide="image" class="lucide-icon icon-hover-pulse"></i> Gallery Images (URL links)</label>
+                <label class="form-label"><i data-lucide="image" class="lucide-icon icon-hover-pulse"></i> Gallery Images</label>
+                <div class="form-hint" style="margin-bottom:8px;">ছবি আপলোড করো অথবা direct URL দাও। <b>ImgBB তে আপলোড করলে best</b>।</div>
                 <div id="galleryWrap"></div>
-                <button type="button" class="btn btn-ghost btn-sm" onclick="addGalleryUrl()" style="margin-top:8px;">+ Add Image URL</button>
-                <div class="form-hint">প্রতিটি image এর direct URL দাও। Color variant এর image আলাদা Variant section এ দিতে হবে।</div>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="addGalleryUrl()" style="margin-top:8px;">+ Add Image</button>
             </div>
 
             <div class="form-group">
@@ -197,10 +196,14 @@
         sb.from('categories').select('*').eq('is_active', true).order('sort_order').then(function(r) {
             allCategories = r.data || [];
             var catFilter = document.getElementById('catFilter');
-            var pCat = document.getElementById('pCategory');
+            var pCatList = document.getElementById('pCategoryList');
             allCategories.forEach(function(c) {
                 catFilter.innerHTML += '<option value="' + c.id + '">' + c.name + '</option>';
-                pCat.innerHTML     += '<option value="' + c.id + '">' + c.name + '</option>';
+                pCatList.innerHTML += 
+                    '<label class="category-checkbox-item">' +
+                        '<input type="checkbox" name="pCat" value="' + c.id + '">' +
+                        '<span>' + c.name + '</span>' +
+                    '</label>';
             });
         });
     }
@@ -287,7 +290,7 @@
         document.getElementById('pFlashEnd').value  = '';
         document.getElementById('pVideoUrl').value  = '';
         document.getElementById('pVideoType').value = 'auto';
-        document.getElementById('pCategory').value  = '';
+        document.querySelectorAll('input[name="pCat"]').forEach(function(cb) { cb.checked = false; });
         setToggle('pActive', true);
         setToggle('pFeatured', false);
         renderGallery();
@@ -308,7 +311,15 @@
         document.getElementById('pFlashEnd').value   = p.flash_sale_end ? p.flash_sale_end.substring(0,16) : '';
         document.getElementById('pVideoUrl').value   = p.video_url || '';
         document.getElementById('pVideoType').value  = p.video_type || 'auto';
-        document.getElementById('pCategory').value   = p.category_id || '';
+        
+        // Fetch categories for this product
+        sb.from('product_categories').select('category_id').eq('product_id', p.id).then(function(catRes) {
+            var selectedIds = (catRes.data || []).map(function(c) { return c.category_id; });
+            document.querySelectorAll('input[name="pCat"]').forEach(function(cb) {
+                cb.checked = selectedIds.includes(cb.value);
+            });
+        });
+
         setToggle('pActive',   p.is_active);
         setToggle('pFeatured', p.is_featured);
         renderGallery();
@@ -332,14 +343,66 @@
         var wrap = document.getElementById('galleryWrap');
         wrap.innerHTML = '';
         galleryUrls.forEach(function(url, i) {
+            var parsed = parseImageInput(url);
+            var previewSrc = parsed.previewUrl || '';
+
             var row = document.createElement('div');
-            row.className = 'gallery-url-row';
+            row.style.cssText = 'margin-bottom:10px;';
             row.innerHTML =
-                '<input class="form-input" placeholder="https://...image.jpg" value="' + (url||'') + '" data-gidx="' + i + '">' +
-                '<button type="button" class="btn btn-danger btn-sm" onclick="removeGallery(' + i + ')">✕</button>';
+                '<div class="imgbb-upload-row">' +
+                    '<input class="form-input" placeholder="https://...image.jpg" value="' + (url||'') + '" data-gidx="' + i + '" oninput="onGalleryInput(this,' + i + ')">' +
+                    '<button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" data-gupload="' + i + '">&#128228; Upload</button>' +
+                    '<button type="button" class="btn btn-danger btn-sm" onclick="removeGallery(' + i + ')">&#10005;</button>' +
+                '</div>' +
+                '<div id="gprev-' + i + '" class="imgbb-preview-wrap" style="height:70px;margin-top:6px;' + (previewSrc ? '' : 'display:none;') + '">' +
+                    (previewSrc ?
+                        '<img class="imgbb-img-preview" src="' + previewSrc + '" onerror="document.getElementById(\'gprev-' + i + '\').style.display=\'none\'">' :
+                        '<div class="imgbb-preview-placeholder"><span>&#128247; No image</span></div>'
+                    ) +
+                '</div>';
             wrap.appendChild(row);
         });
+
+        // Upload buttons bind
+        wrap.querySelectorAll('[data-gupload]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var idx = parseInt(btn.dataset.gupload);
+                var apiKey = getImgbbKey();
+                if (!apiKey) { showToast('&#9888; ImgBB API Key সেট করো! Settings থেকে দাও।', 'warning'); return; }
+                var fileInput = document.createElement('input');
+                fileInput.type = 'file'; fileInput.accept = 'image/*';
+                fileInput.onchange = function() {
+                    if (!fileInput.files[0]) return;
+                    var origText = btn.innerHTML;
+                    btn.innerHTML = '&#9203; Uploading...'; btn.disabled = true;
+                    imgbbUpload(fileInput.files[0], apiKey)
+                        .then(function(r) {
+                            galleryUrls = collectGallery();
+                            galleryUrls[idx] = r.url;
+                            renderGallery();
+                            showToast('&#10003; Gallery image uploaded!', 'success');
+                        })
+                        .catch(function(e) { showToast('&#10008; ' + e.message, 'error'); btn.innerHTML=origText; btn.disabled=false; });
+                };
+                fileInput.click();
+            });
+        });
     }
+
+    function onGalleryInput(input, i) {
+        var parsed = parseImageInput(input.value.trim());
+        var prev = document.getElementById('gprev-' + i);
+        if (!prev) return;
+        if (parsed.previewUrl) {
+            prev.style.display = 'flex';
+            var img = prev.querySelector('img');
+            if (img) { img.src = parsed.previewUrl; }
+            else { prev.innerHTML = '<img class="imgbb-img-preview" src="' + parsed.previewUrl + '" onerror="this.parentElement.style.display=\'none\'">';}
+        } else {
+            prev.style.display = 'none';
+        }
+    }
+
 
     function addGalleryUrl() { 
         galleryUrls = collectGallery();
@@ -357,7 +420,7 @@
     function collectGallery() {
         var inputs = document.querySelectorAll('[data-gidx]');
         var arr = [];
-        inputs.forEach(function(inp) { arr.push(inp.value); });
+        inputs.forEach(function(inp) { arr.push(inp.value.trim()); });
         return arr;
     }
 
@@ -426,12 +489,18 @@
                     '<div class="color-preview" id="cprev-' + vi + '" style="background:' + (v.colorHex||'#888') + ';"></div>' +
                     '<input class="form-input" placeholder="Color Name" value="' + (v.colorName||'') + '" data-vf="' + vi + '" data-ff="colorName" style="flex:1;">' +
                     '<input type="color" value="' + (v.colorHex||'#007AFF') + '" data-vf="' + vi + '" data-ff="colorHex" title="Color Hex" style="width:44px;height:38px;border-radius:8px;border:none;cursor:pointer;background:none;" oninput="document.getElementById(\'cprev-' + vi + '\').style.background=this.value">' +
-                    '<button type="button" class="btn btn-ghost btn-sm" onclick="applyVariantToAll(' + vi + ')" title="Copy image & sizes to all other colors" style="padding:0 8px;font-size:12.5px;"><i data-lucide="clipboard-list" class="lucide-icon"></i> Apply to All</button>' +
+                    '<button type="button" class="btn btn-ghost btn-sm" onclick="applyVariantToAll(' + vi + ')" title="Copy image &amp; sizes to all other colors" style="padding:0 8px;font-size:12.5px;"><i data-lucide="clipboard-list" class="lucide-icon"></i> Apply to All</button>' +
                     '<button type="button" class="btn btn-danger btn-sm" onclick="removeVariant(' + vi + ')"><i data-lucide="trash-2" class="lucide-icon icon-hover-shake icon-danger"></i></button>' +
                 '</div>' +
-                '<div class="form-group" style="margin-bottom:10px;">' +
-                    '<label class="form-label">Color Image URL</label>' +
-                    '<input class="form-input" placeholder="https://...color-image.jpg" value="' + (v.imageUrl||'') + '" data-vf="' + vi + '" data-ff="imageUrl">' +
+                '<div class="form-group" style="margin-bottom:6px;">' +
+                    '<label class="form-label">Color Image</label>' +
+                    '<div class="imgbb-upload-row">' +
+                        '<input class="form-input" placeholder="https://...color-image.jpg" value="' + (v.imageUrl||'') + '" data-vf="' + vi + '" data-ff="imageUrl" oninput="onVariantImgInput(this,' + vi + ')">' +
+                        '<button type="button" class="btn btn-ghost btn-sm imgbb-upload-btn" data-vupload="' + vi + '">\uD83D\uDCE4 Upload</button>' +
+                    '</div>' +
+                    '<div id="vprev-' + vi + '" class="imgbb-preview-wrap" style="height:65px;margin-top:6px;' + (v.imageUrl ? '' : 'display:none;') + '">' +
+                        (v.imageUrl ? '<img class="imgbb-img-preview" src="' + v.imageUrl + '" onerror="document.getElementById(\'vprev-' + vi + '\').style.display=\'none\'">' : '<div class="imgbb-preview-placeholder"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><span>No image</span></div>') +
+                    '</div>' +
                 '</div>' +
                 '<label class="form-label">Sizes (Name | Stock | Extra Price ৳)</label>' +
                 sizesHtml +
@@ -439,6 +508,45 @@
 
             wrap.appendChild(div);
         });
+
+        // Variant upload buttons bind
+        wrap.querySelectorAll('[data-vupload]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var vi = parseInt(btn.dataset.vupload);
+                var apiKey = getImgbbKey();
+                if (!apiKey) { showToast('\u26A0\uFE0F ImgBB API Key \u09B8\u09C7\u099F \u0995\u09B0\u09CB! Settings \u09A5\u09C7\u0995\u09C7 \u09A6\u09BE\u0993\u0964', 'warning'); return; }
+                var fileInput = document.createElement('input');
+                fileInput.type = 'file'; fileInput.accept = 'image/*';
+                fileInput.onchange = function() {
+                    if (!fileInput.files[0]) return;
+                    var origText = btn.innerHTML;
+                    btn.innerHTML = '\u23F3 Uploading...'; btn.disabled = true;
+                    imgbbUpload(fileInput.files[0], apiKey)
+                        .then(function(r) {
+                            collectVariants();
+                            variants[vi].imageUrl = r.url;
+                            renderVariants();
+                            showToast('\u2705 Variant image uploaded!', 'success');
+                        })
+                        .catch(function(e) { showToast('\u274C ' + e.message, 'error'); btn.innerHTML=origText; btn.disabled=false; });
+                };
+                fileInput.click();
+            });
+        });
+    }
+
+    function onVariantImgInput(input, vi) {
+        var parsed = parseImageInput(input.value.trim());
+        var prev = document.getElementById('vprev-' + vi);
+        if (!prev) return;
+        if (parsed.previewUrl) {
+            prev.style.display = 'flex';
+            var img = prev.querySelector('img');
+            if (img) { img.src = parsed.previewUrl; }
+            else { prev.innerHTML = '<img class="imgbb-img-preview" src="' + parsed.previewUrl + '" onerror="this.parentElement.style.display=\'none\'">';}
+        } else {
+            prev.style.display = 'none';
+        }
     }
 
     function collectVariants() {
@@ -469,6 +577,38 @@
         var name = document.getElementById('pName').value.trim();
         if (!name) { showToast('Product name required', 'error'); return; }
 
+    // ── parseImageInput ──────────────────────────────────────
+    // image-seyestem.md documented logic
+    function parseImageInput(raw) {
+        if (!raw) return { previewUrl: null, saveUrl: null };
+        raw = (raw || '').trim();
+        // HTML <img> tag
+        var imgTagMatch = raw.match(/<img[^>]+src=["']([^"']+)["']/i);
+        if (imgTagMatch) return { previewUrl: imgTagMatch[1], saveUrl: imgTagMatch[1] };
+        // BBCode [img]
+        var bbMatch = raw.match(/\[img\](.+?)\[\/img\]/i);
+        if (bbMatch) return { previewUrl: bbMatch[1], saveUrl: bbMatch[1] };
+        // Direct image link (i.ibb.co or common extension)
+        if (/i\.ibb\.co|\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(raw)) {
+            return { previewUrl: raw, saveUrl: raw };
+        }
+        // Viewer link (ibb.co/... not i.ibb.co)
+        if (/^https?:\/\/(www\.)?ibb\.co\//.test(raw)) {
+            return { previewUrl: null, saveUrl: raw };
+        }
+        // Try as direct
+        return { previewUrl: raw, saveUrl: raw };
+    }
+
+    function saveProduct() {
+        var name = document.getElementById('pName').value.trim();
+        if (!name) { showToast('Product name required', 'error'); return; }
+
+        var selectedCats = [];
+        document.querySelectorAll('input[name="pCat"]:checked').forEach(function(cb) {
+            selectedCats.push(cb.value);
+        });
+
         var payload = {
             name:             name,
             description:      document.getElementById('pDesc').value.trim(),
@@ -477,10 +617,12 @@
             flash_sale_end:   document.getElementById('pFlashEnd').value || null,
             video_url:        document.getElementById('pVideoUrl').value.trim(),
             video_type:       document.getElementById('pVideoType').value,
-            category_id:      document.getElementById('pCategory').value || null,
             is_active:        document.getElementById('pActive').classList.contains('on'),
             is_featured:      document.getElementById('pFeatured').classList.contains('on'),
-            gallery_images:   collectGallery().map(function(s) { return s.trim(); }).filter(Boolean),
+            // parseImageInput দিয়ে clean URL সেভ করো
+            gallery_images:   collectGallery()
+                                .map(function(s) { return parseImageInput(s).saveUrl || s.trim(); })
+                                .filter(Boolean),
             variants:         collectVariants(),
         };
 
@@ -494,11 +636,25 @@
         req.then(function(r) {
             setBtnLoading(btn, false, '💾 Save Product');
             if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+
+            var productId = editingProductId || (r.data && r.data[0] && r.data[0].id);
+
+            // Categories sync
+            if (productId) {
+                sb.from('product_categories').delete().eq('product_id', productId).then(function() {
+                    if (selectedCats.length) {
+                        var rows = selectedCats.map(function(cid) { return { product_id: productId, category_id: cid }; });
+                        sb.from('product_categories').insert(rows).then(function() {});
+                    }
+                });
+            }
+
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Product saved!', 'success');
             closeModal('productModal');
             loadProducts();
         });
     }
+
 
     function deleteProduct(id) {
         if (!adminConfirm('এই product মুছবেন? এই কাজ undo করা যাবে না।')) return;

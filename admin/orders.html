@@ -120,26 +120,27 @@
     var allOrders = [];
 
     document.addEventListener('DOMContentLoaded', function() {
-        adminInit('orders');
+        adminInit('orders', function() {
+            // Check for ?id= in URL
+            var urlId = new URLSearchParams(window.location.search).get('id');
 
-        // Check for ?id= in URL
-        var urlId = new URLSearchParams(window.location.search).get('id');
+            sb.from('orders').select('*').order('created_at', { ascending: false }).then(function(r) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
 
-        sb.from('orders').select('*').order('created_at', { ascending: false }).then(function(r) {
-            document.getElementById('pageLoader').style.display = 'none';
-            document.getElementById('adminMain').style.display  = 'flex';
+                if (r.error) { showToast('Failed to load orders', 'error'); return; }
+                allOrders = r.data || [];
+                document.getElementById('orderCountSub').textContent = allOrders.length + ' total orders';
+                filterOrders();
 
-            if (r.error) { showToast('Failed to load orders', 'error'); return; }
-            allOrders = r.data || [];
-            document.getElementById('orderCountSub').textContent = allOrders.length + ' total orders';
-            filterOrders(); // Apply default filters (which hides failed ones now)
-
-            if (urlId) {
-                var found = allOrders.find(function(o) { return o.id === urlId; });
-                if (found) openOrderModal(found);
-            }
+                if (urlId) {
+                    var found = allOrders.find(function(o) { return o.id === urlId; });
+                    if (found) openOrderModal(found);
+                }
+            });
         });
     });
+
 
     function filterOrders() {
         var q      = document.getElementById('searchInput').value.toLowerCase();

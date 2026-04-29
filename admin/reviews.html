@@ -51,8 +51,9 @@
 var allReviews = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    adminInit('reviews'); loadReviews();
+    adminInit('reviews', function() { loadReviews(); });
 });
+
 
 function loadReviews() {
     sb.from('reviews').select('*, products(name)').order('created_at', { ascending: false }).then(function(r) {

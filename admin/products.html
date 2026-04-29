@@ -187,9 +187,11 @@
     var variants = [];
 
     document.addEventListener('DOMContentLoaded', function() {
-        adminInit('products');
-        loadCategories();
-        loadProducts();
+        // adminInit auth guard — তারপর data load
+        adminInit('products', function() {
+            loadCategories();
+            loadProducts();
+        });
     });
 
     function loadCategories() {

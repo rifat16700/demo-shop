@@ -75,7 +75,7 @@
 var allAddons = [], editingId = null, aActive = true;
 
 document.addEventListener('DOMContentLoaded', function() {
-    adminInit('addons'); loadAddons();
+    adminInit('addons', function() { loadAddons(); });
 });
 
 function loadAddons() {

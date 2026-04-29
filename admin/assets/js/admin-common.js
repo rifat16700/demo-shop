@@ -86,7 +86,7 @@ var SIDEBAR_HTML = `
 var TOAST_HTML = '<div class="toast-container" id="toastContainer"></div>';
 
 // ── Init: Inject sidebar + check auth ────────────────────────
-function adminInit(activePage) {
+function adminInit(activePage, onReady) {
     // Inject sidebar + overlay + toast container into page
     document.body.insertAdjacentHTML('afterbegin', SIDEBAR_HTML);
     document.body.insertAdjacentHTML('beforeend', TOAST_HTML);
@@ -100,28 +100,8 @@ function adminInit(activePage) {
             return;
         }
 
-        // --- Admin Email Guard ---
-        // Replace this array with your actual admin Gmail address(es)
-        var ALLOWED_ADMIN_EMAILS = [
-            'rifatrabbil10@gmail.com', 
-            'admin@freelancingbyrifat.com'
-        ];
-
-        var userEmail = session.user.email || '';
-        
-        // Check if the logged in Google user's email is an allowed admin
-        /* TEMPORARILY DISABLED BY USER REQUEST
-        if (!ALLOWED_ADMIN_EMAILS.includes(userEmail)) {
-            alert('Access Denied: You are not authorized as an Admin (' + userEmail + '). Logging out...');
-            sb.auth.signOut().then(function() {
-                window.location.href = 'index.html';
-            });
-            return;
-        }
-        */
-
         // Set user info in sidebar
-        var email = userEmail;
+        var email = session.user.email || '';
         var initial = email.charAt(0).toUpperCase() || 'A';
 
         var emailEl = document.getElementById('adminUserEmail');
@@ -147,8 +127,14 @@ function adminInit(activePage) {
 
         // Load pending counts for badges
         adminLoadBadges();
+
+        // ── Page-specific callback after auth success ──
+        if (typeof onReady === 'function') {
+            onReady();
+        }
     });
 }
+
 
 // ── Load sidebar badge counts ────────────────────────────────
 function adminLoadBadges() {

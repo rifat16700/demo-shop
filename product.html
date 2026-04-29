@@ -540,11 +540,8 @@ function directOrder() {
     var size  = selectedSize ? selectedSize.size : '';
     var key   = product.id + '-' + color + '-' + size;
 
-    // Clear existing cart completely - DIRECT ORDER ONLY
-    var cart = [];
-    
-    // Add only this single product
-    cart.push({ 
+    // এই product শুধু cart এ রাখো (আগেরটা clear করে)
+    var cart = [{ 
         key: key, 
         productId: product.id, 
         productName: product.name, 
@@ -553,14 +550,15 @@ function directOrder() {
         size: size, 
         quantity: currentQty, 
         image: img 
-    });
+    }];
 
     saveCart(cart);
     updateCartBadge();
     
-    // Redirect to cart page
-    window.location.href = 'cart.html';
+    // সরাসরি Checkout এ যাও — cart page skip
+    window.location.href = 'checkout.html';
 }
+
 
 function orderWhatsApp() {
     addToCart();

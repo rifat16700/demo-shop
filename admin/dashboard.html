@@ -170,8 +170,9 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        adminInit('dashboard');
-        loadDashboard();
+        adminInit('dashboard', function() {
+            loadDashboard();
+        });
 
         // Greeting
         var hour = new Date().getHours();
@@ -179,6 +180,7 @@
         document.getElementById('dashGreeting').textContent = greet;
         document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-BD', {day:'2-digit',month:'long',year:'numeric'});
     });
+
 
     function loadDashboard() {
         // Load all stats in parallel

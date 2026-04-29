@@ -106,8 +106,7 @@
 var allBanners = [], editingId = null, bActive = true;
 
 document.addEventListener('DOMContentLoaded', function() {
-    adminInit('banners');
-    loadBanners();
+    adminInit('banners', function() { loadBanners(); });
 });
 
 function loadBanners() {

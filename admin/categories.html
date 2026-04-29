@@ -62,8 +62,7 @@
 var allCats = [], editingId = null, cActive = true;
 
 document.addEventListener('DOMContentLoaded', function() {
-    adminInit('categories');
-    loadCats();
+    adminInit('categories', function() { loadCats(); });
 });
 
 function loadCats() {

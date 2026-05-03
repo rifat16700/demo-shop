@@ -293,15 +293,70 @@ function renderSummaryItems() {
     updateSummaryTotals();
 }
 
+var activePromoObj = null;
+
 function updateSummaryTotals() {
     var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
-    var total = subtotal + addonTotal + deliveryCharge - promoDiscount;
+    
+    var prodDisc = 0;
+    var delDisc = 0;
+    
+    if (activePromoObj) {
+        var minSpend  = activePromoObj.min_spend || 0;
+        if (subtotal >= minSpend) {
+            var discType  = activePromoObj.disc_type || 'flat';
+            var discVal   = activePromoObj.disc_val || activePromoObj.discount || 0;
+            var maxCap    = activePromoObj.max_cap || null;
+            
+            if (discType === 'percent') {
+                prodDisc = (discVal / 100) * subtotal;
+                if (maxCap && prodDisc > maxCap) prodDisc = maxCap;
+            } else {
+                prodDisc = discVal;
+            }
+            
+            var delReward = activePromoObj.del_reward || 'none';
+            var delAmt    = activePromoObj.del_disc_amount || null;
+            var delCap    = activePromoObj.del_disc_cap || null;
+            
+            if (delReward === 'free') {
+                delDisc = deliveryCharge;
+            } else if (delReward === 'amount' && delAmt) {
+                delDisc = parseFloat(delAmt);
+                if (delDisc > deliveryCharge) delDisc = deliveryCharge;
+            } else if (delReward === 'percent' && delAmt) {
+                delDisc = (parseFloat(delAmt)/100) * deliveryCharge;
+                if (delCap && delDisc > delCap) delDisc = delCap;
+            }
+        } else {
+            activePromoObj = null;
+            promoCode = '';
+            document.getElementById('promoInput').value = '';
+            document.getElementById('promoMsg').innerHTML = '';
+            alert('Minimum spend for coupon not met anymore.');
+        }
+    }
+    
+    promoDiscount = prodDisc; // keep legacy variable for product disc
+    var effectiveDelivery = deliveryCharge - delDisc;
+    if (effectiveDelivery < 0) effectiveDelivery = 0;
+    
+    var total = subtotal + addonTotal + effectiveDelivery - prodDisc;
+    
     document.getElementById('smAddon').textContent   = '৳' + addonTotal;
-    document.getElementById('smDelivery').textContent = deliveryCharge > 0 ? '৳' + deliveryCharge : '—';
-    document.getElementById('smPromo').textContent    = '-৳' + promoDiscount;
-    document.getElementById('smTotal').textContent    = '৳' + total;
+    
+    if (delDisc > 0) {
+        document.getElementById('smDelivery').innerHTML = '<del style="color:#aaa;font-size:11px;">৳' + deliveryCharge + '</del> ' + (effectiveDelivery > 0 ? '৳' + effectiveDelivery : '<span style="color:var(--success);">Free</span>');
+    } else {
+        document.getElementById('smDelivery').textContent = deliveryCharge > 0 ? '৳' + deliveryCharge : '—';
+    }
+    
+    document.getElementById('smPromo').textContent    = '-৳' + prodDisc.toFixed(0);
+    document.getElementById('smTotal').textContent    = '৳' + total.toFixed(0);
+    
     document.getElementById('addonLine').style.display  = addonTotal > 0 ? 'flex' : 'none';
-    document.getElementById('promoLine').style.display  = promoDiscount > 0 ? 'flex' : 'none';
+    document.getElementById('promoLine').style.display  = prodDisc > 0 ? 'flex' : 'none';
+    
     return total;
 }
 
@@ -563,8 +618,21 @@ function selectPayment(value) {
 // ── Promo ─────────────────────────────────────────────────────
 function applyPromo(providedCode) {
     var code = (providedCode || document.getElementById('promoInput').value || '').trim().toUpperCase();
-    if (!code) return;
     var msg = document.getElementById('promoMsg');
+    
+    if (!code) {
+        if (activePromoObj) {
+            activePromoObj = null;
+            promoCode = '';
+            promoDiscount = 0;
+            promoPaymentRestrictions = [];
+            buildPaymentOptions(); // restore all
+            updateSummaryTotals();
+            msg.innerHTML = 'ℹ️ Coupon removed.';
+            msg.style.color = '#888';
+        }
+        return;
+    }
 
     // Match by clean code (strip |v1| if old format)
     var promo = allPromos.find(function(p) {
@@ -613,46 +681,35 @@ function applyPromo(providedCode) {
         if (!distOk) { msg.innerHTML = '⛔ Coupon only valid for: ' + appDists.join(', '); msg.style.color='var(--danger)'; return; }
     }
 
-    // 4. Compute discount
-    var disc = 0;
-    if (discType === 'percent') {
-        disc = (discVal / 100) * subtotal;
-        if (maxCap && disc > maxCap) disc = maxCap;
-    } else {
-        disc = discVal;
-    }
-
-    // 5. Delivery reward
-    promoFreeDelivery = false;
-    if (delReward === 'free') {
-        disc += deliveryCharge; promoFreeDelivery = true;
-    } else if (delReward === 'amount' && delAmt) {
-        disc += parseFloat(delAmt);
-    } else if (delReward === 'percent' && delAmt) {
-        var dd = (parseFloat(delAmt)/100) * deliveryCharge;
-        if (delCap && dd > delCap) dd = delCap;
-        disc += dd;
-    }
-
-    promoDiscount = disc;
-    promoCode     = promo.code ? promo.code.split('|v1|')[0] : code;
+    activePromoObj = promo;
+    promoCode = promo.code ? promo.code.split('|v1|')[0] : code;
     document.getElementById('promoInput').value = promoCode;
+    
+    // Call updateSummaryTotals to calculate prodDisc and delDisc
+    updateSummaryTotals();
 
     // 6. Payment restriction enforcement
     promoPaymentRestrictions = appPays;
+    
+    var succMsg = '✅ Coupon "' + promoCode + '" applied! ';
+    if (promoDiscount > 0) succMsg += '৳' + promoDiscount.toFixed(0) + ' discount. ';
+    if (promo.del_reward === 'free') succMsg += '🚚 Free Delivery! ';
+    else if (promo.del_reward === 'amount' && promo.del_disc_amount) succMsg += '🚚 ৳' + promo.del_disc_amount + ' delivery discount! ';
+    else if (promo.del_reward === 'percent' && promo.del_disc_amount) succMsg += '🚚 ' + promo.del_disc_amount + '% delivery discount! ';
+    
     if (appPays.length) {
         buildPaymentOptions(); // rebuilds with only allowed methods visible
         if (selectedPayMethod) {
             var ok = appPays.some(function(pm){ return selectedPayMethod.toLowerCase().includes(pm.toLowerCase()); });
             if (!ok) selectPayment('');
         }
-        msg.innerHTML = '✅ Applied! ৳' + disc.toFixed(0) + ' discount. <small style="color:#FF9500;">⚠️ Only specific payment methods available for this coupon.</small>';
+        msg.innerHTML = succMsg + '<br><small style="color:#FF9500;">⚠️ Only specific payment methods available.</small>';
     } else {
-        msg.innerHTML = '✅ Coupon "' + promoCode + '" applied! ৳' + disc.toFixed(0) + ' discount.';
+        msg.innerHTML = succMsg;
     }
     msg.style.color = 'var(--success)';
-    updateSummaryTotals();
 }
+
 // ── View All Coupons — Bottom Sheet ───────────────────────────
 function openAllCouponsModal() {
     // Ensure bottom sheet exists

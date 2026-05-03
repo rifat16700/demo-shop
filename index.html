@@ -207,6 +207,16 @@ function applySettings(s) {
     } else {
         lg.innerHTML = '<i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i>';
     }
+    
+    // Dynamically set dynamic Favicon
+    var link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+    }
+    link.href = s.logo_url || s.favicon_url || 'assets/images/favicon.ico';
+    
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
@@ -294,9 +304,17 @@ function renderCategories(cats) {
     var mmHtml = '<a href="shop.html" style="display:block;padding:10px;font-weight:600;color:#444;border-radius:10px;margin-bottom:4px;">🌟 All Products</a>';
 
     cats.forEach(function(c) {
-        html += '<a href="shop.html?cat=' + c.id + '" class="cat-pill" data-cat="' + c.id + '">' +
-            (c.icon_url ? '<img src="' + c.icon_url + '">' : '') + c.name + '</a>';
-        mmHtml += '<a href="shop.html?cat=' + c.id + '" style="display:block;padding:10px;font-weight:600;color:#444;border-radius:10px;margin-bottom:4px;">' + c.name + '</a>';
+        var iconHtml = '';
+        var iconUrl = (c.icon_url || '').trim();
+        if (iconUrl.startsWith('<')) {
+            iconHtml = '<span class="cat-icon-html">' + iconUrl + '</span>';
+        } else if (iconUrl) {
+            iconHtml = '<img src="' + iconUrl + '" style="width:20px;height:20px;object-fit:cover;border-radius:4px;">';
+        }
+        html += '<a href="shop.html?cat=' + c.id + '" class="cat-pill" data-cat="' + c.id + '" style="display:inline-flex;align-items:center;gap:6px;">' +
+            iconHtml + c.name + '</a>';
+        mmHtml += '<a href="shop.html?cat=' + c.id + '" style="display:flex;align-items:center;gap:6px;padding:10px;font-weight:600;color:#444;border-radius:10px;margin-bottom:4px;">' +
+            iconHtml + c.name + '</a>';
     });
 
     row.innerHTML = html;

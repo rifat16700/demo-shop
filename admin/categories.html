@@ -43,8 +43,8 @@
         </div>
         <div class="form-group"><label class="form-label">Category Name *</label>
             <input class="form-input" id="cName" placeholder="e.g. T-Shirts"></div>
-        <div class="form-group"><label class="form-label">Icon URL (optional)</label>
-            <input class="form-input" id="cIcon" placeholder="https://...icon.png or emoji URL"></div>
+        <div class="form-group"><label class="form-label">Icon URL or HTML Code (e.g. SVG or Emoji)</label>
+            <textarea class="form-input" id="cIcon" placeholder="https://...icon.png or <svg>...</svg>" style="min-height:60px; font-family:monospace; font-size:12px;"></textarea></div>
         <div class="form-group"><label class="form-label">Sort Order</label>
             <input class="form-input" id="cSort" type="number" placeholder="0" value="0"></div>
         <div class="toggle-wrap" onclick="toggleCatActive()" style="margin-bottom:20px;">
@@ -78,8 +78,18 @@ function renderCats() {
     var html = '';
     if (!allCats.length) { html = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#8E8E93;">No categories yet</td></tr>'; }
     allCats.forEach(function(c) {
+        var iconHtml = '';
+        var iconUrl = c.icon_url || '';
+        if (iconUrl.trim().startsWith('<')) {
+            iconHtml = '<div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--bg-card);overflow:hidden;">' + iconUrl + '</div>';
+        } else if (iconUrl) {
+            iconHtml = '<img src="' + iconUrl + '" style="width:36px;height:36px;border-radius:8px;object-fit:cover;background:var(--bg-card);" onerror="this.style.display=\'none\'">';
+        } else {
+            iconHtml = '<div style="width:36px;height:36px;border-radius:8px;background:var(--bg-card);display:flex;align-items:center;justify-content:center;color:#8E8E93;">—</div>';
+        }
+
         html += '<tr>' +
-            '<td><img src="' + (c.icon_url||'') + '" style="width:36px;height:36px;border-radius:8px;object-fit:cover;background:var(--bg-card);" onerror="this.style.display=\'none\'"></td>' +
+            '<td>' + iconHtml + '</td>' +
             '<td style="font-weight:600;">' + c.name + '</td>' +
             '<td>' + (c.sort_order || 0) + '</td>' +
             '<td><span class="badge ' + (c.is_active ? 'badge-delivered' : 'badge-cancelled') + '">' + (c.is_active ? 'Active' : 'Inactive') + '</span></td>' +

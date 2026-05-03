@@ -163,9 +163,10 @@
                 </div>
 
                 <!-- Promo Code -->
-                <div style="margin-top:16px;display:flex;gap:8px;">
+                <div style="margin-top:16px;display:flex;gap:8px;align-items:center;">
                     <input class="form-input" id="promoInput" placeholder="Promo code (optional)">
-                    <button class="btn btn-ghost" onclick="applyPromo()">Apply</button>
+                    <button class="btn btn-ghost" onclick="applyPromo()" style="padding: 10px 14px;">Apply</button>
+                    <button class="btn btn-outline" onclick="openAllCouponsModal()" style="border:1px dashed var(--primary);font-size:12px;white-space:nowrap;padding:10px 12px;background:rgba(255,77,77,0.03);border-radius:12px;font-weight:700;">🎟️ View All Coupons</button>
                 </div>
                 <div id="promoMsg" style="font-size:13px;margin-top:6px;"></div>
 
@@ -546,19 +547,228 @@ function selectPayment(value) {
 }
 
 // ── Promo ─────────────────────────────────────────────────────
-function applyPromo() {
-    var code = document.getElementById('promoInput').value.trim().toUpperCase();
+function applyPromo(providedCode) {
+    var code = (providedCode || document.getElementById('promoInput').value || '').trim().toUpperCase();
     if (!code) return;
-    var promo = allPromos.find(function(p){ return p.code === code && p.is_active; });
+
     var msg = document.getElementById('promoMsg');
-    if (!promo) { msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Invalid or expired promo code'; msg.style.color = 'var(--danger)'; if (typeof lucide !== 'undefined') lucide.createIcons(); return; }
-    if (promo.expires_at && new Date(promo.expires_at) < new Date()) { msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Promo code expired'; msg.style.color='var(--danger)'; if (typeof lucide !== 'undefined') lucide.createIcons(); return; }
-    promoDiscount = promo.discount;
-    promoCode     = promo.code;
-    msg.innerHTML = '<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Discount of ৳' + promo.discount + ' applied!';
+    
+    // Find matching promo
+    var promo = allPromos.find(function(p) {
+        var parts = p.code.split('|v1|');
+        return parts[0].toUpperCase() === code && p.is_active;
+    });
+
+    if (!promo) {
+        msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Invalid or inactive promo code';
+        msg.style.color = 'var(--danger)';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        return;
+    }
+
+    if (promo.expires_at && new Date(promo.expires_at) < new Date()) {
+        msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Promo code expired';
+        msg.style.color = 'var(--danger)';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        return;
+    }
+
+    var parts = promo.code.split('|v1|');
+    var cleanCode = parts[0];
+    var meta = {};
+    try { if (parts[1]) meta = JSON.parse(parts[1]); } catch(e){}
+
+    var subtotal = cart.reduce(function(s, i) { return s + i.price * (i.quantity || 1); }, 0);
+
+    // 1. Min Spend check (ignoring delivery)
+    if (meta.min_spend && subtotal < parseFloat(meta.min_spend)) {
+        msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Minimum spend of ৳' + meta.min_spend + ' required to use this coupon';
+        msg.style.color = 'var(--danger)';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        return;
+    }
+
+    // 2. Applicable product restriction
+    if (meta.applicable_products && meta.applicable_products.length > 0) {
+        var matchedProduct = cart.some(function(item) {
+            return meta.applicable_products.includes(item.id);
+        });
+        if (!matchedProduct) {
+            msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> This coupon is not valid for the products in your cart';
+            msg.style.color = 'var(--danger)';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            return;
+        }
+    }
+
+    // 3. Applicable district restriction
+    if (meta.applicable_districts && meta.applicable_districts.length > 0) {
+        var selectedDistrict = document.getElementById('distSelect').value;
+        if (!selectedDistrict || !meta.applicable_districts.some(function(d){ return d.toLowerCase() === selectedDistrict.toLowerCase(); })) {
+            msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> This coupon is only valid for orders in: ' + meta.applicable_districts.join(', ');
+            msg.style.color = 'var(--danger)';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            return;
+        }
+    }
+
+    // 4. Calculate core discount
+    var disc = 0;
+    var dType = meta.disc_type || 'flat';
+    var dVal  = parseFloat(meta.disc_val) || promo.discount || 0;
+
+    if (dType === 'percent') {
+        disc = (dVal / 100) * subtotal;
+        if (meta.max_cap && disc > parseFloat(meta.max_cap)) disc = parseFloat(meta.max_cap);
+    } else {
+        disc = dVal;
+    }
+
+    // 5. Add delivery reward
+    if (meta.del_reward === 'free') {
+        disc += deliveryCharge;
+    } else if (meta.del_reward === 'amount' && meta.del_disc_amount) {
+        disc += parseFloat(meta.del_disc_amount);
+    }
+
+    promoDiscount = disc;
+    promoCode     = cleanCode;
+
+    msg.innerHTML = '<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Promo code "' + cleanCode + '" successfully applied! ৳' + disc.toFixed(2) + ' discount.';
     msg.style.color = 'var(--success)';
+    document.getElementById('promoInput').value = cleanCode;
+
+    // Optional: Restricted payment methods alert
+    if (meta.applicable_payments && meta.applicable_payments.length > 0) {
+        alert('ℹ️ This coupon applies only to the following payment methods: ' + meta.applicable_payments.join(', '));
+        // We will adjust/enforce available payment methods at step 3
+        buildPaymentOptions();
+        var selectedMethodIsValid = meta.applicable_payments.some(function(pm) {
+            return pm.toLowerCase().includes(selectedPayMethod.toLowerCase());
+        });
+        if (!selectedMethodIsValid) selectPayment('');
+    }
+
     if (typeof lucide !== 'undefined') lucide.createIcons();
     updateSummaryTotals();
+}
+
+// ── View All Coupons Modal Logic ──────────────────────────────
+function openAllCouponsModal() {
+    var existingModal = document.getElementById('allCouponsModal');
+    if (!existingModal) {
+        var d = document.createElement('div');
+        d.id = 'allCouponsModal';
+        d.className = 'modal-overlay';
+        d.innerHTML = '<div class="modal-box" style="max-width:550px; background:#fff; border-radius:16px; padding:20px; max-height:85vh; overflow-y:auto;">' +
+            '<div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">' +
+                '<h3 style="font-size:16px; font-weight:800; color:var(--text-dark); margin:0;">🎟️ Available Public Coupons</h3>' +
+                '<button class="modal-close" onclick="closeAllCouponsModal()" style="border:none;background:transparent;font-size:18px;cursor:pointer;color:#8E8E93;">✕</button>' +
+            '</div>' +
+            '<div id="allCouponsList" style="display:flex; flex-direction:column; gap:12px;"></div>' +
+        '</div>';
+        document.body.appendChild(d);
+    }
+
+    var subtotal = cart.reduce(function(s, i) { return s + i.price * (i.quantity || 1); }, 0);
+    var listDiv = document.getElementById('allCouponsList');
+    listDiv.innerHTML = '';
+
+    // Extract public coupons
+    var publicCoupons = allPromos.filter(function(p) {
+        if (!p.is_active) return false;
+        var parts = p.code.split('|v1|');
+        if (parts[0].startsWith('REPEATED_CUSTOMER_CONFIG')) return false;
+        var meta = {};
+        try { if (parts[1]) meta = JSON.parse(parts[1]); } catch(e){}
+        return meta.type === 'public';
+    });
+
+    if (!publicCoupons.length) {
+        listDiv.innerHTML = '<p style="text-align:center;color:#888;font-size:13px;padding:20px;">No public coupons available at this time.</p>';
+    } else {
+        // Evaluate eligibility and sort
+        var eligible = [];
+        var closeToEl = [];
+        var others = [];
+
+        publicCoupons.forEach(function(p) {
+            var parts = p.code.split('|v1|');
+            var meta = {};
+            try { if (parts[1]) meta = JSON.parse(parts[1]); } catch(e){}
+
+            var reqSpend = parseFloat(meta.min_spend) || 0;
+            var dType = meta.disc_type || 'flat';
+            var dVal = dType === 'percent' ? meta.disc_val + '%' : '৳' + meta.disc_val;
+
+            var couponObj = {
+                promo: p,
+                cleanCode: parts[0],
+                meta: meta,
+                reqSpend: reqSpend,
+                dVal: dVal
+            };
+
+            if (reqSpend <= subtotal) {
+                eligible.push(couponObj);
+            } else if (reqSpend - subtotal <= 200) {
+                closeToEl.push(couponObj);
+            } else {
+                others.push(couponObj);
+            }
+        });
+
+        // Combine
+        var sorted = eligible.concat(closeToEl).concat(others);
+
+        sorted.forEach(function(item) {
+            var diff = item.reqSpend - subtotal;
+            var isEligible = diff <= 0;
+
+            var card = document.createElement('div');
+            card.style.border = isEligible ? '1.5px solid #22C55E' : '1.5px solid var(--border)';
+            card.style.background = isEligible ? 'rgba(34,197,94,0.02)' : '#fafafa';
+            card.style.borderRadius = '12px';
+            card.style.padding = '12px 16px';
+            card.style.display = 'flex';
+            card.style.justifyContent = 'space-between';
+            card.style.alignItems = 'center';
+            card.style.gap = '10px';
+
+            var detailsHtml = '<div style="flex:1;">' +
+                '<code style="font-size:14px; font-weight:800; color:var(--primary); background:rgba(255,77,77,0.06); padding:3px 8px; border-radius:6px; display:inline-block; margin-bottom:4px;">' + item.cleanCode + '</code>' +
+                '<div style="font-size:13px; font-weight:700; color:var(--text-dark);">' + item.dVal + ' Discount' + 
+                (item.meta.max_cap ? ' (Max ৳' + item.meta.max_cap + ')' : '') + '</div>' +
+                '<div style="font-size:12px; color:#666; margin-top:2px;">' +
+                (item.reqSpend ? 'Min Cart Value: ৳' + item.reqSpend : 'No Minimum spend limit') + '</div>';
+
+            if (item.meta.del_reward === 'free') detailsHtml += '<div style="font-size:11px;color:#22C55E;font-weight:700;margin-top:2px;">🚚 Free Delivery Included</div>';
+
+            if (!isEligible) {
+                detailsHtml += '<div style="font-size:11px; color:#FF9500; font-weight:700; margin-top:4px;">Add ৳' + diff.toFixed(2) + ' more to unlock</div>';
+            }
+            detailsHtml += '</div>';
+
+            var actionBtnHtml = isEligible ?
+                '<button class="btn btn-primary" onclick="applyPublicPromo(\'' + item.cleanCode + '\')" style="padding: 8px 12px; font-size:12px; border-radius:10px;">Apply</button>' :
+                '<button class="btn btn-ghost" disabled style="opacity:0.4; font-size:12px;">Locked</button>';
+
+            card.innerHTML = detailsHtml + actionBtnHtml;
+            listDiv.appendChild(card);
+        });
+    }
+
+    document.getElementById('allCouponsModal').classList.add('show');
+}
+
+function closeAllCouponsModal() {
+    var modal = document.getElementById('allCouponsModal');
+    if (modal) modal.classList.remove('show');
+}
+
+function applyPublicPromo(cleanCode) {
+    applyPromo(cleanCode);
+    closeAllCouponsModal();
 }
 
 // ── Place Order ───────────────────────────────────────────────

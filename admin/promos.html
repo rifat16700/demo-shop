@@ -49,8 +49,10 @@
             border: 1.5px solid var(--border);
             border-radius: var(--radius-sm);
             background: #fff;
-            padding: 6px;
+            padding: 6px 8px;
             min-height: 44px;
+            position: relative;
+            cursor: text;
         }
         .chip-select-wrap:focus-within {
             border-color: var(--primary);
@@ -60,7 +62,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         .chip-tag {
             display: inline-flex;
@@ -73,16 +75,30 @@
             padding: 3px 8px;
             border-radius: 20px;
             cursor: default;
+            user-select: none;
+            -webkit-user-select: none;
         }
         .chip-tag .chip-remove {
-            font-size: 14px;
+            font-size: 15px;
             cursor: pointer;
-            opacity: 0.7;
+            opacity: 0.8;
             font-weight: 400;
             line-height: 1;
+            display: inline-flex;
+            align-items: center;
         }
         .chip-tag .chip-remove:hover { opacity: 1; }
         .chip-dropdown {
+            position: absolute;
+            top: 100%;
+            left: -1px;
+            right: -1px;
+            background: #fff;
+            border: 1.5px solid var(--primary);
+            border-top: none;
+            border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            z-index: 9999;
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.2s ease;
@@ -95,27 +111,33 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 7px 8px;
-            border-radius: 6px;
+            padding: 8px 10px;
+            border-radius: 0;
             cursor: pointer;
             font-size: 13px;
             font-weight: 500;
-            transition: background 0.15s;
+            transition: background 0.12s;
+            user-select: none;
+            -webkit-user-select: none;
         }
-        .chip-option:hover { background: rgba(139,26,26,0.05); }
-        .chip-option.selected { background: rgba(139,26,26,0.08); color: var(--primary); font-weight: 700; }
+        .chip-option:hover { background: rgba(139,26,26,0.06); }
+        .chip-option.selected { background: rgba(139,26,26,0.10); color: var(--primary); font-weight: 700; }
+        .chip-option.selected::before { content: '✓ '; font-weight: 800; }
         .chip-search {
             width: 100%;
             border: none;
             outline: none;
             font-size: 13px;
-            padding: 4px 6px;
+            padding: 3px 4px;
             background: transparent;
             font-family: inherit;
             color: var(--text-dark);
+            user-select: text;
+            -webkit-user-select: text;
         }
         .chip-search::placeholder { color: #aaa; }
     </style>
+
 </head>
 <body>
 <div class="page-loader" id="pageLoader"><div class="spinner"></div></div>
@@ -369,6 +391,422 @@
 <script>
 var allPromos = [], editingId = null, pActive = true, repActive = false;
 var allProducts = [], allCategories = [];
+var chipState = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    adminInit('promos', function() { loadData(); });
+});
+
+function loadData() {
+    Promise.all([
+        sb.from('categories').select('*').eq('is_active', true).order('sort_order'),
+        sb.from('products').select('*').eq('is_active', true).order('created_at'),
+        sb.from('promos').select('*').order('created_at', { ascending: false })
+    ]).then(function(results) {
+        document.getElementById('pageLoader').style.display = 'none';
+        document.getElementById('adminMain').style.display  = 'flex';
+        allCategories = results[0].data || [];
+        allProducts   = results[1].data || [];
+        allPromos     = results[2].data || [];
+        populateMultiSelects();
+        renderPromos();
+        checkRepeatCustPromo();
+    });
+}
+
+// ── Chip Multi-Select System ──────────────────────────────────
+function initChipSelect(key, options, selectedIds) {
+    chipState[key] = [];
+    var drop = document.getElementById(key + 'Drop');
+    if (!drop) return;
+    drop.innerHTML = '';
+    options.forEach(function(opt) {
+        var isSelected = selectedIds.indexOf(opt.id) > -1;
+        var div = document.createElement('div');
+        div.className = 'chip-option' + (isSelected ? ' selected' : '');
+        div.dataset.id    = opt.id;
+        div.dataset.label = opt.label;
+        div.textContent   = opt.label;
+        div.addEventListener('mousedown', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            toggleChip(key, opt.id, opt.label, div);
+        });
+        drop.appendChild(div);
+        if (isSelected) chipState[key].push({id: opt.id, label: opt.label});
+    });
+    renderChipTags(key);
+}
+
+function initFreeChipSelect(key, selectedValues) {
+    chipState[key] = selectedValues.map(function(v){ return {id:v, label:v}; });
+    var bdDistricts = ['Dhaka','Faridpur','Gazipur','Gopalganj','Jamalpur','Kishoreganj','Madaripur','Manikganj','Munshiganj','Mymensingh','Narayanganj','Narsingdi','Netrokona','Rajbari','Shariatpur','Sherpur','Tangail','Bogura','Joypurhat','Naogaon','Natore','Chapai Nawabganj','Pabna','Rajshahi','Sirajganj','Dinajpur','Gaibandha','Kurigram','Lalmonirhat','Nilphamari','Panchagarh','Rangpur','Thakurgaon','Barguna','Barishal','Bhola','Jhalokati','Patuakhali','Pirojpur','Bandarban','Brahmanbaria','Chandpur','Chattogram','Cumilla',"Cox's Bazar",'Feni','Khagrachhari','Lakshmipur','Noakhali','Rangamati','Habiganj','Moulvibazar','Sunamganj','Sylhet','Bagerhat','Chuadanga','Jashore','Jhenaidah','Khulna','Kushtia','Magura','Meherpur','Narail','Satkhira'];
+    var drop = document.getElementById(key + 'Drop');
+    if (!drop) return;
+    drop.innerHTML = '';
+    bdDistricts.forEach(function(d) {
+        var isSel = selectedValues.indexOf(d) > -1;
+        var div = document.createElement('div');
+        div.className = 'chip-option' + (isSel ? ' selected' : '');
+        div.dataset.id = d; div.dataset.label = d; div.textContent = d;
+        div.addEventListener('mousedown', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            toggleChip(key, d, d, div);
+        });
+        drop.appendChild(div);
+    });
+    renderChipTags(key);
+}
+
+function toggleChip(key, id, label, el) {
+    if (!chipState[key]) chipState[key] = [];
+    var idx = chipState[key].findIndex(function(c){ return c.id === id; });
+    if (idx > -1) {
+        chipState[key].splice(idx, 1);
+        if (el) el.classList.remove('selected');
+    } else {
+        chipState[key].push({id: id, label: label});
+        if (el) el.classList.add('selected');
+    }
+    renderChipTags(key);
+}
+
+function addDistrictChip(e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    var val = e.target.value.trim();
+    if (!val) return;
+    var key = 'pDistricts';
+    if (!chipState[key]) chipState[key] = [];
+    if (!chipState[key].find(function(c){ return c.id.toLowerCase() === val.toLowerCase(); })) {
+        chipState[key].push({id: val, label: val});
+        renderChipTags(key);
+    }
+    e.target.value = '';
+}
+
+function removeChip(key, id) {
+    if (!chipState[key]) return;
+    chipState[key] = chipState[key].filter(function(c){ return c.id !== id; });
+    var opt = document.querySelector('#' + key + 'Drop [data-id="' + CSS.escape(id) + '"]');
+    if (opt) opt.classList.remove('selected');
+    renderChipTags(key);
+}
+
+function renderChipTags(key) {
+    var area = document.getElementById(key + 'Tags');
+    if (!area) return;
+    area.innerHTML = '';
+    (chipState[key] || []).forEach(function(c) {
+        var span = document.createElement('span');
+        span.className = 'chip-tag';
+        var label = document.createElement('span');
+        label.textContent = c.label;
+        var rm = document.createElement('span');
+        rm.className = 'chip-remove';
+        rm.textContent = '×';
+        rm.addEventListener('mousedown', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            removeChip(key, c.id);
+        });
+        span.appendChild(label);
+        span.appendChild(rm);
+        area.appendChild(span);
+    });
+}
+
+function getChipValues(key) {
+    return (chipState[key] || []).map(function(c){ return c.id; });
+}
+
+function openDropdown(id) {
+    document.getElementById(id) && document.getElementById(id).classList.add('open');
+}
+function closeAllDropdowns() {
+    ['pProductsDrop','pCategoriesDrop','pDistrictsDrop','pPaymentsDrop'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('open');
+    });
+}
+function filterChipOptions(dropId, q) {
+    var drop = document.getElementById(dropId);
+    if (!drop) return;
+    drop.classList.add('open');
+    Array.from(drop.querySelectorAll('.chip-option')).forEach(function(opt) {
+        opt.style.display = opt.dataset.label.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+    });
+}
+document.addEventListener('click', closeAllDropdowns);
+
+function populateMultiSelects() {
+    var prodOpts = allProducts.map(function(p){ return {id: p.id, label: p.name + ' (৳' + p.base_price + ')'}; });
+    var catOpts  = allCategories.map(function(c){ return {id: c.id, label: c.name}; });
+    var payOpts  = [{id:'COD',label:'Cash on Delivery'},{id:'Hybrid COD',label:'Hybrid COD'},{id:'bKash',label:'bKash'},{id:'Nagad',label:'Nagad'},{id:'Online',label:'Online Gateway'}];
+    initChipSelect('pProducts', prodOpts, []);
+    initChipSelect('pCategories', catOpts, []);
+    initChipSelect('pPayments', payOpts, []);
+    initFreeChipSelect('pDistricts', []);
+}
+
+function checkRepeatCustPromo() {
+    var repRow = allPromos.find(function(p) { return p.is_repeated_config || (p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG')); });
+    if (repRow && repRow.is_active) {
+        document.getElementById('repeatCustCard').style.display = 'block';
+        var val = repRow.rep_value || 0;
+        var type = repRow.rep_type || 'flat';
+        var summary = 'Value: ' + val + (type === 'percent' ? '%' : ' ৳') + 
+            (repRow.rep_min_spend ? ' | Min ৳' + repRow.rep_min_spend : '') + 
+            (repRow.rep_expiry_days ? ' | Valid: ' + repRow.rep_expiry_days + ' days' : '');
+        document.getElementById('repeatCustSummary').textContent = summary;
+    } else {
+        document.getElementById('repeatCustCard').style.display = 'none';
+    }
+}
+
+function renderPromos() {
+    var html = '';
+    var activeCount = 0, publicCount = 0;
+    var visiblePromos = allPromos.filter(function(p) {
+        return !p.is_repeated_config && !(p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG'));
+    });
+
+    if (!visiblePromos.length) {
+        html = '<tr><td colspan="7" style="text-align:center;padding:40px;color:#8E8E93;">No promo codes yet</td></tr>';
+    }
+
+    visiblePromos.forEach(function(p) {
+        // Support both new columns and old |v1| format
+        var cleanCode = p.code ? p.code.split('|v1|')[0] : '';
+        var type = p.type || 'public';
+        var discType = p.disc_type || 'flat';
+        var discVal  = p.disc_val || p.discount || 0;
+        var maxCap   = p.max_cap;
+        var minSpend = p.min_spend;
+        var delRew   = p.del_reward || 'none';
+        var delAmt   = p.del_disc_amount;
+        var appProds = p.applicable_products || [];
+        var appCats  = p.applicable_categories || [];
+        var appDists = p.applicable_districts || [];
+        var appPays  = p.applicable_payments || [];
+
+        if (p.is_active) activeCount++;
+        if (type === 'public') publicCount++;
+
+        var typeBadge = type === 'public' ? '<span class="badge badge-delivered">Public</span>' : '<span class="badge badge-pending">Private</span>';
+        var dVal  = discType === 'percent' ? discVal + '%' : '৳' + discVal;
+        var maxCapText = (discType === 'percent' && maxCap) ? '<div style="font-size:11px;color:#999;">Max ৳' + maxCap + '</div>' : '';
+
+        var rest = '';
+        if (minSpend) rest += '<div class="meta-tag">Min ৳' + minSpend + '</div>';
+        if (delRew === 'free') rest += '<div class="meta-tag" style="background:#E1F5FE;color:#0288D1;">Free Delivery</div>';
+        if (delRew === 'amount' && delAmt) rest += '<div class="meta-tag" style="background:#E1F5FE;color:#0288D1;">-৳' + delAmt + ' Del.</div>';
+        if (delRew === 'percent' && delAmt) rest += '<div class="meta-tag" style="background:#E1F5FE;color:#0288D1;">-' + delAmt + '% Del.</div>';
+        if (Array.isArray(appProds) && appProds.length) rest += '<div class="meta-tag">Fixed Products</div>';
+        if (Array.isArray(appCats) && appCats.length) rest += '<div class="meta-tag">Fixed Categories</div>';
+        if (Array.isArray(appDists) && appDists.length) rest += '<div class="meta-tag">Fixed Districts</div>';
+        if (Array.isArray(appPays) && appPays.length) rest += '<div class="meta-tag">Fixed Payment</div>';
+        if (!rest) rest = '<span style="color:#aaa;font-size:12px;">All Orders</span>';
+
+        html += '<tr>' +
+            '<td><code style="font-size:14px;font-weight:700;color:#BF5AF2;background:rgba(191,90,242,0.1);padding:3px 8px;border-radius:6px;">' + cleanCode + '</code></td>' +
+            '<td>' + typeBadge + '</td>' +
+            '<td style="font-weight:700;color:#34C759;">' + dVal + maxCapText + '</td>' +
+            '<td>' + (minSpend ? '৳' + minSpend : '—') + '</td>' +
+            '<td style="max-width:200px;">' + rest + '</td>' +
+            '<td style="font-size:12px;color:#8E8E93;">' + (p.expires_at ? formatDateShort(p.expires_at) : 'Never') + '<br>(' + (p.used_count||0) + '/' + (p.usage_limit||'∞') + ')</td>' +
+            '<td><span class="badge ' + (p.is_active ? 'badge-delivered' : 'badge-cancelled') + '">' + (p.is_active ? 'Active' : 'Inactive') + '</span></td>' +
+            '<td style="display:flex;gap:6px;">' +
+                '<button class="btn btn-ghost btn-sm" onclick=\'editPromo(' + JSON.stringify(p).replace(/'/g,"&apos;") + ')\'><i data-lucide="edit-3" class="lucide-icon"></i></button>' +
+                '<button class="btn btn-danger btn-sm" onclick="deletePromo(\'' + p.id + '\')"><i data-lucide="trash-2" class="lucide-icon icon-danger"></i></button>' +
+            '</td></tr>';
+    });
+
+    document.getElementById('promoBody').innerHTML = html;
+    document.getElementById('totalCoupons').textContent = visiblePromos.length;
+    document.getElementById('publicCouponsCount').textContent = publicCount;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function resetChipSelects(selProds, selCats, selPays, selDists) {
+    selProds  = selProds  || [];
+    selCats   = selCats   || [];
+    selPays   = selPays   || [];
+    selDists  = selDists  || [];
+    var prodOpts = allProducts.map(function(p){ return {id: p.id, label: p.name + ' (৳' + p.base_price + ')'}; });
+    var catOpts  = allCategories.map(function(c){ return {id: c.id, label: c.name}; });
+    var payOpts  = [{id:'COD',label:'Cash on Delivery'},{id:'Hybrid COD',label:'Hybrid COD'},{id:'bKash',label:'bKash'},{id:'Nagad',label:'Nagad'},{id:'Online',label:'Online Gateway'}];
+    initChipSelect('pProducts', prodOpts, selProds);
+    initChipSelect('pCategories', catOpts, selCats);
+    initChipSelect('pPayments', payOpts, selPays);
+    initFreeChipSelect('pDistricts', selDists);
+    ['pProductsSearch','pCategoriesSearch','pDistrictsSearch','pPaymentsSearch'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+}
+
+function openModal() {
+    editingId = null; pActive = true;
+    document.getElementById('promoModalTitle').textContent = 'Add Promo Code';
+    ['pCode','pDiscount','pMaxCap','pLimit','pExpiry','pMinSpend','pDelDiscAmount','pDelDiscCap'].forEach(function(id){
+        var el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('pType').value = 'public';
+    document.getElementById('pDiscType').value = 'flat';
+    document.getElementById('pDelReward').value = 'none';
+    resetChipSelects();
+    toggleDiscTypeFields();
+    toggleDelDiscountField();
+    setToggle('pActive', true);
+    document.getElementById('promoModal').classList.add('show');
+}
+
+function editPromo(p) {
+    editingId = p.id; pActive = p.is_active !== false;
+    document.getElementById('promoModalTitle').textContent = 'Edit Promo';
+    var cleanCode = p.code ? p.code.split('|v1|')[0] : '';
+    document.getElementById('pCode').value      = cleanCode;
+    document.getElementById('pType').value      = p.type || 'public';
+    document.getElementById('pDiscType').value  = p.disc_type || 'flat';
+    document.getElementById('pDiscount').value  = p.disc_val || p.discount || '';
+    document.getElementById('pMaxCap').value    = p.max_cap || '';
+    document.getElementById('pLimit').value     = p.usage_limit || '';
+    document.getElementById('pExpiry').value    = p.expires_at ? p.expires_at.substring(0,16) : '';
+    document.getElementById('pMinSpend').value  = p.min_spend || '';
+    document.getElementById('pDelReward').value = p.del_reward || 'none';
+    document.getElementById('pDelDiscAmount').value = p.del_disc_amount || '';
+    var capEl = document.getElementById('pDelDiscCap'); if (capEl) capEl.value = p.del_disc_cap || '';
+
+    resetChipSelects(
+        Array.isArray(p.applicable_products)   ? p.applicable_products   : [],
+        Array.isArray(p.applicable_categories) ? p.applicable_categories : [],
+        Array.isArray(p.applicable_payments)   ? p.applicable_payments   : [],
+        Array.isArray(p.applicable_districts)  ? p.applicable_districts  : []
+    );
+    toggleDiscTypeFields();
+    toggleDelDiscountField();
+    setToggle('pActive', pActive);
+    document.getElementById('promoModal').classList.add('show');
+}
+
+function setToggle(id, state) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (state) el.classList.add('on'); else el.classList.remove('on');
+}
+function togglePA()       { pActive = !pActive; setToggle('pActive', pActive); }
+function toggleRepActive() { repActive = !repActive; setToggle('repActive', repActive); }
+
+function toggleDiscTypeFields() {
+    var type = document.getElementById('pDiscType').value;
+    document.getElementById('maxCapWrap').style.display = type === 'percent' ? 'block' : 'none';
+    document.getElementById('discAmountLabel').textContent = type === 'percent' ? 'Value (%) *' : 'Value (৳) *';
+}
+
+function toggleDelDiscountField() {
+    var rw = document.getElementById('pDelReward').value;
+    var wrap    = document.getElementById('delDiscAmountWrap');
+    var capWrap = document.getElementById('delDiscCapWrap');
+    var lbl     = document.getElementById('delDiscLabel');
+    var inp     = document.getElementById('pDelDiscAmount');
+    if (rw === 'amount') {
+        wrap.style.display = 'block';
+        if (lbl) lbl.textContent = 'Delivery Discount Amount (৳)';
+        if (inp) inp.placeholder = 'e.g. 60';
+        if (capWrap) capWrap.style.display = 'none';
+    } else if (rw === 'percent') {
+        wrap.style.display = 'block';
+        if (lbl) lbl.textContent = 'Delivery Discount (%)';
+        if (inp) inp.placeholder = 'e.g. 50';
+        if (capWrap) capWrap.style.display = 'block';
+    } else {
+        wrap.style.display = 'none';
+    }
+}
+
+function savePromo() {
+    var rawCode = document.getElementById('pCode').value.trim().toUpperCase();
+    var val = parseFloat(document.getElementById('pDiscount').value) || 0;
+    if (!rawCode || val <= 0) { showToast('Valid code and value required', 'error'); return; }
+
+    var payload = {
+        code:       rawCode,
+        discount:   document.getElementById('pDiscType').value === 'flat' ? val : 0,
+        is_active:  pActive,
+        usage_limit: parseInt(document.getElementById('pLimit').value) || null,
+        expires_at:  document.getElementById('pExpiry').value || null,
+        type:        document.getElementById('pType').value,
+        disc_type:   document.getElementById('pDiscType').value,
+        disc_val:    val,
+        max_cap:     parseFloat(document.getElementById('pMaxCap').value)    || null,
+        min_spend:   parseFloat(document.getElementById('pMinSpend').value)  || null,
+        del_reward:  document.getElementById('pDelReward').value,
+        del_disc_amount: parseFloat(document.getElementById('pDelDiscAmount').value) || null,
+        del_disc_cap:    parseFloat((document.getElementById('pDelDiscCap')||{}).value) || null,
+        applicable_products:   getChipValues('pProducts'),
+        applicable_categories: getChipValues('pCategories'),
+        applicable_districts:  getChipValues('pDistricts'),
+        applicable_payments:   getChipValues('pPayments')
+    };
+
+    var req = editingId ? sb.from('promos').update(payload).eq('id', editingId) : sb.from('promos').insert([payload]);
+    req.then(function(r) {
+        if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+        showToast('✅ Coupon saved!', 'success'); closeModal(); loadData();
+    });
+}
+
+function deletePromo(id) {
+    if (!adminConfirm('Delete this promo code?')) return;
+    sb.from('promos').delete().eq('id', id).then(function(r) {
+        if (r.error) { showToast('Delete failed', 'error'); return; }
+        showToast('Deleted!', 'success'); loadData();
+    });
+}
+
+function openRepeatSettings() {
+    var repRow = allPromos.find(function(p) { return p.is_repeated_config || (p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG')); });
+    repActive = repRow ? repRow.is_active : false;
+    document.getElementById('repType').value       = repRow ? (repRow.rep_type || 'flat') : 'flat';
+    document.getElementById('repValue').value      = repRow ? (repRow.rep_value || '') : '';
+    document.getElementById('repCap').value        = repRow ? (repRow.rep_cap || '') : '';
+    document.getElementById('repExpiryDays').value = repRow ? (repRow.rep_expiry_days || '') : '';
+    document.getElementById('repMinSpend').value   = repRow ? (repRow.rep_min_spend || '') : '';
+    document.getElementById('repDelReward').value  = repRow ? (repRow.rep_del_reward || 'none') : 'none';
+    setToggle('repActive', repActive);
+    toggleRepDiscTypeFields();
+    document.getElementById('repeatModal').classList.add('show');
+}
+
+function toggleRepDiscTypeFields() {
+    var type = document.getElementById('repType').value;
+    document.getElementById('repCapWrap').style.display = type === 'percent' ? 'block' : 'none';
+}
+
+function saveRepeatCustConfig() {
+    var val = parseFloat(document.getElementById('repValue').value) || 0;
+    if (val <= 0) { showToast('Valid value required', 'error'); return; }
+    var repRow = allPromos.find(function(p) { return p.is_repeated_config || (p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG')); });
+    var payload = {
+        code: 'REPEAT_CUSTOMER_CONFIG',
+        discount: 0,
+        is_active: repActive,
+        is_repeated_config: true,
+        type: 'private',
+        rep_type:        document.getElementById('repType').value,
+        rep_value:       val,
+        rep_cap:         parseFloat(document.getElementById('repCap').value) || null,
+        rep_expiry_days: parseInt(document.getElementById('repExpiryDays').value) || null,
+        rep_min_spend:   parseFloat(document.getElementById('repMinSpend').value) || null,
+        rep_del_reward:  document.getElementById('repDelReward').value
+    };
+    var req = repRow ? sb.from('promos').update(payload).eq('id', repRow.id) : sb.from('promos').insert([payload]);
+    req.then(function(r) {
+        if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+        showToast('✅ Repeat customer config saved!', 'success');
+        closeRepeatModal(); loadData();
+    });
+}
+
+function closeModal()       { document.getElementById('promoModal').classList.remove('show'); }
+function closeRepeatModal() { document.getElementById('repeatModal').classList.remove('show'); }
+</script>
 
 document.addEventListener('DOMContentLoaded', function() {
     adminInit('promos', function() {

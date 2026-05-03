@@ -209,6 +209,8 @@ var advancePayable = 0;
 var selectedPayMethod = '';
 var allPromos = [];
 var draftSent = false;
+var promoPaymentRestrictions = []; // payment methods required by applied coupon
+var promoFreeDelivery = false;     // if coupon gives free delivery
 var isPickup = new URLSearchParams(window.location.search).get('pickup') === '1';
 
 // ── Init ─────────────────────────────────────────────────────
@@ -481,28 +483,40 @@ function buildPaymentOptions() {
         document.getElementById('pickupInfo').style.display = 'none';
     }
 
+    // Payment method filtering by coupon restriction
+    var allowed = promoPaymentRestrictions; // [] = all allowed
+    function isAllowed(key) {
+        if (!allowed.length) return true;
+        return allowed.some(function(pm){ return key.toLowerCase().includes(pm.toLowerCase()); });
+    }
+
     var opts = '';
     var proxyUrl = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;
-    if (proxyUrl) {
-        opts += payOpt('auto_gateway', '<i data-lucide="globe" class="lucide-icon icon-spin"></i>', 'Pay Online', 'bKash/Rocket/Card via payment gateway (instant)', '');
+    if (proxyUrl && isAllowed('online')) {
+        opts += payOpt('auto_gateway', '<i data-lucide="globe" class="lucide-icon icon-spin"></i>', 'Pay Online', 'bKash/Rocket/Card via payment gateway', '');
     }
-
-    if (settings.bkash_number) {
+    if (settings.bkash_number && isAllowed('bkash')) {
         opts += payOpt('manual_bkash', '💜', 'bKash', 'Send to ' + settings.bkash_number, 'personal');
     }
-
-    if (settings.nagad_number) {
+    if (settings.nagad_number && isAllowed('nagad')) {
         opts += payOpt('manual_nagad', '🧡', 'Nagad', 'Send to ' + settings.nagad_number, 'personal');
     }
-
-    if (settings.allow_cod && !isPickup) {
+    if (settings.allow_cod && !isPickup && isAllowed('cod')) {
         var codLabel = advancePayable > 0 ? 'Hybrid COD (Advance + Delivery)' : 'Cash on Delivery';
-        var codDesc = advancePayable > 0 ? 'Pay ৳' + advancePayable + ' advance via bKash/Nagad, rest on delivery' : 'Pay when product is received';
+        var codDesc  = advancePayable > 0 ? 'Pay ৳' + advancePayable + ' advance, rest on delivery' : 'Pay when product is received';
         opts += payOpt('cod', '💵', codLabel, codDesc, '');
     }
+    if (isPickup) {
+        opts += payOpt('cod', '💵', 'Pay at Pickup', 'Pay when you collect your order', '');
+    }
+
+    if (!opts) opts = '<div style="padding:20px;text-align:center;color:#999;font-size:13px;">⚠️ No payment method available for this coupon. Please remove the coupon or contact support.</div>';
 
     document.getElementById('paymentOptions').innerHTML = opts;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
+
+
 
 function payOpt(value, icon, name, desc, badge) {
     return '<div class="payment-option" onclick="selectPayment(\'' + value + '\')" data-payval="' + value + '">' +
@@ -550,230 +564,185 @@ function selectPayment(value) {
 function applyPromo(providedCode) {
     var code = (providedCode || document.getElementById('promoInput').value || '').trim().toUpperCase();
     if (!code) return;
-
     var msg = document.getElementById('promoMsg');
-    
-    // Find matching promo
+
+    // Match by clean code (strip |v1| if old format)
     var promo = allPromos.find(function(p) {
-        var parts = p.code.split('|v1|');
-        return parts[0].toUpperCase() === code && p.is_active;
+        if (!p.is_active) return false;
+        var clean = p.code ? p.code.split('|v1|')[0].toUpperCase() : '';
+        return clean === code;
     });
 
     if (!promo) {
-        msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Invalid or inactive promo code';
-        msg.style.color = 'var(--danger)';
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-        return;
+        msg.innerHTML = '⛔ Invalid or inactive promo code';
+        msg.style.color = 'var(--danger)'; return;
     }
-
     if (promo.expires_at && new Date(promo.expires_at) < new Date()) {
-        msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Promo code expired';
-        msg.style.color = 'var(--danger)';
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-        return;
+        msg.innerHTML = '⛔ This promo code has expired';
+        msg.style.color = 'var(--danger)'; return;
     }
 
-    var parts = promo.code.split('|v1|');
-    var cleanCode = parts[0];
-    var meta = {};
-    try { if (parts[1]) meta = JSON.parse(parts[1]); } catch(e){}
+    var subtotal = cart.reduce(function(s,i){ return s + i.price*(i.quantity||1); }, 0);
+    var minSpend  = promo.min_spend   || 0;
+    var discType  = promo.disc_type   || 'flat';
+    var discVal   = promo.disc_val    || promo.discount || 0;
+    var maxCap    = promo.max_cap     || null;
+    var delReward = promo.del_reward  || 'none';
+    var delAmt    = promo.del_disc_amount || null;
+    var delCap    = promo.del_disc_cap    || null;
+    var appProds  = Array.isArray(promo.applicable_products)   ? promo.applicable_products   : [];
+    var appDists  = Array.isArray(promo.applicable_districts)  ? promo.applicable_districts  : [];
+    var appPays   = Array.isArray(promo.applicable_payments)   ? promo.applicable_payments   : [];
 
-    var subtotal = cart.reduce(function(s, i) { return s + i.price * (i.quantity || 1); }, 0);
-
-    // 1. Min Spend check (ignoring delivery)
-    if (meta.min_spend && subtotal < parseFloat(meta.min_spend)) {
-        msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Minimum spend of ৳' + meta.min_spend + ' required to use this coupon';
-        msg.style.color = 'var(--danger)';
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-        return;
+    // 1. Min spend check
+    if (minSpend && subtotal < minSpend) {
+        msg.innerHTML = '⛔ Minimum cart value of ৳' + minSpend + ' required';
+        msg.style.color = 'var(--danger)'; return;
     }
 
-    // 2. Applicable product restriction
-    if (meta.applicable_products && meta.applicable_products.length > 0) {
-        var matchedProduct = cart.some(function(item) {
-            return meta.applicable_products.includes(item.id);
-        });
-        if (!matchedProduct) {
-            msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> This coupon is not valid for the products in your cart';
-            msg.style.color = 'var(--danger)';
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-            return;
-        }
+    // 2. Product restriction
+    if (appProds.length) {
+        var matched = cart.some(function(i){ return appProds.indexOf(i.id) > -1; });
+        if (!matched) { msg.innerHTML = '⛔ Coupon not valid for products in your cart'; msg.style.color='var(--danger)'; return; }
     }
 
-    // 3. Applicable district restriction
-    if (meta.applicable_districts && meta.applicable_districts.length > 0) {
-        var selectedDistrict = document.getElementById('distSelect').value;
-        if (!selectedDistrict || !meta.applicable_districts.some(function(d){ return d.toLowerCase() === selectedDistrict.toLowerCase(); })) {
-            msg.innerHTML = '<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> This coupon is only valid for orders in: ' + meta.applicable_districts.join(', ');
-            msg.style.color = 'var(--danger)';
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-            return;
-        }
+    // 3. District restriction
+    if (appDists.length) {
+        var dist = document.getElementById('distSelect').value;
+        var distOk = dist && appDists.some(function(d){ return d.toLowerCase() === dist.toLowerCase(); });
+        if (!distOk) { msg.innerHTML = '⛔ Coupon only valid for: ' + appDists.join(', '); msg.style.color='var(--danger)'; return; }
     }
 
-    // 4. Calculate core discount
+    // 4. Compute discount
     var disc = 0;
-    var dType = meta.disc_type || 'flat';
-    var dVal  = parseFloat(meta.disc_val) || promo.discount || 0;
-
-    if (dType === 'percent') {
-        disc = (dVal / 100) * subtotal;
-        if (meta.max_cap && disc > parseFloat(meta.max_cap)) disc = parseFloat(meta.max_cap);
+    if (discType === 'percent') {
+        disc = (discVal / 100) * subtotal;
+        if (maxCap && disc > maxCap) disc = maxCap;
     } else {
-        disc = dVal;
+        disc = discVal;
     }
 
-    // 5. Add delivery reward
-    if (meta.del_reward === 'free') {
-        disc += deliveryCharge;
-    } else if (meta.del_reward === 'amount' && meta.del_disc_amount) {
-        disc += parseFloat(meta.del_disc_amount);
-    } else if (meta.del_reward === 'percent' && meta.del_disc_amount) {
-        var delDisc = (parseFloat(meta.del_disc_amount) / 100) * deliveryCharge;
-        if (meta.del_disc_cap && delDisc > parseFloat(meta.del_disc_cap)) delDisc = parseFloat(meta.del_disc_cap);
-        disc += delDisc;
+    // 5. Delivery reward
+    promoFreeDelivery = false;
+    if (delReward === 'free') {
+        disc += deliveryCharge; promoFreeDelivery = true;
+    } else if (delReward === 'amount' && delAmt) {
+        disc += parseFloat(delAmt);
+    } else if (delReward === 'percent' && delAmt) {
+        var dd = (parseFloat(delAmt)/100) * deliveryCharge;
+        if (delCap && dd > delCap) dd = delCap;
+        disc += dd;
     }
 
     promoDiscount = disc;
-    promoCode     = cleanCode;
+    promoCode     = promo.code ? promo.code.split('|v1|')[0] : code;
+    document.getElementById('promoInput').value = promoCode;
 
-    msg.innerHTML = '<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Promo code "' + cleanCode + '" successfully applied! ৳' + disc.toFixed(2) + ' discount.';
-    msg.style.color = 'var(--success)';
-    document.getElementById('promoInput').value = cleanCode;
-
-    // Optional: Restricted payment methods alert
-    if (meta.applicable_payments && meta.applicable_payments.length > 0) {
-        alert('ℹ️ This coupon applies only to the following payment methods: ' + meta.applicable_payments.join(', '));
-        // We will adjust/enforce available payment methods at step 3
-        buildPaymentOptions();
-        var selectedMethodIsValid = meta.applicable_payments.some(function(pm) {
-            return pm.toLowerCase().includes(selectedPayMethod.toLowerCase());
-        });
-        if (!selectedMethodIsValid) selectPayment('');
+    // 6. Payment restriction enforcement
+    promoPaymentRestrictions = appPays;
+    if (appPays.length) {
+        buildPaymentOptions(); // rebuilds with only allowed methods visible
+        if (selectedPayMethod) {
+            var ok = appPays.some(function(pm){ return selectedPayMethod.toLowerCase().includes(pm.toLowerCase()); });
+            if (!ok) selectPayment('');
+        }
+        msg.innerHTML = '✅ Applied! ৳' + disc.toFixed(0) + ' discount. <small style="color:#FF9500;">⚠️ Only specific payment methods available for this coupon.</small>';
+    } else {
+        msg.innerHTML = '✅ Coupon "' + promoCode + '" applied! ৳' + disc.toFixed(0) + ' discount.';
     }
-
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    msg.style.color = 'var(--success)';
     updateSummaryTotals();
 }
-
-// ── View All Coupons Modal Logic ──────────────────────────────
+// ── View All Coupons — Bottom Sheet ───────────────────────────
 function openAllCouponsModal() {
-    var existingModal = document.getElementById('allCouponsModal');
-    if (!existingModal) {
-        var d = document.createElement('div');
-        d.id = 'allCouponsModal';
-        d.className = 'modal-overlay';
-        d.innerHTML = '<div class="modal-box" style="max-width:550px; background:#fff; border-radius:16px; padding:20px; max-height:85vh; overflow-y:auto;">' +
-            '<div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">' +
-                '<h3 style="font-size:16px; font-weight:800; color:var(--text-dark); margin:0;">🎟️ Available Public Coupons</h3>' +
-                '<button class="modal-close" onclick="closeAllCouponsModal()" style="border:none;background:transparent;font-size:18px;cursor:pointer;color:#8E8E93;">✕</button>' +
-            '</div>' +
-            '<div id="allCouponsList" style="display:flex; flex-direction:column; gap:12px;"></div>' +
-        '</div>';
-        document.body.appendChild(d);
+    // Ensure bottom sheet exists
+    if (!document.getElementById('allCouponsSheet')) {
+        var overlay = document.createElement('div');
+        overlay.id = 'allCouponsSheet';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998;display:none;align-items:flex-end;';
+        overlay.onclick = function(e){ if(e.target===this) closeAllCouponsModal(); };
+        overlay.innerHTML =
+            '<div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:78vh;overflow-y:auto;padding:0 0 20px;animation:slideUpSheet 0.35s cubic-bezier(0.22,0.61,0.36,1);">' +
+                '<div style="width:40px;height:4px;background:#ddd;border-radius:4px;margin:12px auto 4px;"></div>' +
+                '<div style="padding:14px 20px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;">' +
+                    '<div style="font-size:16px;font-weight:800;color:var(--text-dark);">🎟️ Available Coupons</div>' +
+                    '<button onclick="closeAllCouponsModal()" style="border:none;background:rgba(0,0,0,0.06);border-radius:50%;width:30px;height:30px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>' +
+                '</div>' +
+                '<div id="allCouponsList" style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;"></div>' +
+            '</div>';
+        var style = document.createElement('style');
+        style.textContent = '@keyframes slideUpSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}';
+        document.head.appendChild(style);
+        document.body.appendChild(overlay);
     }
 
-    var subtotal = cart.reduce(function(s, i) { return s + i.price * (i.quantity || 1); }, 0);
-    var listDiv = document.getElementById('allCouponsList');
+    var subtotal = cart.reduce(function(s,i){ return s+i.price*(i.quantity||1); },0);
+    var listDiv  = document.getElementById('allCouponsList');
     listDiv.innerHTML = '';
 
-    // Extract public coupons
     var publicCoupons = allPromos.filter(function(p) {
-        if (!p.is_active) return false;
-        var parts = p.code.split('|v1|');
-        if (parts[0].startsWith('REPEATED_CUSTOMER_CONFIG')) return false;
-        var meta = {};
-        try { if (parts[1]) meta = JSON.parse(parts[1]); } catch(e){}
-        return meta.type === 'public';
+        return p.is_active && (p.type === 'public') && !p.is_repeated_config &&
+               !(p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG'));
     });
 
     if (!publicCoupons.length) {
-        listDiv.innerHTML = '<p style="text-align:center;color:#888;font-size:13px;padding:20px;">No public coupons available at this time.</p>';
+        listDiv.innerHTML = '<p style="text-align:center;color:#888;font-size:13px;padding:20px;">No public coupons available right now.</p>';
     } else {
-        // Evaluate eligibility and sort
-        var eligible = [];
-        var closeToEl = [];
-        var others = [];
-
+        var eligible = [], closeToEl = [], others = [];
         publicCoupons.forEach(function(p) {
-            var parts = p.code.split('|v1|');
-            var meta = {};
-            try { if (parts[1]) meta = JSON.parse(parts[1]); } catch(e){}
-
-            var reqSpend = parseFloat(meta.min_spend) || 0;
-            var dType = meta.disc_type || 'flat';
-            var dVal = dType === 'percent' ? meta.disc_val + '%' : '৳' + meta.disc_val;
-
-            var couponObj = {
-                promo: p,
-                cleanCode: parts[0],
-                meta: meta,
-                reqSpend: reqSpend,
-                dVal: dVal
-            };
-
-            if (reqSpend <= subtotal) {
-                eligible.push(couponObj);
-            } else if (reqSpend - subtotal <= 200) {
-                closeToEl.push(couponObj);
-            } else {
-                others.push(couponObj);
-            }
+            var reqSpend = p.min_spend || 0;
+            var discType = p.disc_type || 'flat';
+            var dVal = discType === 'percent' ? (p.disc_val || 0)+'%' : '৳'+(p.disc_val || 0);
+            var obj = { promo:p, reqSpend:reqSpend, dVal:dVal };
+            if (reqSpend <= subtotal) eligible.push(obj);
+            else if (reqSpend - subtotal <= 300) closeToEl.push(obj);
+            else others.push(obj);
         });
 
-        // Combine
-        var sorted = eligible.concat(closeToEl).concat(others);
-
-        sorted.forEach(function(item) {
+        eligible.concat(closeToEl).concat(others).forEach(function(item) {
+            var p = item.promo;
+            var cleanCode = p.code ? p.code.split('|v1|')[0] : '';
             var diff = item.reqSpend - subtotal;
             var isEligible = diff <= 0;
 
+            var extras = '';
+            if (p.del_reward === 'free') extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">🚚 + Free Delivery</span> ';
+            if (p.del_reward === 'amount' && p.del_disc_amount) extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">🚚 -৳'+p.del_disc_amount+' Delivery</span> ';
+            if (p.del_reward === 'percent' && p.del_disc_amount) extras += '<span style="font-size:11px;color:#22C55E;font-weight:700;">🚚 -'+p.del_disc_amount+'% Delivery</span> ';
+            if (!isEligible) extras += '<div style="font-size:11px;color:#FF9500;font-weight:700;margin-top:3px;">Add ৳'+diff.toFixed(0)+' more to unlock</div>';
+
             var card = document.createElement('div');
-            card.style.border = isEligible ? '1.5px solid #22C55E' : '1.5px solid var(--border)';
-            card.style.background = isEligible ? 'rgba(34,197,94,0.02)' : '#fafafa';
-            card.style.borderRadius = '12px';
-            card.style.padding = '12px 16px';
-            card.style.display = 'flex';
-            card.style.justifyContent = 'space-between';
-            card.style.alignItems = 'center';
-            card.style.gap = '10px';
-
-            var detailsHtml = '<div style="flex:1;">' +
-                '<code style="font-size:14px; font-weight:800; color:var(--primary); background:rgba(255,77,77,0.06); padding:3px 8px; border-radius:6px; display:inline-block; margin-bottom:4px;">' + item.cleanCode + '</code>' +
-                '<div style="font-size:13px; font-weight:700; color:var(--text-dark);">' + item.dVal + ' Discount' + 
-                (item.meta.max_cap ? ' (Max ৳' + item.meta.max_cap + ')' : '') + '</div>' +
-                '<div style="font-size:12px; color:#666; margin-top:2px;">' +
-                (item.reqSpend ? 'Min Cart Value: ৳' + item.reqSpend : 'No Minimum spend limit') + '</div>';
-
-            if (item.meta.del_reward === 'free') detailsHtml += '<div style="font-size:11px;color:#22C55E;font-weight:700;margin-top:2px;">🚚 Free Delivery Included</div>';
-
-            if (!isEligible) {
-                detailsHtml += '<div style="font-size:11px; color:#FF9500; font-weight:700; margin-top:4px;">Add ৳' + diff.toFixed(2) + ' more to unlock</div>';
-            }
-            detailsHtml += '</div>';
-
-            var actionBtnHtml = isEligible ?
-                '<button class="btn btn-primary" onclick="applyPublicPromo(\'' + item.cleanCode + '\')" style="padding: 8px 12px; font-size:12px; border-radius:10px;">Apply</button>' :
-                '<button class="btn btn-ghost" disabled style="opacity:0.4; font-size:12px;">Locked</button>';
-
-            card.innerHTML = detailsHtml + actionBtnHtml;
+            card.style.cssText = 'border:1.5px solid '+(isEligible?'#22C55E':'var(--border)')+';border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:'+(isEligible?'rgba(34,197,94,0.03)':'#fafafa')+';';
+            card.innerHTML =
+                '<div style="flex:1;">' +
+                    '<code style="font-size:13px;font-weight:800;color:var(--primary);background:rgba(139,26,26,0.07);padding:3px 8px;border-radius:6px;display:inline-block;margin-bottom:4px;">' + cleanCode + '</code>' +
+                    '<div style="font-size:13px;font-weight:700;color:var(--text-dark);">' + item.dVal + ' Discount' + (p.max_cap?' (Max ৳'+p.max_cap+')':'') + '</div>' +
+                    '<div style="font-size:12px;color:#777;margin-top:1px;">' + (item.reqSpend?'Min ৳'+item.reqSpend:'No minimum') + '</div>' +
+                    (extras ? '<div style="margin-top:4px;">'+extras+'</div>' : '') +
+                '</div>' +
+                (isEligible
+                    ? '<button class="btn btn-primary" style="padding:8px 14px;font-size:12px;border-radius:10px;white-space:nowrap;" onclick="applyPublicPromo(\''+cleanCode+'\')">Apply</button>'
+                    : '<button class="btn btn-ghost" disabled style="opacity:0.4;font-size:12px;white-space:nowrap;">Locked</button>');
             listDiv.appendChild(card);
         });
     }
 
-    document.getElementById('allCouponsModal').classList.add('show');
+    var sheet = document.getElementById('allCouponsSheet');
+    sheet.style.display = 'flex';
 }
 
 function closeAllCouponsModal() {
-    var modal = document.getElementById('allCouponsModal');
-    if (modal) modal.classList.remove('show');
+    var s = document.getElementById('allCouponsSheet');
+    if (s) s.style.display = 'none';
 }
 
 function applyPublicPromo(cleanCode) {
     applyPromo(cleanCode);
     closeAllCouponsModal();
 }
+
+
+
 
 // ── Place Order ───────────────────────────────────────────────
 function placeOrder() {

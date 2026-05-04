@@ -83,6 +83,9 @@
                 <!-- Mobile filters -->
                 <div style="margin-left:auto;display:flex;gap:8px;">
                     <select class="form-select" id="sortByMobile" onchange="document.getElementById('sortBy').value=this.value;applyFilters();" style="font-size:13px;display:none;">
+                    <button class="btn btn-ghost" id="mobileFilterBtn" onclick="openMobileFilters()" style="display:none;padding:8px 12px;">
+                        <i data-lucide="filter" class="lucide-icon"></i> Filter
+                    </button>
                         <option value="newest">Newest</option>
                         <option value="price_low">Price ↑</option>
                         <option value="price_high">Price ↓</option>
@@ -102,6 +105,50 @@
                 <div style="font-size:18px;font-weight:700;color:var(--text-dark);margin-bottom:6px;">No products found</div>
                 <div>Try different filters or <a href="shop.html" style="color:var(--primary);font-weight:700;">reset all</a></div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Filter Modal -->
+<div class="modal-overlay" id="mobileFilterModal" onclick="closeMobileFilters()" style="display:none;">
+    <div class="mobile-filter-sheet" onclick="event.stopPropagation()">
+        <div class="mobile-filter-header">
+            <div style="font-weight:700;">Filters</div>
+            <button onclick="closeMobileFilters()" style="background:none;border:none;font-size:18px;">✕</button>
+        </div>
+        <div class="mobile-filter-body">
+            <div>
+                <h3>📂 Categories</h3>
+                <div class="sidebar-cat" id="mobileSidebarCats">
+                </div>
+            </div>
+            <div>
+                <h3><i data-lucide="badge-dollar-sign" class="lucide-icon"></i> Price Range</h3>
+                <div class="price-range-row">
+                    <input class="form-input" id="mobileMinPrice" type="number" placeholder="Min ৳" oninput="syncPriceToMain()" style="font-size:13px;padding:9px 10px;">
+                    <span>—</span>
+                    <input class="form-input" id="mobileMaxPrice" type="number" placeholder="Max ৳" oninput="syncPriceToMain()" style="font-size:13px;padding:9px 10px;">
+                </div>
+            </div>
+            <div style="margin-top:16px;">
+                <h3>🔀 Sort By</h3>
+                <select class="form-select" id="mobileSortBy" onchange="document.getElementById('sortBy').value=this.value;applyFilters();" style="font-size:13px;">
+                    <option value="newest">Newest First</option>
+                    <option value="price_low">Price: Low to High</option>
+                    <option value="price_high">Price: High to Low</option>
+                    <option value="sale">On Sale First</option>
+                </select>
+            </div>
+            <div style="margin-top:16px;">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;font-weight:600;">
+                    <input type="checkbox" id="mobileOnlyFlash" onchange="document.getElementById('onlyFlash').checked=this.checked;applyFilters()" style="width:16px;height:16px;accent-color:var(--primary);">
+                    ⚡ Flash Deals Only
+                </label>
+            </div>
+        </div>
+        <div class="mobile-filter-footer">
+            <button class="btn btn-ghost" onclick="resetFilters()">Reset</button>
+            <button class="btn btn-primary" onclick="applyFilters();closeMobileFilters()">Apply</button>
         </div>
     </div>
 </div>
@@ -132,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         allProducts.forEach(function(p) {
             p.category_ids = pc.filter(function(x) { return x.product_id === p.id; }).map(function(x) { return x.category_id; });
-            if (p.category_id && !p.category_ids.includes(p.category_id)) p.category_ids.push(p.category_id);
+            
         });
 
         var name = settings.store_name || CONFIG.STORE_NAME;
@@ -148,6 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.innerWidth <= 768) {
         document.getElementById('sortByMobile').style.display = 'flex';
         document.getElementById('mobileCatRow').style.display = 'flex';
+        document.getElementById('mobileFilterBtn').style.display = 'flex';
     }
 });
 
@@ -166,6 +214,7 @@ function renderCategories() {
 
     sidebarCats.innerHTML = html;
     mobilePills.innerHTML = mobileHtml;
+    if (document.getElementById('mobileSidebarCats')) document.getElementById('mobileSidebarCats').innerHTML = html;
 }
 
 function selectCat(id, el) {
@@ -257,6 +306,37 @@ function updateCartBadge() {
     var cart = getCart(), count = cart.reduce(function(s,i){return s+(i.quantity||1);},0);
     var b = document.getElementById('cartBadge');
     if (b) { b.textContent = count; b.style.display = count > 0 ? 'flex' : 'none'; }
+}
+
+function openMobileFilters() { 
+    document.getElementById('mobileFilterModal').style.display = 'flex'; 
+    populateMobileFilters(); 
+}
+function closeMobileFilters() { 
+    document.getElementById('mobileFilterModal').style.display = 'none'; 
+}
+function populateMobileFilters() {
+    document.getElementById('mobileSidebarCats').innerHTML = document.getElementById('sidebarCats').innerHTML;
+    document.getElementById('mobileMinPrice').value = document.getElementById('minPrice').value;
+    document.getElementById('mobileMaxPrice').value = document.getElementById('maxPrice').value;
+    document.getElementById('mobileSortBy').value = document.getElementById('sortBy').value;
+    document.getElementById('mobileOnlyFlash').checked = document.getElementById('onlyFlash').checked;
+    document.querySelectorAll('#mobileSidebarCats a').forEach(a => {
+        a.onclick = function(e) { e.preventDefault(); selectCat(a.dataset.cat, a); closeMobileFilters(); };
+    });
+}
+function syncPriceToMain() {
+    document.getElementById('minPrice').value = document.getElementById('mobileMinPrice').value;
+    document.getElementById('maxPrice').value = document.getElementById('mobileMaxPrice').value;
+}
+function resetFilters() {
+    activeCatId = '';
+    document.getElementById('minPrice').value = '';
+    document.getElementById('maxPrice').value = '';
+    document.getElementById('sortBy').value = 'newest';
+    document.getElementById('onlyFlash').checked = false;
+    applyFilters();
+    closeMobileFilters();
 }
 </script>
 

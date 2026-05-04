@@ -330,6 +330,7 @@
         // Fetch categories for this product
         sb.from('product_categories').select('category_id').eq('product_id', p.id).then(function(catRes) {
             var selectedIds = (catRes.data || []).map(function(c) { return c.category_id; });
+            if (p.category_id && !selectedIds.includes(p.category_id)) selectedIds.push(p.category_id);
             document.querySelectorAll('input[name="pCat"]').forEach(function(cb) {
                 cb.checked = selectedIds.includes(cb.value);
             });

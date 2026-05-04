@@ -622,6 +622,7 @@
             video_type:       document.getElementById('pVideoType').value,
             is_active:        document.getElementById('pActive').classList.contains('on'),
             is_featured:      document.getElementById('pFeatured').classList.contains('on'),
+            category_id:      selectedCats.length > 0 ? selectedCats[0] : null,
             // parseImageInput দিয়ে clean URL সেভ করো
             gallery_images:   collectGallery()
                                 .map(function(s) { return parseImageInput(s).saveUrl || s.trim(); })

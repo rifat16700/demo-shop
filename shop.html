@@ -47,9 +47,8 @@
         <aside class="sidebar">
             <div>
                 <h3>📂 Categories</h3>
-                <div class="sidebar-cat">
+                <div class="sidebar-cat" id="sidebarCats">
                     <a href="#" class="active" data-cat="" onclick="selectCat('',this)">🌟 All Products</a>
-                    <div id="sidebarCats"></div>
                 </div>
             </div>
             <div>
@@ -149,7 +148,8 @@ function renderCategories() {
     var sidebarCats = document.getElementById('sidebarCats');
     var mobilePills = document.getElementById('mobileCatRow');
 
-    var html = '', mobileHtml = '<a href="#" class="cat-pill' + (!activeCatId?' active':'') + '" onclick="selectCat(\'\',this);return false;">🌟 All</a>';
+    var html = '<a href="#" class="' + (!activeCatId?'active':'') + '" data-cat="" onclick="selectCat(\'\',this);return false;">🌟 All Products</a>';
+    var mobileHtml = '<a href="#" class="cat-pill' + (!activeCatId?' active':'') + '" onclick="selectCat(\'\',this);return false;">🌟 All</a>';
 
     allCategories.forEach(function(c) {
         var isActive = activeCatId === c.id;

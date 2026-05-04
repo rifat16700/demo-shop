@@ -645,7 +645,7 @@
 
         var req = editingProductId
             ? sb.from('products').update(payload).eq('id', editingProductId)
-            : sb.from('products').insert([payload]);
+            : sb.from('products').insert([payload]).select();
 
         req.then(function(r) {
             setBtnLoading(btn, false, '💾 Save Product');

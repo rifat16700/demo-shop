@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         allProducts.forEach(function(p) {
             p.category_ids = pc.filter(function(x) { return x.product_id === p.id; }).map(function(x) { return x.category_id; });
-            
+            if (p.category_id && !p.category_ids.includes(p.category_id)) p.category_ids.push(p.category_id);
         });
 
         var name = settings.store_name || CONFIG.STORE_NAME;

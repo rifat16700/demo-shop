@@ -549,21 +549,21 @@ function buildPaymentOptions() {
         advancePayable = 0;
     }
 
-    // Advance section only shows if COD is available and there IS an advance
-    var showAdvance = advancePayable > 0 && settings.allow_cod && !isPickup;
-    var advSection = document.getElementById('advanceSection');
-    if (showAdvance) {
-        advSection.style.display = 'block';
-        document.getElementById('advanceInfoText').textContent = 'Remaining ৳' + (total - advancePayable) + ' will be paid on delivery.';
-        document.getElementById('advanceAmountLabel').textContent = '৳' + advancePayable;
+    // Advance section: শুধু COD select হলে দেখাবে — selectPayment() এ control হয়
+    // Initially hide করে রাখো, payment type বেছে নিলে সঠিকভাবে show/hide হবে
+    document.getElementById('advanceSection').style.display = 'none';
+    document.getElementById('advPayLine').style.display = 'none';
+    document.getElementById('codPayLine').style.display = 'none';
+    // If rebuilding (coupon applied) and COD was already selected — re-show
+    if (selectedPayMethod === 'cod' && advancePayable > 0 && !isPickup) {
+        var advSec2 = document.getElementById('advanceSection');
+        advSec2.style.display = 'block';
+        document.getElementById('advanceInfoText').textContent   = 'Remaining \u09f3' + Math.round(total - advancePayable) + ' will be paid on delivery.';
+        document.getElementById('advanceAmountLabel').textContent = '\u09f3' + advancePayable;
         document.getElementById('advPayLine').style.display = 'flex';
-        document.getElementById('smAdvPay').textContent = '৳' + advancePayable;
+        document.getElementById('smAdvPay').textContent     = '\u09f3' + advancePayable;
         document.getElementById('codPayLine').style.display = 'flex';
-        document.getElementById('smCod').textContent = '৳' + (total - advancePayable);
-    } else {
-        advSection.style.display = 'none';
-        document.getElementById('advPayLine').style.display = 'none';
-        document.getElementById('codPayLine').style.display = 'none';
+        document.getElementById('smCod').textContent        = '\u09f3' + Math.round(total - advancePayable);
     }
 
     if (isPickup && settings.store_address) {
@@ -627,32 +627,56 @@ function selectPayment(value) {
         if (radio) radio.checked = el.dataset.payval === value;
     });
 
-    var manualBox = document.getElementById('manualPayBox');
+    var manualBox  = document.getElementById('manualPayBox');
+    var advSection = document.getElementById('advanceSection');
+    var advPayLine = document.getElementById('advPayLine');
+    var codPayLine = document.getElementById('codPayLine');
     var total = updateSummaryTotals();
 
-    // bKash manual → full total payment
+    var isCod    = (value === 'cod');
+    var isOnline = (value === 'auto_gateway');
+    var isManual = (value === 'manual_bkash' || value === 'manual_nagad');
+
+    // ── Advance section: শুধু COD এ দেখাবে (advance configured থাকলে) ──
+    if (isCod && advancePayable > 0 && !isPickup) {
+        advSection.style.display = 'block';
+        advPayLine.style.display = 'flex';
+        codPayLine.style.display = 'flex';
+        document.getElementById('advanceInfoText').textContent   = 'Remaining ৳' + Math.round(total - advancePayable) + ' will be paid on delivery.';
+        document.getElementById('advanceAmountLabel').textContent = '৳' + advancePayable;
+        document.getElementById('smAdvPay').textContent           = '৳' + advancePayable;
+        document.getElementById('smCod').textContent              = '৳' + Math.round(total - advancePayable);
+    } else {
+        // bKash, Nagad, Online Gateway — advance দেখানোর দরকার নেই, full pay করবে
+        advSection.style.display = 'none';
+        advPayLine.style.display = 'none';
+        codPayLine.style.display = 'none';
+    }
+
+    // ── Manual pay box (bKash / Nagad) ──────────────────────────────────
+    // bKash manual → full total
     if (value === 'manual_bkash') {
         document.getElementById('manualPayNumber').textContent     = settings.bkash_number || '';
-        document.getElementById('manualPayMethodName').textContent  = 'bKash';
-        document.getElementById('manualPayAmt').textContent         = '৳' + Math.round(total);
+        document.getElementById('manualPayMethodName').textContent = 'bKash';
+        document.getElementById('manualPayAmt').textContent        = '৳' + Math.round(total);
         manualBox.style.display = 'block';
         return;
     }
 
-    // Nagad manual → full total payment
+    // Nagad manual → full total
     if (value === 'manual_nagad') {
         document.getElementById('manualPayNumber').textContent     = settings.nagad_number || '';
-        document.getElementById('manualPayMethodName').textContent  = 'Nagad';
-        document.getElementById('manualPayAmt').textContent         = '৳' + Math.round(total);
+        document.getElementById('manualPayMethodName').textContent = 'Nagad';
+        document.getElementById('manualPayAmt').textContent        = '৳' + Math.round(total);
         manualBox.style.display = 'block';
         return;
     }
 
-    // COD with advance required (settings.advance_method = manual bKash advance)
-    if (value === 'cod' && advancePayable > 0 && settings.advance_method === 'manual') {
+    // COD + advance configured + manual bKash advance method
+    if (isCod && advancePayable > 0 && settings.advance_method === 'manual') {
         document.getElementById('manualPayNumber').textContent     = settings.bkash_number || '';
-        document.getElementById('manualPayMethodName').textContent  = 'bKash (Advance only)';
-        document.getElementById('manualPayAmt').textContent         = '৳' + advancePayable;
+        document.getElementById('manualPayMethodName').textContent = 'bKash (Advance only — ৳' + advancePayable + ')';
+        document.getElementById('manualPayAmt').textContent        = '৳' + advancePayable;
         manualBox.style.display = 'block';
         return;
     }

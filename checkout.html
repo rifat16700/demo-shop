@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -212,11 +212,20 @@ var draftSent = false;
 var promoPaymentRestrictions = []; // payment methods required by applied coupon
 var promoFreeDelivery = false;     // if coupon gives free delivery
 var isPickup = new URLSearchParams(window.location.search).get('pickup') === '1';
+// Direct Order (Buy Now) — main cart থেকে আলাদা
+var isDirectOrder = new URLSearchParams(window.location.search).get('direct') === '1';
+var DIRECT_KEY = (typeof CONFIG !== 'undefined' && CONFIG.DIRECT_ORDER_KEY) ? CONFIG.DIRECT_ORDER_KEY : 'fbr_direct_order';
 
 // ── Init ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
-    cart = getCart();
-    if (!cart.length) { window.location.href = 'cart.html'; return; }
+    // Direct Order হলে আলাদা key থেকে load করো, main cart untouched
+    if (isDirectOrder) {
+        try { cart = JSON.parse(localStorage.getItem(DIRECT_KEY) || '[]'); } catch(e) { cart = []; }
+        if (!cart.length) { window.location.href = 'shop.html'; return; }
+    } else {
+        cart = getCart();
+        if (!cart.length) { window.location.href = 'cart.html'; return; }
+    }
 
     if (isPickup) {
         deliveryCharge = 0;
@@ -512,13 +521,35 @@ function goStep3() {
 // ── Payment Options ───────────────────────────────────────────
 function buildPaymentOptions() {
     var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
-    var total = subtotal + addonTotal + deliveryCharge - promoDiscount;
 
+    // Calculate effective delivery after coupon discount
+    var delDisc = 0;
+    if (activePromoObj && activePromoObj.del_reward === 'free') {
+        delDisc = deliveryCharge;
+    } else if (activePromoObj && activePromoObj.del_reward === 'amount' && activePromoObj.del_disc_amount) {
+        delDisc = Math.min(parseFloat(activePromoObj.del_disc_amount), deliveryCharge);
+    } else if (activePromoObj && activePromoObj.del_reward === 'percent' && activePromoObj.del_disc_amount) {
+        delDisc = (parseFloat(activePromoObj.del_disc_amount)/100) * deliveryCharge;
+        if (activePromoObj.del_disc_cap && delDisc > activePromoObj.del_disc_cap) delDisc = activePromoObj.del_disc_cap;
+    }
+    var effectiveDelivery = Math.max(0, deliveryCharge - delDisc);
+    var isFreeDelivery = (effectiveDelivery === 0 && !isPickup);
+
+    var total = subtotal + addonTotal + effectiveDelivery - promoDiscount;
+
+    // Advance: only for COD, and only if delivery is not free
     var advAmt = settings.advance_amount || 0;
-    if (advAmt === -1) advancePayable = deliveryCharge;
-    else if (advAmt > 0) advancePayable = advAmt;
-    else advancePayable = 0;
+    if (isFreeDelivery || isPickup) {
+        advancePayable = 0; // free delivery = no advance needed
+    } else if (advAmt === -1) {
+        advancePayable = effectiveDelivery; // advance = delivery charge only
+    } else if (advAmt > 0) {
+        advancePayable = advAmt;
+    } else {
+        advancePayable = 0;
+    }
 
+    // Advance section only shows if COD is available and there IS an advance
     var showAdvance = advancePayable > 0 && settings.allow_cod && !isPickup;
     var advSection = document.getElementById('advanceSection');
     if (showAdvance) {
@@ -529,7 +560,11 @@ function buildPaymentOptions() {
         document.getElementById('smAdvPay').textContent = '৳' + advancePayable;
         document.getElementById('codPayLine').style.display = 'flex';
         document.getElementById('smCod').textContent = '৳' + (total - advancePayable);
-    } else { advSection.style.display = 'none'; }
+    } else {
+        advSection.style.display = 'none';
+        document.getElementById('advPayLine').style.display = 'none';
+        document.getElementById('codPayLine').style.display = 'none';
+    }
 
     if (isPickup && settings.store_address) {
         document.getElementById('pickupInfo').style.display = 'block';
@@ -594,20 +629,30 @@ function selectPayment(value) {
 
     var manualBox = document.getElementById('manualPayBox');
     var total = updateSummaryTotals();
-    var payAmt = (value === 'cod' && advancePayable > 0) ? advancePayable : (value.startsWith('manual') ? total : 0);
 
-    if (value === 'manual_bkash' || (value === 'cod' && advancePayable > 0 && settings.advance_method === 'manual')) {
-        document.getElementById('manualPayNumber').textContent  = settings.bkash_number || '';
-        document.getElementById('manualPayMethodName').textContent = 'bKash';
-        document.getElementById('manualPayAmt').textContent     = '৳' + (value === 'manual_bkash' ? total : advancePayable);
+    // bKash manual → full total payment
+    if (value === 'manual_bkash') {
+        document.getElementById('manualPayNumber').textContent     = settings.bkash_number || '';
+        document.getElementById('manualPayMethodName').textContent  = 'bKash';
+        document.getElementById('manualPayAmt').textContent         = '৳' + Math.round(total);
         manualBox.style.display = 'block';
         return;
     }
 
+    // Nagad manual → full total payment
     if (value === 'manual_nagad') {
-        document.getElementById('manualPayNumber').textContent  = settings.nagad_number || '';
-        document.getElementById('manualPayMethodName').textContent = 'Nagad';
-        document.getElementById('manualPayAmt').textContent     = '৳' + total;
+        document.getElementById('manualPayNumber').textContent     = settings.nagad_number || '';
+        document.getElementById('manualPayMethodName').textContent  = 'Nagad';
+        document.getElementById('manualPayAmt').textContent         = '৳' + Math.round(total);
+        manualBox.style.display = 'block';
+        return;
+    }
+
+    // COD with advance required (settings.advance_method = manual bKash advance)
+    if (value === 'cod' && advancePayable > 0 && settings.advance_method === 'manual') {
+        document.getElementById('manualPayNumber').textContent     = settings.bkash_number || '';
+        document.getElementById('manualPayMethodName').textContent  = 'bKash (Advance only)';
+        document.getElementById('manualPayAmt').textContent         = '৳' + advancePayable;
         manualBox.style.display = 'block';
         return;
     }
@@ -697,13 +742,26 @@ function applyPromo(providedCode) {
     else if (promo.del_reward === 'amount' && promo.del_disc_amount) succMsg += '🚚 ৳' + promo.del_disc_amount + ' delivery discount! ';
     else if (promo.del_reward === 'percent' && promo.del_disc_amount) succMsg += '🚚 ' + promo.del_disc_amount + '% delivery discount! ';
     
-    if (appPays.length) {
-        buildPaymentOptions(); // rebuilds with only allowed methods visible
+    // Always rebuild payment options when coupon has delivery discount OR payment restriction
+    // This ensures advance amount reflects delivery discount correctly
+    var hasDeliveryDiscount = (promo.del_reward && promo.del_reward !== 'none');
+    if (appPays.length || hasDeliveryDiscount) {
+        buildPaymentOptions(); // recalculates advance with effective delivery
         if (selectedPayMethod) {
-            var ok = appPays.some(function(pm){ return selectedPayMethod.toLowerCase().includes(pm.toLowerCase()); });
-            if (!ok) selectPayment('');
+            // If payment method was restricted and now invalid, clear it
+            if (appPays.length) {
+                var ok = appPays.some(function(pm){ return selectedPayMethod.toLowerCase().includes(pm.toLowerCase()); });
+                if (!ok) selectPayment('');
+            } else {
+                // Re-select same method to refresh amounts (e.g. bKash total after discount)
+                selectPayment(selectedPayMethod);
+            }
         }
-        msg.innerHTML = succMsg + '<br><small style="color:#FF9500;">⚠️ Only specific payment methods available.</small>';
+        if (appPays.length) {
+            msg.innerHTML = succMsg + '<br><small style="color:#FF9500;">⚠️ Only specific payment methods available.</small>';
+        } else {
+            msg.innerHTML = succMsg;
+        }
     } else {
         msg.innerHTML = succMsg;
     }
@@ -814,7 +872,13 @@ function placeOrder() {
     var addr  = isPickup ? (settings.store_address || 'Store Pickup') : document.getElementById('custAddress').value.trim();
 
     var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
-    var total    = subtotal + addonTotal + deliveryCharge - promoDiscount;
+    // Re-calculate effective delivery (after coupon discount)
+    var delDiscPO = 0;
+    if (activePromoObj && activePromoObj.del_reward === "free") delDiscPO = deliveryCharge;
+    else if (activePromoObj && activePromoObj.del_reward === "amount" && activePromoObj.del_disc_amount) delDiscPO = Math.min(parseFloat(activePromoObj.del_disc_amount), deliveryCharge);
+    else if (activePromoObj && activePromoObj.del_reward === "percent" && activePromoObj.del_disc_amount) { delDiscPO = (parseFloat(activePromoObj.del_disc_amount)/100)*deliveryCharge; if (activePromoObj.del_disc_cap && delDiscPO > activePromoObj.del_disc_cap) delDiscPO = activePromoObj.del_disc_cap; }
+    var effectiveDeliveryPO = Math.max(0, deliveryCharge - delDiscPO);
+    var total    = subtotal + addonTotal + effectiveDeliveryPO - promoDiscount;
 
     var senderNum = '', trxId = '';
     var manualBox = document.getElementById('manualPayBox');
@@ -867,7 +931,12 @@ function placeOrder() {
     sb.from('orders').insert([orderData]).then(function(r) {
         if (r.error) { btn.disabled = false; btn.innerHTML = '<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order'; if (typeof lucide !== 'undefined') lucide.createIcons(); alert('Error: ' + r.error.message); return; }
         sendOrderNotification(orderData);
-        localStorage.removeItem(CONFIG.CART_KEY);
+        // Direct Order হলে শুধু direct key clear করো — main cart অক্ষত থাকবে
+        if (isDirectOrder) {
+            localStorage.removeItem(DIRECT_KEY);
+        } else {
+            localStorage.removeItem(CONFIG.CART_KEY);
+        }
         window.location.href = 'success.html?id=' + orderId;
     });
 }
@@ -967,7 +1036,7 @@ function verifyGatewayPayment(orderId, trxId) {
                             status:          'Confirmed'
                         }).eq('id', orderId).then(function(upRes) {
                             sendOrderNotification(oData);
-                            localStorage.removeItem(CONFIG.CART_KEY);
+                            if (isDirectOrder) { localStorage.removeItem(DIRECT_KEY); } else { localStorage.removeItem(CONFIG.CART_KEY); }
                             window.history.replaceState({}, document.title, window.location.pathname);
                             window.location.href = 'success.html?id=' + orderId;
                         });

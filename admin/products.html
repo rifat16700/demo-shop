@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -32,6 +32,29 @@
         .color-preview { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); }
         .size-item { display: grid; grid-template-columns: 80px 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
         .gallery-url-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+
+        /* -- Rich Text Editor ---------------------------------- */
+        .rte-wrap { border: 1.5px solid var(--border); border-radius: var(--radius-md); overflow: hidden; background: var(--bg-card); transition: border-color 0.2s; }
+        .rte-wrap:focus-within { border-color: var(--accent,#007AFF); box-shadow: 0 0 0 3px rgba(0,122,255,0.12); }
+        .rte-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: 8px 10px; background: rgba(255,255,255,0.04); border-bottom: 1px solid var(--border); }
+        .rte-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; border-radius: 6px; border: none; background: transparent; color: var(--text-secondary,#888); font-size: 13px; font-weight: 700; cursor: pointer; padding: 0 8px; transition: background 0.15s, color 0.15s; font-family: inherit; }
+        .rte-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary,#fff); }
+        .rte-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+        .rte-select { height: 32px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card,#1c1c1e); color: var(--text-secondary,#888); font-size: 12px; padding: 0 6px; cursor: pointer; font-family: inherit; }
+        .rte-select option { background: var(--bg-card,#1c1c1e); }
+        .rte-editor { min-height: 130px; max-height: 300px; overflow-y: auto; padding: 12px 14px; font-size: 14px; line-height: 1.8; color: var(--text-primary,#fff); outline: none; }
+        .rte-editor:empty:before { content: attr(data-placeholder); color: var(--text-secondary,#888); pointer-events: none; }
+        .rte-editor b, .rte-editor strong { font-weight: 700; }
+        .rte-editor i, .rte-editor em { font-style: italic; }
+        .rte-editor u { text-decoration: underline; }
+        .rte-editor s { text-decoration: line-through; }
+        .rte-editor ul { list-style: disc; padding-left: 22px; margin: 4px 0; }
+        .rte-editor ol { list-style: decimal; padding-left: 22px; margin: 4px 0; }
+        .rte-editor h1 { font-size: 1.5em; font-weight: 800; margin: 6px 0 2px; }
+        .rte-editor h2 { font-size: 1.25em; font-weight: 700; margin: 6px 0 2px; }
+        .rte-editor h3 { font-size: 1.1em; font-weight: 700; margin: 4px 0 2px; }
+        .rte-editor blockquote { border-left: 3px solid var(--accent,#007AFF); padding-left: 12px; color: var(--text-secondary,#888); margin: 4px 0; font-style: italic; }
+        .rte-char-count { font-size: 11px; color: var(--text-secondary,#888); text-align: right; padding: 4px 12px 6px; }
     </style>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
@@ -90,8 +113,37 @@
                 <input class="form-input" id="pName" placeholder="Product name...">
             </div>
             <div class="form-group">
-                <label class="form-label">Description</label>
-                <textarea class="form-textarea" id="pDesc" rows="3" placeholder="Product description..."></textarea>
+                <label class="form-label">&#128221; Description (Rich Text)</label>
+                <div class="rte-wrap">
+                    <div class="rte-toolbar">
+                        <select class="rte-select" onchange="rteBlock(this.value);this.value='p'" title="Block style">
+                            <option value="p">Paragraph</option>
+                            <option value="h1">Heading 1</option>
+                            <option value="h2">Heading 2</option>
+                            <option value="h3">Heading 3</option>
+                            <option value="blockquote">Quote</option>
+                        </select>
+                        <div class="rte-sep"></div>
+                        <button type="button" class="rte-btn" title="Bold" onclick="rteCmd('bold')"><b>B</b></button>
+                        <button type="button" class="rte-btn" title="Italic" onclick="rteCmd('italic')"><i>I</i></button>
+                        <button type="button" class="rte-btn" title="Underline" onclick="rteCmd('underline')"><u>U</u></button>
+                        <button type="button" class="rte-btn" title="Strikethrough" onclick="rteCmd('strikeThrough')"><s>S</s></button>
+                        <div class="rte-sep"></div>
+                        <button type="button" class="rte-btn" title="Highlight" style="position:relative;overflow:hidden;"><span style="background:#FFD60A;border-radius:3px;padding:1px 6px;color:#000;font-size:12px;font-weight:700;">A</span><input type="color" value="#FFD60A" style="opacity:0;position:absolute;inset:0;cursor:pointer;width:100%;height:100%;" onchange="rteCmd('backColor',this.value)"></button>
+                        <button type="button" class="rte-btn" title="Text color" style="position:relative;overflow:hidden;"><span style="font-size:13px;font-weight:900;color:#FF3B30;text-decoration:underline;">A</span><input type="color" value="#FF3B30" style="opacity:0;position:absolute;inset:0;cursor:pointer;width:100%;height:100%;" onchange="rteCmd('foreColor',this.value)"></button>
+                        <div class="rte-sep"></div>
+                        <button type="button" class="rte-btn" title="Bullet list" onclick="rteCmd('insertUnorderedList')">&#8226; List</button>
+                        <button type="button" class="rte-btn" title="Numbered list" onclick="rteCmd('insertOrderedList')">1. List</button>
+                        <div class="rte-sep"></div>
+                        <button type="button" class="rte-btn" title="Align left" onclick="rteCmd('justifyLeft')">&#8801;</button>
+                        <button type="button" class="rte-btn" title="Align center" onclick="rteCmd('justifyCenter')">&#8803;</button>
+                        <button type="button" class="rte-btn" title="Align right" onclick="rteCmd('justifyRight')">&#8800;</button>
+                        <div class="rte-sep"></div>
+                        <button type="button" class="rte-btn" title="Clear formatting" onclick="rteCmd('removeFormat')" style="font-size:11px;">&#10005; fmt</button>
+                    </div>
+                    <div class="rte-editor" id="pDesc" contenteditable="true" data-placeholder="Product description লিখো..." oninput="document.getElementById('rteCharCount').textContent=this.innerText.trim().length+' chars'"></div>
+                    <div class="rte-char-count" id="rteCharCount">0 chars</div>
+                </div>
             </div>
 
             <div class="form-row">
@@ -296,7 +348,7 @@
         variants    = [];
         document.getElementById('productModalTitle').textContent = 'Add New Product';
         document.getElementById('pName').value      = '';
-        document.getElementById('pDesc').value      = '';
+        document.getElementById('pDesc').innerHTML  = ''; document.getElementById('rteCharCount').textContent = '0 chars';
         document.getElementById('pBasePrice').value = '';
         document.getElementById('pFlashPrice').value= '';
         document.getElementById('pFlashEnd').value  = '';
@@ -320,7 +372,8 @@
 
         document.getElementById('productModalTitle').textContent = 'Edit Product';
         document.getElementById('pName').value       = p.name || '';
-        document.getElementById('pDesc').value       = p.description || '';
+        document.getElementById('pDesc').innerHTML  = p.description || '';
+        document.getElementById('rteCharCount').textContent = (document.getElementById('pDesc').innerText.length) + ' chars';
         document.getElementById('pBasePrice').value  = p.base_price || '';
         document.getElementById('pFlashPrice').value = p.flash_sale_price || '';
         document.getElementById('pFlashEnd').value   = p.flash_sale_end ? p.flash_sale_end.substring(0,16) : '';
@@ -626,7 +679,7 @@
 
         var payload = {
             name:             name,
-            description:      document.getElementById('pDesc').value.trim(),
+            description:      document.getElementById('pDesc').innerHTML.trim(),
             base_price:       parseInt(document.getElementById('pBasePrice').value) || 0,
             flash_sale_price: parseInt(document.getElementById('pFlashPrice').value) || 0,
             flash_sale_end:   document.getElementById('pFlashEnd').value || null,
@@ -703,6 +756,74 @@
         });
     }
 
+
+    // ── Rich Text Editor helpers ─────────────────────────────
+    function rteCmd(cmd, val) {
+        var ed = document.getElementById('pDesc');
+        ed.focus();
+        document.execCommand(cmd, false, val || null);
+        updateRteCharCount();
+    }
+    function rteBlock(tag) {
+        var ed = document.getElementById('pDesc');
+        ed.focus();
+        document.execCommand('formatBlock', false, '<' + tag + '>');
+        updateRteCharCount();
+    }
+    function updateRteCharCount() {
+        var ed = document.getElementById('pDesc');
+        var cc = document.getElementById('rteCharCount');
+        if (ed && cc) cc.textContent = (ed.innerText || '').trim().length + ' chars';
+    }
+    // ── Paste handler: sanitize & preserve basic formatting ──
+    (function() {
+        function setupRtePaste() {
+            var ed = document.getElementById('pDesc');
+            if (!ed) return;
+            ed.addEventListener('paste', function(e) {
+                e.preventDefault();
+                var cd = e.clipboardData || window.clipboardData;
+                var html = cd.getData('text/html');
+                var text = cd.getData('text/plain');
+                if (html) {
+                    var tmp = document.createElement('div');
+                    tmp.innerHTML = html;
+                    // Remove dangerous elements
+                    tmp.querySelectorAll('script,style,meta,link,head,form,iframe,object,embed').forEach(function(el){ el.remove(); });
+                    var SAFE = ['b','strong','i','em','u','s','strike','h1','h2','h3','ul','ol','li','br','p','blockquote','span'];
+                    // Walk all elements and flatten unsafe ones
+                    var els = Array.from(tmp.querySelectorAll('*'));
+                    els.forEach(function(el) {
+                        var tag = el.tagName ? el.tagName.toLowerCase() : '';
+                        if (SAFE.indexOf(tag) === -1) {
+                            var frag = document.createDocumentFragment();
+                            while (el.firstChild) frag.appendChild(el.firstChild);
+                            el.parentNode && el.parentNode.replaceChild(frag, el);
+                        } else {
+                            // Keep only color/background-color inline styles
+                            var st = el.getAttribute('style') || '';
+                            var keepSt = [];
+                            var colMatch = st.match(/(?:background-)?color\s*:[^;]+/g);
+                            if (colMatch) keepSt = keepSt.concat(colMatch);
+                            if (keepSt.length) el.setAttribute('style', keepSt.join(';'));
+                            else el.removeAttribute('style');
+                            el.removeAttribute('class');
+                            el.removeAttribute('id');
+                        }
+                    });
+                    document.execCommand('insertHTML', false, tmp.innerHTML);
+                } else if (text) {
+                    // Plain text: preserve line breaks
+                    var esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                    var br = esc.replace(/\n/g, '<br>');
+                    document.execCommand('insertHTML', false, br);
+                }
+                updateRteCharCount();
+            });
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupRtePaste);
+        else setupRtePaste();
+    })();
     function closeModal(id) { document.getElementById(id).classList.remove('show'); }
     </script>
 

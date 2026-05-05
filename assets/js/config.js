@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // config.js — Global Configuration
 // Project: Freelancing By Rifat E-Commerce
 // ⚠️ FILL IN YOUR SUPABASE CREDENTIALS BELOW
@@ -19,7 +19,8 @@ var CONFIG = {
 
     // ── App Defaults (settings table থেকে override হবে) ─────
     STORE_NAME: 'Freelancing By Rifat',
-    CART_KEY: 'fbr_cart',          // localStorage key
+    CART_KEY: 'fbr_cart',          // localStorage key - main cart
+    DIRECT_ORDER_KEY: 'fbr_direct_order', // Buy Now / Direct Order — main cart কে touch করে না
     SESSION_KEY: 'fbr_session',
 
     // ── Admin Panel ───────────────────────────────────────────

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -85,7 +85,7 @@
             </div>
 
             <!-- Description -->
-            <p id="pDesc" style="font-size:14px;color:var(--text-body);line-height:1.7;margin-bottom:20px;"></p>
+            <div id="pDesc" class="product-description" style="font-size:14px;color:var(--text-body);line-height:1.75;margin-bottom:20px;"></div>
 
             <!-- Color selector -->
             <div id="colorSection" style="margin-bottom:24px;">
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function renderProduct(p) {
     document.getElementById('pName').textContent = p.name;
-    document.getElementById('pDesc').textContent = p.description || '';
+    document.getElementById('pDesc').innerHTML = p.description || '';
 
     var variants = p.variants || [];
     var gallery  = p.gallery_images || [];
@@ -540,8 +540,8 @@ function directOrder() {
     var size  = selectedSize ? selectedSize.size : '';
     var key   = product.id + '-' + color + '-' + size;
 
-    // এই product শুধু cart এ রাখো (আগেরটা clear করে)
-    var cart = [{ 
+    // Direct Order — main cart এ হাত দেবে না, আলাদা key তে save করবে
+    var directItem = [{ 
         key: key, 
         productId: product.id, 
         productName: product.name, 
@@ -552,11 +552,11 @@ function directOrder() {
         image: img 
     }];
 
-    saveCart(cart);
-    updateCartBadge();
+    // Main cart untouched — direct order goes to its own temp key
+    localStorage.setItem(CONFIG.DIRECT_ORDER_KEY || 'fbr_direct_order', JSON.stringify(directItem));
     
-    // সরাসরি Checkout এ যাও — cart page skip
-    window.location.href = 'checkout.html';
+    // সরাসরি Checkout এ যাও — direct=1 flag দিয়ে
+    window.location.href = 'checkout.html?direct=1';
 }
 
 
@@ -713,10 +713,11 @@ function pickupOrder() {
     var size  = selectedSize ? selectedSize.size : '';
     var key   = product.id + '-' + color + '-' + size;
 
-    var cart = [{ key: key, productId: product.id, productName: product.name, price: finalPrice, color: color, size: size, quantity: currentQty, image: img }];
-    saveCart(cart);
-    updateCartBadge();
-    window.location.href = 'cart.html?pickup=1';
+    // Main cart touch করে না — direct key তে রাখো
+    var directItem = [{ key: key, productId: product.id, productName: product.name, price: finalPrice, color: color, size: size, quantity: currentQty, image: img }];
+    var dKey = (typeof CONFIG !== 'undefined' && CONFIG.DIRECT_ORDER_KEY) ? CONFIG.DIRECT_ORDER_KEY : 'fbr_direct_order';
+    localStorage.setItem(dKey, JSON.stringify(directItem));
+    window.location.href = 'checkout.html?pickup=1&direct=1';
 }
 
 // Reviews

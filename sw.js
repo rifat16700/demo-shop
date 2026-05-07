@@ -1,10 +1,22 @@
-const CACHE_NAME = 'fbr-offline-v1';
+const CACHE_NAME = 'fbr-offline-v2';
 const OFFLINE_URL = '/offline.html';
 
 // Assets to precache for offline display
 const PRECACHE_ASSETS = [
+    '/',
+    '/index.html',
+    '/shop.html',
+    '/cart.html',
+    '/checkout.html',
+    '/product.html',
+    '/track.html',
+    '/success.html',
     OFFLINE_URL,
-    '/assets/css/premium-icons.css'
+    '/assets/css/style.css',
+    '/assets/css/premium-icons.css',
+    '/assets/js/config.js',
+    '/assets/js/supabase-init.js',
+    '/assets/js/offline-handler.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -30,30 +42,59 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // We only care about HTML requests for the offline fallback
-    if (event.request.mode === 'navigate' || (event.request.method === 'GET' && event.request.headers.get('accept').includes('text/html'))) {
-        
-        // If explicitly asking for the offline page, deliver it immediately from cache
-        if (event.request.url.includes(OFFLINE_URL)) {
-            event.respondWith(
-                caches.match(OFFLINE_URL).then(res => res || fetch(event.request))
-            );
-            return;
-        }
+    // We only handle GET requests
+    if (event.request.method !== 'GET') return;
 
+    const requestURL = new URL(event.request.url);
+
+    // 1. Network First, Fallback to Cache for HTML pages and Supabase API calls
+    if (event.request.mode === 'navigate' || 
+        event.request.headers.get('accept').includes('text/html') || 
+        requestURL.href.includes('supabase.co/rest/v1/')) {
+        
         event.respondWith(
-            fetch(event.request).catch((error) => {
-                // If network fails on any HTML page, return the cached offline page
-                return caches.match(OFFLINE_URL).then((response) => {
-                    return response || new Response('Offline Page Missing', { status: 503, statusText: 'Service Unavailable' });
-                });
-            })
+            fetch(event.request)
+                .then((networkResponse) => {
+                    // Cache the successful response
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseClone);
+                    });
+                    return networkResponse;
+                })
+                .catch(async () => {
+                    // Network failed, try cache
+                    const cachedResponse = await caches.match(event.request);
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
+                    
+                    // If it's an HTML request and not in cache, show the offline page
+                    if (event.request.mode === 'navigate' || event.request.headers.get('accept').includes('text/html')) {
+                        return caches.match(OFFLINE_URL);
+                    }
+                    
+                    // Otherwise return a generic 503
+                    return new Response('Offline and not in cache', { status: 503, statusText: 'Offline' });
+                })
         );
-    } else {
-        // Non-HTML requests (images, css, js) -> Try network, then cache (or vice-versa depending on strategy)
-        // For standard offline resilience of icons/CSS, try network falling back to cache
+    } 
+    // 2. Stale-While-Revalidate for static assets (CSS, JS, Images)
+    else {
         event.respondWith(
-            fetch(event.request).catch(() => caches.match(event.request))
+            caches.match(event.request).then((cachedResponse) => {
+                const fetchPromise = fetch(event.request).then((networkResponse) => {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseClone);
+                    });
+                    return networkResponse;
+                }).catch(() => {
+                    // Ignore network errors for static assets if we have them in cache
+                });
+                
+                return cachedResponse || fetchPromise;
+            })
         );
     }
 });

@@ -81,14 +81,38 @@
                     <span><i data-lucide="search" class="lucide-icon"></i></span>
                     <input type="text" id="prodSearch" placeholder="Search products..." oninput="filterProducts()">
                 </div>
-                <select class="form-select" id="catFilter" onchange="filterProducts()" style="width:auto;min-width:160px;">
+                <!-- Mobile filter toggle -->
+                <button class="filter-toggle-btn" id="prodFilterToggle" onclick="toggleProdFilters()">
+                    <i data-lucide="sliders-horizontal" class="lucide-icon"></i> Filter
+                    <span class="filter-count" id="prodFilterCount">0</span>
+                </button>
+                <!-- Inline filters -->
+                <select class="form-select filter-inline" id="catFilter" onchange="filterProducts();updateProdFilterCount()" style="width:auto;min-width:160px;">
                     <option value="">All Categories</option>
                 </select>
-                <select class="form-select" id="activeFilter" onchange="filterProducts()" style="width:auto;min-width:140px;">
+                <select class="form-select filter-inline" id="activeFilter" onchange="filterProducts();updateProdFilterCount()" style="width:auto;min-width:140px;">
                     <option value="">All</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </select>
+            </div>
+
+            <!-- Mobile Filter Panel -->
+            <div class="filter-panel" id="prodFilterPanel">
+                <div class="filter-panel-row">
+                    <select class="form-select" id="catFilterM" onchange="syncProdFilter('catFilter','catFilterM');filterProducts();updateProdFilterCount()">
+                        <option value="">All Categories</option>
+                    </select>
+                    <select class="form-select" id="activeFilterM" onchange="syncProdFilter('activeFilter','activeFilterM');filterProducts();updateProdFilterCount()">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="filter-panel-actions">
+                    <button class="btn btn-ghost btn-sm" onclick="resetProdFilters()">Reset</button>
+                    <button class="btn btn-primary btn-sm" onclick="toggleProdFilters()">Done</button>
+                </div>
             </div>
 
             <div class="product-grid" id="productGrid">
@@ -255,17 +279,58 @@
     function loadCategories() {
         sb.from('categories').select('*').eq('is_active', true).order('sort_order').then(function(r) {
             allCategories = r.data || [];
-            var catFilter = document.getElementById('catFilter');
-            var pCatList = document.getElementById('pCategoryList');
+            var catFilter  = document.getElementById('catFilter');
+            var catFilterM = document.getElementById('catFilterM');
+            var pCatList   = document.getElementById('pCategoryList');
             allCategories.forEach(function(c) {
-                catFilter.innerHTML += '<option value="' + c.id + '">' + c.name + '</option>';
-                pCatList.innerHTML += 
+                var opt = '<option value="' + c.id + '">' + c.name + '</option>';
+                catFilter.innerHTML  += opt;
+                if (catFilterM) catFilterM.innerHTML += opt;
+                pCatList.innerHTML +=
                     '<label class="category-checkbox-item">' +
                         '<input type="checkbox" name="pCat" value="' + c.id + '">' +
                         '<span>' + c.name + '</span>' +
                     '</label>';
             });
         });
+    }
+
+    // ── Mobile Filter Panel helpers ──────────────────────────
+    function toggleProdFilters() {
+        var panel = document.getElementById('prodFilterPanel');
+        panel.classList.toggle('open');
+        if (panel.classList.contains('open')) {
+            var catFilterM  = document.getElementById('catFilterM');
+            var activeFilterM = document.getElementById('activeFilterM');
+            if (catFilterM)    catFilterM.value    = document.getElementById('catFilter').value;
+            if (activeFilterM) activeFilterM.value = document.getElementById('activeFilter').value;
+        }
+    }
+
+    function syncProdFilter(mainId, mobileId) {
+        document.getElementById(mainId).value = document.getElementById(mobileId).value;
+    }
+
+    function updateProdFilterCount() {
+        var count = 0;
+        if (document.getElementById('catFilter').value)    count++;
+        if (document.getElementById('activeFilter').value) count++;
+        var badge = document.getElementById('prodFilterCount');
+        if (badge) {
+            badge.textContent = count;
+            if (count > 0) badge.classList.add('has-filters');
+            else badge.classList.remove('has-filters');
+        }
+    }
+
+    function resetProdFilters() {
+        document.getElementById('catFilter').value    = '';
+        document.getElementById('activeFilter').value = '';
+        var m1 = document.getElementById('catFilterM');    if (m1) m1.value = '';
+        var m2 = document.getElementById('activeFilterM'); if (m2) m2.value = '';
+        filterProducts();
+        updateProdFilterCount();
+        document.getElementById('prodFilterPanel').classList.remove('open');
     }
 
     function loadProducts() {

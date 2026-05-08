@@ -35,46 +35,94 @@
                 <div>
                     <div class="page-title">Orders</div>
                     <div class="page-subtitle" id="orderCountSub">Loading...</div>
-                </div>
             </div>
         </header>
 
         <div class="admin-content">
             <!-- Filter Bar -->
-            <div class="filter-bar">
+            <div class="filter-bar" id="ordersFilterBar">
                 <div class="search-box">
                     <span><i data-lucide="search" class="lucide-icon"></i></span>
-                    <input type="text" id="searchInput" placeholder="Search by Order ID, Name, Phone..." oninput="filterOrders()">
+                    <input type="text" id="searchInput" placeholder="Search Order ID, Name, Phone..." oninput="filterOrders()">
                 </div>
-                <select class="form-select" id="statusFilter" onchange="filterOrders()" style="width:auto;min-width:160px;">
+                <!-- Mobile filter toggle button (shown on small screens) -->
+                <button class="filter-toggle-btn" id="orderFilterToggle" onclick="toggleOrderFilters()">
+                    <i data-lucide="sliders-horizontal" class="lucide-icon"></i> Filters
+                    <span class="filter-count" id="orderFilterCount">0</span>
+                </button>
+                <!-- Inline filters (hidden on mobile, shown via panel) -->
+                <select class="form-select filter-inline" id="statusFilter" onchange="filterOrders();updateFilterCount()" style="width:auto;min-width:160px;">
                     <option value="">All Status</option>
-                    <option value="Pending">⌛ Pending</option>
+                    <option value="Pending">⏛ Pending</option>
                     <option value="Confirmed">✅ Confirmed</option>
                     <option value="Processing">🔄 Processing</option>
                     <option value="Shipped">🚚 Shipped</option>
                     <option value="Delivered">🎉 Delivered</option>
                     <option value="Cancelled">❌ Cancelled</option>
                 </select>
-                <select class="form-select" id="payFilter" onchange="filterOrders()" style="width:auto;min-width:150px;">
+                <select class="form-select filter-inline" id="payFilter" onchange="filterOrders();updateFilterCount()" style="width:auto;min-width:150px;">
                     <option value="">All Payment</option>
                     <option value="Unpaid">Unpaid</option>
                     <option value="Advance Paid">Advance Paid</option>
                     <option value="Paid">Paid</option>
                 </select>
-                <select class="form-select" id="sortFilter" onchange="filterOrders()" style="width:auto;min-width:150px;">
+                <select class="form-select filter-inline" id="sortFilter" onchange="filterOrders()" style="width:auto;min-width:150px;">
                     <option value="newest">Newest First</option>
                     <option value="oldest">Oldest First</option>
                     <option value="highest">Highest Amount</option>
                 </select>
-                <select class="form-select" id="typeFilter" onchange="filterOrders()" style="width:auto;min-width:140px;">
+                <select class="form-select filter-inline" id="typeFilter" onchange="filterOrders();updateFilterCount()" style="width:auto;min-width:140px;">
                     <option value="">All Types</option>
                     <option value="delivery">🚚 Delivery</option>
                     <option value="pickup">🚶 Pickup</option>
                 </select>
-                <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--text-secondary); font-size:13px; font-weight:600; padding:0 10px; white-space:nowrap;">
-                    <input type="checkbox" id="failedFilter" onchange="filterOrders()" style="width:16px;height:16px;cursor:pointer;accent-color:#ff3b30;">
-                    <span>Show Failed/Unconfirmed (Auto Payment)</span>
+                <label class="filter-inline" style="display:flex; align-items:center; gap:6px; cursor:pointer; color:var(--text-secondary); font-size:13px; font-weight:600; padding:0 10px; white-space:nowrap;">
+                    <input type="checkbox" id="failedFilter" onchange="filterOrders();updateFilterCount()" style="width:16px;height:16px;cursor:pointer;accent-color:#ff3b30;">
+                    <span>Show Failed/Unconfirmed</span>
                 </label>
+            </div>
+
+            <!-- Collapsible Filter Panel (mobile) -->
+            <div class="filter-panel" id="orderFilterPanel">
+                <div class="filter-panel-row">
+                    <select class="form-select" id="statusFilterM" onchange="syncMobileFilter('statusFilter','statusFilterM');filterOrders();updateFilterCount()">
+                        <option value="">All Status</option>
+                        <option value="Pending">⏛ Pending</option>
+                        <option value="Confirmed">✅ Confirmed</option>
+                        <option value="Processing">🔄 Processing</option>
+                        <option value="Shipped">🚚 Shipped</option>
+                        <option value="Delivered">🎉 Delivered</option>
+                        <option value="Cancelled">❌ Cancelled</option>
+                    </select>
+                    <select class="form-select" id="payFilterM" onchange="syncMobileFilter('payFilter','payFilterM');filterOrders();updateFilterCount()">
+                        <option value="">All Payment</option>
+                        <option value="Unpaid">Unpaid</option>
+                        <option value="Advance Paid">Advance Paid</option>
+                        <option value="Paid">Paid</option>
+                    </select>
+                </div>
+                <div class="filter-panel-row">
+                    <select class="form-select" id="sortFilterM" onchange="syncMobileFilter('sortFilter','sortFilterM');filterOrders()">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="highest">Highest Amount</option>
+                    </select>
+                    <select class="form-select" id="typeFilterM" onchange="syncMobileFilter('typeFilter','typeFilterM');filterOrders();updateFilterCount()">
+                        <option value="">All Types</option>
+                        <option value="delivery">🚚 Delivery</option>
+                        <option value="pickup">🚶 Pickup</option>
+                    </select>
+                </div>
+                <div class="filter-panel-row">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;">
+                        <input type="checkbox" id="failedFilterM" onchange="document.getElementById('failedFilter').checked=this.checked;filterOrders();updateFilterCount()" style="width:16px;height:16px;cursor:pointer;accent-color:#ff3b30;">
+                        <span>Show Failed/Unconfirmed (Auto Payment)</span>
+                    </label>
+                </div>
+                <div class="filter-panel-actions">
+                    <button class="btn btn-ghost btn-sm" onclick="resetOrderFilters()">Reset Filters</button>
+                    <button class="btn btn-primary btn-sm" onclick="toggleOrderFilters()">Done</button>
+                </div>
             </div>
 
             <!-- Orders Table -->
@@ -118,6 +166,52 @@
 
     <script>
     var allOrders = [];
+
+    // ── Mobile Filter Panel helpers ──────────────────────────
+    function toggleOrderFilters() {
+        var panel = document.getElementById('orderFilterPanel');
+        panel.classList.toggle('open');
+        // Sync mobile selects to current main values when opening
+        if (panel.classList.contains('open')) {
+            document.getElementById('statusFilterM').value = document.getElementById('statusFilter').value;
+            document.getElementById('payFilterM').value    = document.getElementById('payFilter').value;
+            document.getElementById('sortFilterM').value   = document.getElementById('sortFilter').value;
+            document.getElementById('typeFilterM').value   = document.getElementById('typeFilter').value;
+            document.getElementById('failedFilterM').checked = document.getElementById('failedFilter').checked;
+        }
+    }
+
+    function syncMobileFilter(mainId, mobileId) {
+        document.getElementById(mainId).value = document.getElementById(mobileId).value;
+    }
+
+    function updateFilterCount() {
+        var count = 0;
+        if (document.getElementById('statusFilter').value) count++;
+        if (document.getElementById('payFilter').value) count++;
+        if (document.getElementById('typeFilter').value) count++;
+        if (document.getElementById('failedFilter').checked) count++;
+        var badge = document.getElementById('orderFilterCount');
+        if (badge) {
+            badge.textContent = count;
+            if (count > 0) badge.classList.add('has-filters');
+            else badge.classList.remove('has-filters');
+        }
+    }
+
+    function resetOrderFilters() {
+        ['statusFilter','payFilter','typeFilter'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.value = '';
+        });
+        ['statusFilterM','payFilterM','typeFilterM'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.value = '';
+        });
+        document.getElementById('sortFilter').value = 'newest';
+        document.getElementById('failedFilter').checked = false;
+        filterOrders();
+        updateFilterCount();
+        document.getElementById('orderFilterPanel').classList.remove('open');
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         adminInit('orders', function() {

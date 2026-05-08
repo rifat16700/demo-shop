@@ -118,21 +118,27 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('displayOrderId').textContent = orderId;
     document.getElementById('trackLink').href = 'track.html?id=' + orderId;
 
-    sb.from('settings').select('store_name').eq('id',1).single().then(function(r) {
-        if (r.data) document.getElementById('navBrand').textContent = r.data.store_name || '';
-    });
+    var p1 = sb.from('settings').select('*').eq('id',1).single();
+    var p2 = sb.from('orders').select('*').eq('id', orderId).single();
 
-    sb.from('orders').select('*').eq('id', orderId).single().then(function(r) {
+    Promise.all([p1, p2]).then(function(results) {
         document.getElementById('pageLoader').style.display = 'none';
-        if (r.error || !r.data) {
+        var settings = results[0].data || {};
+        var rOrder = results[1];
+        
+        if (settings.store_name) {
+            document.getElementById('navBrand').textContent = settings.store_name;
+        }
+
+        if (rOrder.error || !rOrder.data) {
             document.getElementById('orderDetails').innerHTML = '<div style="text-align:center;padding:30px;color:#999;">Could not load order details.</div>';
             return;
         }
-        renderOrder(r.data);
+        renderOrder(rOrder.data, settings);
     });
 });
 
-function renderOrder(order) {
+function renderOrder(order, settings) {
     var items = Array.isArray(order.items) ? order.items : [];
 
     var itemsHtml = items.map(function(item) {
@@ -149,6 +155,16 @@ function renderOrder(order) {
                        order.payment_method === 'bKash' ? '💜 bKash' :
                        order.payment_method === 'Nagad' ? '🧡 Nagad' : '<i data-lucide="globe" class="lucide-icon icon-spin"></i> Online Payment';
 
+    var pickupCard = '';
+    if (order.delivery_type === 'pickup' && settings.store_address) {
+        var mapUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(settings.store_address);
+        pickupCard = '<div class="info-card" style="background:linear-gradient(135deg,#fff8e1,#fff3cd);border:1px solid rgba(255,149,0,0.2);">' +
+            '<div style="font-size:14px;font-weight:800;color:#d97706;margin-bottom:8px;"><i data-lucide="store" class="lucide-icon icon-bounce"></i> Store Pickup Location</div>' +
+            '<div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6;"><b>Address:</b> ' + settings.store_address + '</div>' +
+            '<a href="' + mapUrl + '" target="_blank" class="btn btn-outline btn-full btn-sm" style="background:#fff;border-color:#d97706;color:#d97706;font-weight:700;"><i data-lucide="map" class="lucide-icon"></i> Get Store Direction</a>' +
+        '</div>';
+    }
+
     var html =
         '<div class="info-card">' +
             '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
@@ -160,6 +176,8 @@ function renderOrder(order) {
             (order.address ? '<div style="margin-top:12px;"><div class="info-label">Address</div><div class="info-value">' + order.address + '</div></div>' : '') +
             (order.payment_trx_id ? '<div style="margin-top:10px;background:rgba(0,0,0,0.04);border-radius:8px;padding:8px 12px;font-size:13px;"><b>TrxID:</b> <code>' + order.payment_trx_id + '</code></div>' : '') +
         '</div>' +
+        
+        pickupCard +
 
         '<div class="info-card">' +
             '<div style="font-size:14px;font-weight:800;margin-bottom:14px;"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> Order Items</div>' +
@@ -180,7 +198,7 @@ function renderOrder(order) {
         '<div class="info-card" style="text-align:center;background:linear-gradient(135deg,rgba(0,122,255,0.05),rgba(0,122,255,0.02));">' +
             '<div style="font-size:14px;font-weight:700;margin-bottom:8px;"><i data-lucide="package" class="lucide-icon icon-bounce"></i> What happens next?</div>' +
             '<div style="font-size:13px;color:#666;line-height:1.7;">' +
-                (order.payment_status === 'Unpaid' ? '1. <i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Your order is confirmed\n2. <i data-lucide="search" class="lucide-icon"></i> Our team is reviewing it\n3. <i data-lucide="package" class="lucide-icon icon-bounce"></i> We\'ll call you before shipping\n4. <i data-lucide="truck" class="lucide-icon icon-bounce"></i> Delivery in 2-5 business days' : '1. <i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Payment received\n2. <i data-lucide="package" class="lucide-icon icon-bounce"></i> We\'re preparing your order\n3. <i data-lucide="truck" class="lucide-icon icon-bounce"></i> Delivery in 2-5 business days') +
+                (order.payment_status === 'Unpaid' ? '1. <i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Your order is confirmed\n2. <i data-lucide="search" class="lucide-icon"></i> Our team is reviewing it\n3. <i data-lucide="package" class="lucide-icon icon-bounce"></i> We\'ll call you before pickup/shipping\n4. <i data-lucide="truck" class="lucide-icon icon-bounce"></i> Processed in 2-5 business days' : '1. <i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Payment received\n2. <i data-lucide="package" class="lucide-icon icon-bounce"></i> We\'re preparing your order\n3. <i data-lucide="truck" class="lucide-icon icon-bounce"></i> Processed in 2-5 business days') +
             '</div>' +
         '</div>';
 

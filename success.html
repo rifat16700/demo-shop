@@ -57,8 +57,8 @@
 </div>
 
 <!-- Hidden Invoice Template for PDF -->
-<div id="pdfContainer" style="display:none;">
-    <div id="pdfInvoice" style="padding: 40px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; width: 800px; background: #fff;">
+<div id="pdfContainer" style="display:none; padding: 20px; background: #fff; width: 790px;">
+    <div id="pdfInvoice" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; width: 100%;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px;">
             <div>
                 <h1 style="margin: 0; color: #111; font-size: 32px; letter-spacing: 1px;">INVOICE</h1>
@@ -156,11 +156,11 @@ function renderOrder(order, settings) {
                        order.payment_method === 'Nagad' ? '🧡 Nagad' : '<i data-lucide="globe" class="lucide-icon icon-spin"></i> Online Payment';
 
     var pickupCard = '';
-    if (order.delivery_type === 'pickup' && settings.store_address) {
-        var mapUrl = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(settings.store_address);
+    if (order.delivery_type === 'pickup' && (settings.store_address || settings.store_map_link)) {
+        var mapUrl = settings.store_map_link ? settings.store_map_link : 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(settings.store_address);
         pickupCard = '<div class="info-card" style="background:linear-gradient(135deg,#fff8e1,#fff3cd);border:1px solid rgba(255,149,0,0.2);">' +
             '<div style="font-size:14px;font-weight:800;color:#d97706;margin-bottom:8px;"><i data-lucide="store" class="lucide-icon icon-bounce"></i> Store Pickup Location</div>' +
-            '<div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6;"><b>Address:</b> ' + settings.store_address + '</div>' +
+            (settings.store_address ? '<div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.6;"><b>Address:</b> ' + settings.store_address + '</div>' : '') +
             '<a href="' + mapUrl + '" target="_blank" class="btn btn-outline btn-full btn-sm" style="background:#fff;border-color:#d97706;color:#d97706;font-weight:700;"><i data-lucide="map" class="lucide-icon"></i> Get Store Direction</a>' +
         '</div>';
     }
@@ -249,19 +249,22 @@ function downloadPDF() {
         margin: 10,
         filename: 'Invoice_' + order.id + '.pdf',
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
+        html2canvas: { scale: 2, useCORS: true, logging: false, windowWidth: 830 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
-    // Temporarily show container for html2canvas
+    // Temporarily append container to body so html2canvas renders it fully without cutting
     var container = document.getElementById('pdfContainer');
+    document.body.appendChild(container);
     container.style.display = 'block';
     container.style.position = 'absolute';
-    container.style.left = '-9999px';
+    container.style.left = '0';
     container.style.top = '-9999px';
+    container.style.zIndex = '-9999';
 
     html2pdf().set(opt).from(element).save().then(function() {
         container.style.display = 'none';
+        container.style.position = 'static';
     });
 }
 </script>

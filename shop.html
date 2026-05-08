@@ -190,7 +190,12 @@
 </div>
 
 <footer class="footer" style="margin-top:40px;">
-    <div class="footer-bottom"><span id="footerCopy">© 2025 Freelancing By Rifat</span></div>
+    <div id="footerStoreLoc" style="display:none; text-align:center; padding: 20px 20px 0; max-width:400px; margin:0 auto;">
+        <a id="footerStoreLink" href="#" target="_blank" class="btn btn-outline btn-full btn-sm" style="border-color:#ddd; color:#555; background:#fff;"><i data-lucide="map-pin" class="lucide-icon text-primary"></i> <span style="font-weight:700;">Visit Our Store</span></a>
+    </div>
+    <div class="footer-bottom">
+        <span id="footerCopy">© 2025 Freelancing By Rifat</span>
+    </div>
 </footer>
 
 <script>
@@ -202,13 +207,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var urlCat = new URLSearchParams(window.location.search).get('cat');
     if (urlCat) activeCatId = urlCat;
 
-    var p1 = sb.from('settings').select('store_name').eq('id',1).single();
+    var p1 = sb.from('settings').select('*').eq('id',1).single();
     var p2 = sb.from('categories').select('*').eq('is_active',true).order('sort_order');
     var p3 = sb.from('products').select('*').eq('is_active',true).order('created_at',{ascending:false});
     var p4 = sb.from('product_categories').select('*');
 
     Promise.all([p1, p2, p3, p4]).then(function(results) {
-        var settings = results[0].data || {};
+        var r = results[0];
         allCategories = results[1].data || [];
         allProducts   = results[2].data || [];
         var pc = results[3].data || [];
@@ -218,8 +223,21 @@ document.addEventListener('DOMContentLoaded', function() {
             if (p.category_id && !p.category_ids.includes(p.category_id)) p.category_ids.push(p.category_id);
         });
 
-        var name = settings.store_name || CONFIG.STORE_NAME;
-        document.getElementById('navBrand').textContent = name;
+        var name = CONFIG.STORE_NAME;
+        if (r.data) {
+            var s = r.data;
+            if (s.store_name) {
+                name = s.store_name;
+                document.getElementById('navBrand').textContent = s.store_name;
+            }
+            if (s.store_map_link) {
+                document.getElementById('footerStoreLink').href = s.store_map_link;
+                document.getElementById('footerStoreLoc').style.display = 'block';
+            } else if (s.store_address) {
+                document.getElementById('footerStoreLink').href = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(s.store_address);
+                document.getElementById('footerStoreLoc').style.display = 'block';
+            }
+        }
         document.getElementById('footerCopy').textContent = '© ' + new Date().getFullYear() + ' ' + name;
 
         renderCategories();

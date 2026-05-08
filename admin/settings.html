@@ -237,6 +237,11 @@
                     <input class="form-input" id="storeAddress" placeholder="Shop #5, Mirpur 10, Dhaka">
                     <div class="form-hint">Pickup button এ এই address দেখাবে।</div>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">Store Map Link (Google Maps)</label>
+                    <input class="form-input" id="storeMapLink" placeholder="https://maps.google.com/...">
+                    <div class="form-hint">Footer-এ এবং success page-এ এই লিংকেই map open হবে।</div>
+                </div>
                 <hr class="section-divider">
                 <div class="settings-section-title" style="font-size:11px;border:none;color:#34C759;padding:0;margin-bottom:10px;">Pickup Telegram Bot</div>
                 <div class="form-group">
@@ -440,6 +445,7 @@
 
             // Pickup
             setVal('storeAddress', s.store_address || '');
+            setVal('storeMapLink', s.store_map_link || '');
             setVal('pickupBotToken', s.pickup_bot_token || '');
             setVal('pickupChatId', s.pickup_chat_id || '');
         });
@@ -532,6 +538,7 @@
             messaging_apps:       collectMsgApps(),
             allow_pickup:         pickupEnabled,
             store_address:        document.getElementById('storeAddress').value.trim(),
+            store_map_link:       document.getElementById('storeMapLink').value.trim(),
             pickup_bot_token:     document.getElementById('pickupBotToken').value.trim(),
             pickup_chat_id:       document.getElementById('pickupChatId').value.trim(),
             id: 1

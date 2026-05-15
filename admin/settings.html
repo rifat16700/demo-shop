@@ -281,6 +281,35 @@
                     <div class="form-hint">Checkout এ BDT total থেকে USDT amount এই rate দিয়ে calculate হবে। আজকের rate দাও।</div>
                 </div>
 
+                <!-- Verification System Mode -->
+                <div style="background:rgba(98,126,234,0.06);border:1.5px solid rgba(98,126,234,0.25);border-radius:12px;padding:16px;margin-top:14px;">
+                    <div style="font-size:12px;font-weight:800;color:#627EEA;margin-bottom:10px;">⚙️ কোন Verification System ব্যবহার হবে?</div>
+                    <select class="form-select" id="verifyMode" style="font-weight:700;margin-bottom:10px;">
+                        <option value="auto">🔄 Auto — PHP চেষ্টা করবে, fail হলে Supabase backup (recommended)</option>
+                        <option value="php_only">🔵 PHP Proxy Only — cPanel available আছে</option>
+                        <option value="supabase_only">🟠 Supabase Edge Only — cPanel নেই, Edge Function use করো</option>
+                    </select>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+                        <div style="font-size:11px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e0e8ff;">
+                            <div style="font-weight:700;color:#15803d;">🔄 Auto</div>
+                            <div style="color:#666;margin-top:2px;">PHP verify → fail হলে Supabase backup চলবে</div>
+                        </div>
+                        <div style="font-size:11px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e0e8ff;">
+                            <div style="font-weight:700;color:#1d4ed8;">🔵 PHP Only</div>
+                            <div style="color:#666;margin-top:2px;">cPanel আছে, Binance API সরাসরি verify</div>
+                        </div>
+                        <div style="font-size:11px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e0e8ff;">
+                            <div style="font-weight:700;color:#c2610b;">🟠 Supabase Only</div>
+                            <div style="color:#666;margin-top:2px;">cPanel নেই, Supabase Edge Function only</div>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" style="font-size:11px;">Supabase Edge Function URL <span style="color:#aaa;font-weight:400;">(optional — খালি রাখলে auto-detect)</span></label>
+                        <input class="form-input" id="supabaseEdgeUrl" placeholder="https://qdkppbwjgkkxzgzgsykv.supabase.co/functions/v1/verify-payment" style="font-size:12px;">
+                        <div class="form-hint">Custom deploy করলে URL দাও। নইলে খালি রাখো — config থেকে auto নেবে।</div>
+                    </div>
+                </div>
+
                 <hr class="section-divider">
 
                 <!-- Direct Crypto -->
@@ -493,6 +522,8 @@
             setVal('binancePayUid', s.binance_pay_uid || '');
             setVal('binanceProxyUrl', s.binance_proxy_url || CONFIG.BINANCE_PROXY_URL || '');
             setVal('usdToBdtRate', s.usd_to_bdt_rate || '110');
+            document.getElementById('verifyMode').value = s.verify_mode || 'auto';
+            setVal('supabaseEdgeUrl', s.supabase_edge_url || '');
             cryptoCoins = s.crypto_coins || [];
             renderCryptoCoins();
         });
@@ -591,6 +622,8 @@
             binance_pay_uid:      document.getElementById('binancePayUid').value.trim(),
             binance_proxy_url:    document.getElementById('binanceProxyUrl').value.trim(),
             usd_to_bdt_rate:      parseFloat(document.getElementById('usdToBdtRate').value) || 110,
+            verify_mode:          document.getElementById('verifyMode').value,
+            supabase_edge_url:    document.getElementById('supabaseEdgeUrl').value.trim(),
             crypto_coins:         collectCryptoCoins(),
             id: 1
         };

@@ -32,31 +32,47 @@
         .transfer-tab-btn.active { background:var(--primary); color:#fff; }
         .transfer-tab-btn:not(.active) { background:#f5f7fa; color:#888; }
         .transfer-tab-btn:not(.active):hover { background:#ececec; }
-        .intl-amount-box { background:linear-gradient(135deg,#1a1a2e,#16213e); border-radius:14px; padding:18px; margin-bottom:14px; text-align:center; }
-        .intl-amount-usdt { font-size:32px; font-weight:900; color:#F0B90B; letter-spacing:1px; }
-        .intl-amount-bdt  { font-size:13px; color:#aaa; margin-top:4px; }
-        .intl-amount-rate { font-size:11px; color:#666; margin-top:3px; }
-        .crypto-opt { border:2px solid var(--border); border-radius:12px; padding:14px 16px; cursor:pointer; margin-bottom:10px; transition:all 0.2s; display:flex; align-items:center; gap:12px; }
-        .crypto-opt:hover { border-color:#627EEA; }
+        /* Amount box */
+        .intl-amount-box { background:#fff; border:2px solid rgba(240,185,11,0.35); border-radius:16px; padding:20px 18px; margin-bottom:16px; text-align:center; position:relative; overflow:hidden; box-shadow:0 2px 16px rgba(240,185,11,0.1); }
+        .intl-amount-box::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg,#F0B90B,#627EEA,#F0B90B); }
+        .intl-amount-usdt { font-size:28px; font-weight:900; color:#1a1a2e; }
+        .intl-amount-usdt span { color:#F0B90B; }
+        .intl-amount-bdt  { font-size:13px; color:#666; margin-top:4px; font-weight:600; }
+        .intl-amount-rate { font-size:11px; color:#aaa; margin-top:3px; }
+        /* Step headers */
+        .intl-step { display:flex; align-items:center; gap:8px; margin:16px 0 10px; }
+        .intl-step-num { width:24px; height:24px; min-width:24px; background:linear-gradient(135deg,#627EEA,#4a6cd4); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; box-shadow:0 2px 6px rgba(98,126,234,0.35); }
+        .intl-step-label { font-size:12px; font-weight:800; color:#627EEA; text-transform:uppercase; letter-spacing:0.6px; }
+        /* System badge */
+        .sys-badge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; border-radius:20px; padding:4px 10px; margin-bottom:12px; }
+        .sys-badge.auto { background:rgba(34,197,94,0.08); color:#15803d; border:1px solid rgba(34,197,94,0.25); }
+        .sys-badge.php  { background:rgba(59,130,246,0.08); color:#1d4ed8; border:1px solid rgba(59,130,246,0.25); }
+        .sys-badge.sb   { background:rgba(255,149,0,0.08);  color:#c2610b; border:1px solid rgba(255,149,0,0.3); }
+        /* Options */
+        .crypto-opt { border:2px solid var(--border); border-radius:12px; padding:14px 16px; cursor:pointer; margin-bottom:10px; transition:all 0.2s; display:flex; align-items:center; gap:12px; background:#fff; }
+        .crypto-opt:hover { border-color:#627EEA; background:#f8f9ff; transform:translateY(-1px); }
         .crypto-opt.selected { border-color:#627EEA; background:rgba(98,126,234,0.06); }
-        .crypto-opt.binance-selected { border-color:#F0B90B; background:rgba(240,185,11,0.06); }
-        .net-opt { border:1.5px solid var(--border); border-radius:10px; padding:12px 14px; cursor:pointer; margin-bottom:8px; transition:all 0.2s; display:flex; align-items:center; gap:10px; }
-        .net-opt:hover { border-color:#627EEA; }
+        .crypto-opt.binance-selected { border-color:#F0B90B; background:rgba(240,185,11,0.05); }
+        .net-opt { border:1.5px solid var(--border); border-radius:10px; padding:11px 14px; cursor:pointer; margin-bottom:8px; transition:all 0.2s; display:flex; align-items:center; gap:10px; background:#fff; }
+        .net-opt:hover { border-color:#627EEA; background:#f8f9ff; }
         .net-opt.selected { border-color:#627EEA; background:rgba(98,126,234,0.08); }
-        .wallet-addr-box { background:#f8f9ff; border:1.5px solid #627EEA; border-radius:12px; padding:14px; margin:12px 0; }
-        .wallet-addr-text { font-size:13px; font-weight:700; word-break:break-all; color:#222; background:#fff; border:1px solid #e0e4f0; border-radius:8px; padding:10px 12px; margin:8px 0; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+        /* Wallet address */
+        .wallet-addr-box { background:#f8fbff; border:1.5px solid rgba(98,126,234,0.3); border-radius:14px; padding:16px; margin:12px 0; }
+        .wallet-addr-text { font-size:12px; font-weight:600; word-break:break-all; color:#222; background:#fff; border:1px solid #dde4f5; border-radius:10px; padding:11px 12px; margin:8px 0; display:flex; justify-content:space-between; align-items:center; gap:8px; font-family:monospace; }
         .copy-btn { border:none; background:#627EEA; color:#fff; border-radius:7px; padding:5px 12px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; transition:all 0.2s; flex-shrink:0; }
         .copy-btn:hover { background:#4a6cd4; }
         .copy-btn.copied { background:#22C55E; }
+        .net-warn { font-size:11px; color:#92400e; background:rgba(255,149,0,0.08); border:1px solid rgba(255,149,0,0.25); border-radius:8px; padding:8px 10px; margin-top:8px; }
+        /* TxID & verify */
         .txid-input-wrap { margin-top:14px; }
-        .verify-btn { width:100%; padding:15px; font-size:15px; font-weight:800; border:none; border-radius:14px; background:linear-gradient(135deg,#F0B90B,#e6a800); color:#1a1a2e; cursor:pointer; transition:all 0.25s; margin-top:12px; display:flex; align-items:center; justify-content:center; gap:8px; }
-        .verify-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(240,185,11,0.4); }
+        .verify-btn { width:100%; padding:15px; font-size:15px; font-weight:800; border:none; border-radius:14px; background:linear-gradient(135deg,#22C55E,#16a34a); color:#fff; cursor:pointer; transition:all 0.25s; margin-top:12px; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 14px rgba(34,197,94,0.3); }
+        .verify-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(34,197,94,0.4); }
         .verify-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
         .verify-status { font-size:13px; font-weight:600; margin-top:10px; padding:10px 14px; border-radius:10px; display:none; }
-        .verify-status.success { background:rgba(34,197,94,0.1); color:#15803d; border:1px solid rgba(34,197,94,0.3); display:block; }
-        .verify-status.error   { background:rgba(239,68,68,0.08); color:#dc2626; border:1px solid rgba(239,68,68,0.25); display:block; }
-        .verify-status.loading { background:rgba(240,185,11,0.1); color:#92400e; border:1px solid rgba(240,185,11,0.3); display:block; }
-        .backup-badge { font-size:10px; background:rgba(255,149,0,0.15); color:#c2610b; border:1px solid rgba(255,149,0,0.3); border-radius:20px; padding:2px 8px; font-weight:700; display:inline-block; vertical-align:middle; margin-left:6px; }
+        .verify-status.success { background:rgba(34,197,94,0.08); color:#15803d; border:1px solid rgba(34,197,94,0.25); display:block; }
+        .verify-status.error   { background:rgba(239,68,68,0.06); color:#b91c1c; border:1px solid rgba(239,68,68,0.2); display:block; }
+        .verify-status.loading { background:rgba(98,126,234,0.08); color:#3730a3; border:1px solid rgba(98,126,234,0.2); display:block; }
+        .backup-badge { font-size:10px; background:rgba(255,149,0,0.12); color:#c2610b; border:1px solid rgba(255,149,0,0.3); border-radius:20px; padding:2px 8px; font-weight:700; display:inline-block; vertical-align:middle; margin-left:6px; }
     </style>
     <link rel="stylesheet" href="assets/css/premium-icons.css">
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
@@ -1390,7 +1406,8 @@ function selectIntlCoin(symbol) {
     netsHtml += '</div>';
 
     document.getElementById('cryptoNetworkDetails').style.display = 'block';
-    document.getElementById('cryptoNetworkDetails').innerHTML = netsHtml;
+    document.getElementById('cryptoNetworkDetails').innerHTML =
+        '<div class="intl-step"><div class="intl-step-num">2</div><span class="intl-step-label">Select Network</span></div>' + netsHtml;
     document.getElementById('cryptoWalletBox').style.display = 'none';
     document.getElementById('cryptoTxidWrap').style.display = 'none';
     document.getElementById('verifyCryptoBtn').style.display = 'none';
@@ -1454,19 +1471,20 @@ function setVerifyStatus(msg, type) {
     el.textContent = msg;
 }
 
-// ── Crypto Payment Verification ───────────────────────────────────────────────────
-// PRIMARY:  PHP Proxy (cPanel) → Binance API direct → Supabase NOT needed for verify
-// BACKUP:   Supabase Edge Function → Supabase server → cPanel/PHP NOT needed
-// BOTH:     Supabase verified_payments UNIQUE lock → double-spend protection
+// ── Crypto Payment Verification ─────────────────────────────────────────────
+// PRIMARY:  PHP Proxy → Binance API (no Supabase needed for verify)
+// BACKUP:   Supabase Edge Function (no cPanel/PHP needed)
+// CONTROL:  settings.verify_mode = 'auto' | 'php_only' | 'supabase_only'
 function verifyCryptoPayment() {
     if (intlVerified) { placeCryptoOrder(); return; }
 
     var txid = (document.getElementById('cryptoTxidInput').value || '').trim();
     if (!txid) { setVerifyStatus('❌ Please enter your Transaction ID / TxHash.', 'error'); return; }
     if (!intlPayMode) { setVerifyStatus('❌ Please select a payment method first.', 'error'); return; }
-    if (intlPayMode === 'crypto' && !intlNetworkName) { setVerifyStatus('❌ Please select a network.', 'error'); return; }
+    if (intlPayMode === 'crypto' && !intlNetworkName) { setVerifyStatus('❌ Please select a network first.', 'error'); return; }
 
     var btn = document.getElementById('verifyCryptoBtn');
+    var verifyMode = (settings.verify_mode || 'auto');
     btn.disabled = true;
     btn.textContent = '🔍 Verifying...';
     setVerifyStatus('🔍 Checking transaction...', 'loading');
@@ -1484,11 +1502,11 @@ function verifyCryptoPayment() {
             return;
         }
 
-        // ── Layer 2: PHP Proxy (PRIMARY — Binance API, no Supabase needed) ──
+        // ── Layer 2: Route based on verify_mode ──────────────────────
         var proxyUrl = (settings.binance_proxy_url || CONFIG.BINANCE_PROXY_URL || '').trim();
 
-        if (!proxyUrl) {
-            // No PHP proxy configured → go to Supabase Edge backup
+        // 'supabase_only' → skip PHP, go straight to Edge Function
+        if (verifyMode === 'supabase_only' || !proxyUrl) {
             runSupabaseEdgeBackup(txid, usdt, btn);
             return;
         }
@@ -1520,9 +1538,14 @@ function verifyCryptoPayment() {
             }
         })
         .catch(function() {
-            // PHP proxy unreachable → Supabase Edge Function backup
-            setVerifyStatus('⚠️ Primary system unavailable. Switching to backup...', 'loading');
-            runSupabaseEdgeBackup(txid, usdt, btn);
+            if (verifyMode === 'php_only') {
+                // php_only mode — do not fallback
+                setVerifyStatus('❌ PHP proxy unavailable. Please check cPanel or switch to Auto mode.', 'error');
+                btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+            } else {
+                setVerifyStatus('⚠️ Primary unavailable. Switching to Supabase backup...', 'loading');
+                runSupabaseEdgeBackup(txid, usdt, btn);
+            }
         });
     });
 }
@@ -1558,7 +1581,8 @@ function saveTxidAndPlace(txid, usdt, btn, isBackup) {
 function runSupabaseEdgeBackup(txid, usdt, btn) {
     setVerifyStatus('🔄 Connecting to backup system (Supabase)...', 'loading');
 
-    var edgeUrl  = CONFIG.SUPABASE_URL + '/functions/v1/verify-payment';
+    var edgeUrl  = (settings.supabase_edge_url || '').trim() ||
+                   (CONFIG.SUPABASE_URL + '/functions/v1/verify-payment');
     var anonKey  = CONFIG.SUPABASE_ANON_KEY;
     var coinVal  = intlPayMode === 'binance_pay' ? 'USDT' : intlCoinSymbol;
     var netVal   = intlPayMode === 'binance_pay' ? 'Binance Pay' : intlNetworkName;

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,6 +25,38 @@
         .summary-total { border-top: 2px solid var(--border); padding-top: 12px; font-size: 18px; font-weight: 900; }
         .order-item-row2 { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
         @media (max-width: 900px) { .checkout-layout { grid-template-columns: 1fr; } }
+
+        /* ── International Transfer UI ─────────────────────────── */
+        .transfer-tab-bar { display:flex; border:2px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:18px; }
+        .transfer-tab-btn { flex:1; padding:13px 10px; font-size:13px; font-weight:700; border:none; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:7px; }
+        .transfer-tab-btn.active { background:var(--primary); color:#fff; }
+        .transfer-tab-btn:not(.active) { background:#f5f7fa; color:#888; }
+        .transfer-tab-btn:not(.active):hover { background:#ececec; }
+        .intl-amount-box { background:linear-gradient(135deg,#1a1a2e,#16213e); border-radius:14px; padding:18px; margin-bottom:14px; text-align:center; }
+        .intl-amount-usdt { font-size:32px; font-weight:900; color:#F0B90B; letter-spacing:1px; }
+        .intl-amount-bdt  { font-size:13px; color:#aaa; margin-top:4px; }
+        .intl-amount-rate { font-size:11px; color:#666; margin-top:3px; }
+        .crypto-opt { border:2px solid var(--border); border-radius:12px; padding:14px 16px; cursor:pointer; margin-bottom:10px; transition:all 0.2s; display:flex; align-items:center; gap:12px; }
+        .crypto-opt:hover { border-color:#627EEA; }
+        .crypto-opt.selected { border-color:#627EEA; background:rgba(98,126,234,0.06); }
+        .crypto-opt.binance-selected { border-color:#F0B90B; background:rgba(240,185,11,0.06); }
+        .net-opt { border:1.5px solid var(--border); border-radius:10px; padding:12px 14px; cursor:pointer; margin-bottom:8px; transition:all 0.2s; display:flex; align-items:center; gap:10px; }
+        .net-opt:hover { border-color:#627EEA; }
+        .net-opt.selected { border-color:#627EEA; background:rgba(98,126,234,0.08); }
+        .wallet-addr-box { background:#f8f9ff; border:1.5px solid #627EEA; border-radius:12px; padding:14px; margin:12px 0; }
+        .wallet-addr-text { font-size:13px; font-weight:700; word-break:break-all; color:#222; background:#fff; border:1px solid #e0e4f0; border-radius:8px; padding:10px 12px; margin:8px 0; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+        .copy-btn { border:none; background:#627EEA; color:#fff; border-radius:7px; padding:5px 12px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; transition:all 0.2s; flex-shrink:0; }
+        .copy-btn:hover { background:#4a6cd4; }
+        .copy-btn.copied { background:#22C55E; }
+        .txid-input-wrap { margin-top:14px; }
+        .verify-btn { width:100%; padding:15px; font-size:15px; font-weight:800; border:none; border-radius:14px; background:linear-gradient(135deg,#F0B90B,#e6a800); color:#1a1a2e; cursor:pointer; transition:all 0.25s; margin-top:12px; display:flex; align-items:center; justify-content:center; gap:8px; }
+        .verify-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(240,185,11,0.4); }
+        .verify-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; box-shadow:none; }
+        .verify-status { font-size:13px; font-weight:600; margin-top:10px; padding:10px 14px; border-radius:10px; display:none; }
+        .verify-status.success { background:rgba(34,197,94,0.1); color:#15803d; border:1px solid rgba(34,197,94,0.3); display:block; }
+        .verify-status.error   { background:rgba(239,68,68,0.08); color:#dc2626; border:1px solid rgba(239,68,68,0.25); display:block; }
+        .verify-status.loading { background:rgba(240,185,11,0.1); color:#92400e; border:1px solid rgba(240,185,11,0.3); display:block; }
+        .backup-badge { font-size:10px; background:rgba(255,149,0,0.15); color:#c2610b; border:1px solid rgba(255,149,0,0.3); border-radius:20px; padding:2px 8px; font-weight:700; display:inline-block; vertical-align:middle; margin-left:6px; }
     </style>
     <link rel="stylesheet" href="assets/css/premium-icons.css">
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
@@ -140,26 +172,74 @@
                     <div style="font-size:20px;font-weight:900;color:var(--text-dark);margin-top:6px;">Advance: <span id="advanceAmountLabel" style="color:var(--primary);">৳0</span></div>
                 </div>
 
-                <!-- Payment Options -->
-                <div id="paymentOptions">
-                    <!-- Will be populated from settings -->
+                <!-- ── Transfer Type Tab Bar ── -->
+                <div class="transfer-tab-bar" id="transferTabBar">
+                    <button class="transfer-tab-btn active" id="tabNational" onclick="switchTransferTab('national')">
+                        🇧🇩 National Transfer
+                    </button>
+                    <button class="transfer-tab-btn" id="tabInternational" onclick="switchTransferTab('international')">
+                        🌐 International Transfer
+                    </button>
                 </div>
 
-                <!-- Manual payment details -->
-                <div class="manual-pay-box" id="manualPayBox">
-                    <div style="font-size:13px;font-weight:700;margin-bottom:10px;">
-                        Send <span id="manualPayAmt" style="color:var(--primary);font-size:16px;">৳0</span> to:
+                <!-- ── NATIONAL PANEL ── -->
+                <div id="nationalPayPanel">
+                    <!-- Payment Options -->
+                    <div id="paymentOptions">
+                        <!-- Will be populated from settings -->
                     </div>
-                    <div style="font-size:20px;font-weight:800;color:var(--text-dark);margin-bottom:4px;" id="manualPayNumber">01XXXXXXXXX</div>
-                    <div style="font-size:12px;color:#888;margin-bottom:14px;" id="manualPayMethodName">bKash / Nagad</div>
-                    <div class="form-group" style="margin-bottom:12px;">
-                        <label class="form-label">Sender Number *</label>
-                        <input class="form-input" id="senderNumber" placeholder="Number you sent from" type="tel">
+
+                    <!-- Manual payment details -->
+                    <div class="manual-pay-box" id="manualPayBox">
+                        <div style="font-size:13px;font-weight:700;margin-bottom:10px;">
+                            Send <span id="manualPayAmt" style="color:var(--primary);font-size:16px;">৳0</span> to:
+                        </div>
+                        <div style="font-size:20px;font-weight:800;color:var(--text-dark);margin-bottom:4px;" id="manualPayNumber">01XXXXXXXXX</div>
+                        <div style="font-size:12px;color:#888;margin-bottom:14px;" id="manualPayMethodName">bKash / Nagad</div>
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <label class="form-label">Sender Number *</label>
+                            <input class="form-input" id="senderNumber" placeholder="Number you sent from" type="tel">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Transaction ID *</label>
+                            <input class="form-input" id="trxId" placeholder="TrxID / Reference Number">
+                        </div>
                     </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label class="form-label">Transaction ID *</label>
-                        <input class="form-input" id="trxId" placeholder="TrxID / Reference Number">
+                </div>
+
+                <!-- ── INTERNATIONAL PANEL ── -->
+                <div id="internationalPayPanel" style="display:none;">
+
+                    <!-- USDT Amount Display -->
+                    <div class="intl-amount-box" id="intlAmountBox">
+                        <div class="intl-amount-usdt" id="intlUsdtAmt">0.00 USDT</div>
+                        <div class="intl-amount-bdt" id="intlBdtAmt">= ৳0</div>
+                        <div class="intl-amount-rate" id="intlRateLabel">Rate: 1 USD = ৳110</div>
                     </div>
+
+                    <!-- Crypto Payment Options (Binance Pay + Coins) -->
+                    <div id="cryptoPaymentOptions"></div>
+
+                    <!-- Network Selection (shown after coin picked) -->
+                    <div id="cryptoNetworkDetails" style="display:none;"></div>
+
+                    <!-- Wallet Address Display (shown after network picked) -->
+                    <div id="cryptoWalletBox" style="display:none;"></div>
+
+                    <!-- TxID Input -->
+                    <div class="txid-input-wrap" id="cryptoTxidWrap" style="display:none;">
+                        <label class="form-label" style="font-weight:700;font-size:13px;">📋 Transaction ID / TxHash *</label>
+                        <input class="form-input" id="cryptoTxidInput" placeholder="Paste your Transaction ID or TxHash here" style="font-size:13px;">
+                        <div style="font-size:11px;color:#888;margin-top:5px;">Binance Pay: Transaction ID from Binance app. Crypto: TxHash from blockchain explorer.</div>
+                    </div>
+
+                    <!-- Verify Status -->
+                    <div class="verify-status" id="cryptoVerifyStatus"></div>
+
+                    <!-- Verify & Pay Button -->
+                    <button class="verify-btn" id="verifyCryptoBtn" onclick="verifyCryptoPayment()" style="display:none;">
+                        ✅ Verify & Pay
+                    </button>
                 </div>
 
                 <!-- Promo Code -->
@@ -170,7 +250,7 @@
                 </div>
                 <div id="promoMsg" style="font-size:13px;margin-top:6px;"></div>
 
-                <div style="display:flex;gap:10px;margin-top:20px;">
+                <div style="display:flex;gap:10px;margin-top:20px;" id="nationalPlaceOrderRow">
                     <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
                     <button class="btn btn-primary btn-full btn-lg" id="placeOrderBtn" onclick="placeOrder()">
                         <i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order
@@ -1142,7 +1222,410 @@ function genOrderId() {
 }
 
 function getCart() { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY)||'[]'); } catch(e){ return []; } }
+
+// ── International Transfer System ─────────────────────────────
+var currentTransferTab = 'national';
+var intlPayMode       = ''; // 'binance_pay' | 'crypto'
+var intlCoinSymbol    = '';
+var intlNetworkName   = '';
+var intlNetworkAddr   = '';
+var intlVerified      = false; // true after successful verification
+
+function switchTransferTab(tab) {
+    currentTransferTab = tab;
+    selectedPayMethod  = '';
+    intlVerified       = false;
+
+    var isIntl = (tab === 'international');
+    document.getElementById('tabNational').classList.toggle('active', !isIntl);
+    document.getElementById('tabInternational').classList.toggle('active', isIntl);
+    document.getElementById('nationalPayPanel').style.display   = isIntl ? 'none' : 'block';
+    document.getElementById('internationalPayPanel').style.display = isIntl ? 'block' : 'none';
+    document.getElementById('nationalPlaceOrderRow').style.display = isIntl ? 'none' : 'flex';
+
+    // Hide manual pay box when switching to national after crypto
+    document.getElementById('manualPayBox').style.display = 'none';
+
+    if (isIntl) { buildInternationalOptions(); }
+}
+
+function buildInternationalOptions() {
+    var total   = updateSummaryTotals();
+    var usdRate = parseFloat(settings.usd_to_bdt_rate || 110);
+    var usdtAmt = (total / usdRate).toFixed(2);
+
+    document.getElementById('intlUsdtAmt').textContent  = usdtAmt + ' USDT';
+    document.getElementById('intlBdtAmt').textContent   = '= ৳' + Math.round(total);
+    document.getElementById('intlRateLabel').textContent = 'Rate: 1 USD = ৳' + usdRate;
+
+    var html = '';
+    var hasProxy = !!(settings.binance_proxy_url || CONFIG.BINANCE_PROXY_URL);
+
+    // Binance Pay option
+    if (settings.binance_pay_uid) {
+        var badge = hasProxy ? '' : '<span class="backup-badge">Manual Review</span>';
+        html += '<div class="crypto-opt" id="copt_binance_pay" onclick="selectIntlMethod(\'binance_pay\')">' +
+            '<span style="font-size:26px;">🟡</span>' +
+            '<div style="flex:1;">' +
+                '<div style="font-weight:800;font-size:14px;">Binance Pay ' + badge + '</div>' +
+                '<div style="font-size:12px;color:#888;">Send via Binance Pay to UID: <strong>' + settings.binance_pay_uid + '</strong></div>' +
+            '</div>' +
+            '<input type="radio" name="intlMethod" value="binance_pay" style="width:18px;height:18px;accent-color:#F0B90B;">' +
+            '</div>';
+    }
+
+    // Crypto coins
+    var coins = settings.crypto_coins || [];
+    coins.forEach(function(coin) {
+        if (!coin.symbol || !coin.networks || !coin.networks.length) return;
+        var nets = coin.networks.map(function(n) { return n.name; }).join(' / ');
+        html += '<div class="crypto-opt" id="copt_' + coin.symbol + '" onclick="selectIntlCoin(\'' + coin.symbol + '\')">' +
+            '<span style="font-size:26px;">🪙</span>' +
+            '<div style="flex:1;">' +
+                '<div style="font-weight:800;font-size:14px;">' + coin.symbol +
+                    '<span style="font-size:12px;font-weight:400;color:#888;margin-left:6px;">' + (coin.name || '') + '</span></div>' +
+                '<div style="font-size:12px;color:#888;">Networks: ' + nets + '</div>' +
+            '</div>' +
+            '<input type="radio" name="intlMethod" value="coin_' + coin.symbol + '" style="width:18px;height:18px;accent-color:#627EEA;">' +
+            '</div>';
+    });
+
+    if (!html) {
+        html = '<div style="text-align:center;padding:24px;color:#999;font-size:13px;border:1.5px dashed var(--border);border-radius:12px;">' +
+               '⚠️ No international payment method configured.<br>Admin → Settings → Crypto & Binance Pay থেকে যোগ করো।</div>';
+    }
+
+    document.getElementById('cryptoPaymentOptions').innerHTML = html;
+    document.getElementById('cryptoNetworkDetails').style.display = 'none';
+    document.getElementById('cryptoWalletBox').style.display = 'none';
+    document.getElementById('cryptoTxidWrap').style.display = 'none';
+    document.getElementById('verifyCryptoBtn').style.display = 'none';
+    setVerifyStatus('', '');
+    intlVerified = false;
+}
+
+function selectIntlMethod(method) {
+    intlPayMode     = method;
+    intlCoinSymbol  = '';
+    intlNetworkName = '';
+    intlNetworkAddr = '';
+
+    // Highlight
+    document.querySelectorAll('#cryptoPaymentOptions .crypto-opt').forEach(function(el) {
+        el.classList.remove('selected', 'binance-selected');
+    });
+    var el = document.getElementById('copt_' + method);
+    if (el) {
+        el.classList.add('binance-selected');
+        var radio = el.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+    }
+
+    if (method === 'binance_pay') {
+        selectedPayMethod = 'crypto_binance_pay';
+        document.getElementById('cryptoNetworkDetails').style.display = 'none';
+
+        var uid   = settings.binance_pay_uid;
+        var total = updateSummaryTotals();
+        var rate  = parseFloat(settings.usd_to_bdt_rate || 110);
+        var usdt  = (total / rate).toFixed(2);
+
+        document.getElementById('cryptoWalletBox').style.display = 'block';
+        document.getElementById('cryptoWalletBox').innerHTML =
+            '<div class="wallet-addr-box" style="border-color:#F0B90B;background:rgba(240,185,11,0.05);">' +
+                '<div style="font-size:12px;font-weight:700;color:#B8860B;margin-bottom:6px;">🟡 Binance Pay Instructions</div>' +
+                '<div style="font-size:13px;color:#555;margin-bottom:6px;">Send exactly <strong style="color:#1a1a2e;">' + usdt + ' USDT</strong> to:</div>' +
+                '<div class="wallet-addr-text" style="border-color:rgba(240,185,11,0.4);">' +
+                    '<span id="binanceUidDisplay" style="font-size:18px;letter-spacing:2px;font-weight:900;">UID: ' + uid + '</span>' +
+                    '<button class="copy-btn" style="background:#F0B90B;color:#1a1a2e;" onclick="copyText(\'' + uid + '\',this)">📋 Copy</button>' +
+                '</div>' +
+                '<div style="font-size:11px;color:#888;">After sending, open Binance app → Pay → History → copy the <strong>Transaction ID</strong>.</div>' +
+            '</div>';
+
+        document.getElementById('cryptoTxidWrap').style.display = 'block';
+        document.getElementById('verifyCryptoBtn').style.display = 'flex';
+        setVerifyStatus('', '');
+        intlVerified = false;
+    }
+}
+
+function selectIntlCoin(symbol) {
+    intlPayMode    = 'crypto';
+    intlCoinSymbol = symbol;
+    intlNetworkName = '';
+    intlNetworkAddr = '';
+    selectedPayMethod = 'crypto_' + symbol;
+
+    // Highlight coin
+    document.querySelectorAll('#cryptoPaymentOptions .crypto-opt').forEach(function(el) {
+        el.classList.remove('selected', 'binance-selected');
+    });
+    var el = document.getElementById('copt_' + symbol);
+    if (el) {
+        el.classList.add('selected');
+        var radio = el.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+    }
+
+    // Build network list
+    var coins = settings.crypto_coins || [];
+    var coin  = coins.find(function(c) { return c.symbol === symbol; });
+    if (!coin) return;
+
+    var netsHtml = '<div style="margin-top:4px;">' +
+        '<div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">⛓️ Select Network</div>';
+
+    coin.networks.forEach(function(net) {
+        var safeNet = (net.name || '').replace(/'/g, "\\'");
+        var safeAddr = (net.address || '').replace(/'/g, "\\'");
+        netsHtml += '<div class="net-opt" id="netopt_' + safeNet + '" onclick="selectIntlNetwork(\'' + safeNet + '\',\'' + safeAddr + '\')">' +
+            '<span style="font-size:18px;">⛓️</span>' +
+            '<div style="flex:1;">' +
+                '<div style="font-weight:700;font-size:13px;">' + (net.name || '—') + '</div>' +
+                '<div style="font-size:11px;color:#888;">' + (net.address ? net.address.substring(0,16) + '...' : 'No address') + '</div>' +
+            '</div>' +
+            '<input type="radio" name="netMethod" style="width:16px;height:16px;accent-color:#627EEA;">' +
+            '</div>';
+    });
+    netsHtml += '</div>';
+
+    document.getElementById('cryptoNetworkDetails').style.display = 'block';
+    document.getElementById('cryptoNetworkDetails').innerHTML = netsHtml;
+    document.getElementById('cryptoWalletBox').style.display = 'none';
+    document.getElementById('cryptoTxidWrap').style.display = 'none';
+    document.getElementById('verifyCryptoBtn').style.display = 'none';
+    setVerifyStatus('', '');
+    intlVerified = false;
+}
+
+function selectIntlNetwork(netName, addr) {
+    intlNetworkName = netName;
+    intlNetworkAddr = addr;
+
+    document.querySelectorAll('#cryptoNetworkDetails .net-opt').forEach(function(el) {
+        el.classList.toggle('selected', el.id === 'netopt_' + netName);
+        var r = el.querySelector('input[type="radio"]');
+        if (r) r.checked = (el.id === 'netopt_' + netName);
+    });
+
+    var total = updateSummaryTotals();
+    var rate  = parseFloat(settings.usd_to_bdt_rate || 110);
+    var usdt  = (total / rate).toFixed(2);
+    var sym   = intlCoinSymbol;
+
+    document.getElementById('cryptoWalletBox').style.display = 'block';
+    document.getElementById('cryptoWalletBox').innerHTML =
+        '<div class="wallet-addr-box">' +
+            '<div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:6px;">🔷 ' + sym + ' — ' + netName + ' Wallet</div>' +
+            '<div style="font-size:13px;color:#555;margin-bottom:6px;">Send exactly <strong style="color:#1a1a2e;">' + usdt + ' USDT</strong> to:</div>' +
+            '<div class="wallet-addr-text">' +
+                '<span id="walletAddrSpan" style="font-family:monospace;font-size:12px;">' + (addr || 'Address not set') + '</span>' +
+                (addr ? '<button class="copy-btn" onclick="copyText(\'' + addr.replace(/'/g, "\\'") + '\',this)">📋 Copy</button>' : '') +
+            '</div>' +
+            '<div style="font-size:11px;color:#dc2626;font-weight:600;">⚠️ Only send ' + sym + ' via <strong>' + netName + '</strong>. Wrong network = lost funds!</div>' +
+        '</div>';
+
+    document.getElementById('cryptoTxidWrap').style.display = 'block';
+    document.getElementById('verifyCryptoBtn').style.display = 'flex';
+    setVerifyStatus('', '');
+    intlVerified = false;
+}
+
+function copyText(text, btn) {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(function() {
+        var orig = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        btn.classList.add('copied');
+        setTimeout(function() { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+    }).catch(function() {
+        // fallback
+        var el = document.createElement('textarea');
+        el.value = text; document.body.appendChild(el); el.select();
+        document.execCommand('copy'); document.body.removeChild(el);
+        btn.textContent = '✅ Copied!';
+        setTimeout(function() { btn.textContent = '📋 Copy'; }, 1800);
+    });
+}
+
+function setVerifyStatus(msg, type) {
+    var el = document.getElementById('cryptoVerifyStatus');
+    el.className = 'verify-status' + (type ? ' ' + type : '');
+    el.textContent = msg;
+}
+
+// ── Crypto Payment Verification ───────────────────────────────
+// Flow: 1) Supabase double-spend check → 2) PHP proxy (if available) → 3) Backup mode fallback
+function verifyCryptoPayment() {
+    if (intlVerified) { placeCryptoOrder(); return; }
+
+    var txid = (document.getElementById('cryptoTxidInput').value || '').trim();
+    if (!txid) { setVerifyStatus('❌ Please enter your Transaction ID / TxHash.', 'error'); return; }
+
+    if (!intlPayMode) { setVerifyStatus('❌ Please select a payment method first.', 'error'); return; }
+    if (intlPayMode === 'crypto' && !intlNetworkName) { setVerifyStatus('❌ Please select a network.', 'error'); return; }
+
+    var btn = document.getElementById('verifyCryptoBtn');
+    btn.disabled = true;
+    btn.textContent = '🔍 Verifying...';
+    setVerifyStatus('🔍 Checking transaction on blockchain...', 'loading');
+
+    var total  = updateSummaryTotals();
+    var rate   = parseFloat(settings.usd_to_bdt_rate || 110);
+    var usdt   = parseFloat((total / rate).toFixed(2));
+
+    // Step 1: Double-spend check in Supabase
+    sb.from('verified_payments').select('id').eq('transaction_id', txid).maybeSingle()
+    .then(function(dupRes) {
+        if (!dupRes.error && dupRes.data) {
+            setVerifyStatus('❌ This Transaction ID has already been used! Double-spend rejected.', 'error');
+            btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+            return;
+        }
+
+        // Step 2: Try PHP proxy
+        var proxyUrl = (settings.binance_proxy_url || CONFIG.BINANCE_PROXY_URL || '').trim();
+        if (!proxyUrl) {
+            // No proxy configured — go straight to backup mode
+            runBackupVerification(txid, usdt, btn);
+            return;
+        }
+
+        var body = intlPayMode === 'binance_pay'
+            ? { action: 'verify-pay',     order_ref: txid, expected_amount: usdt }
+            : { action: 'verify-deposit', tx_hash: txid, coin: intlCoinSymbol, expected_amount: usdt };
+
+        var timeout = new Promise(function(_, reject) {
+            setTimeout(function() { reject(new Error('timeout')); }, 12000);
+        });
+
+        Promise.race([
+            fetch(proxyUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            }).then(function(r) { return r.json(); }),
+            timeout
+        ])
+        .then(function(data) {
+            if (data.success) {
+                // PHP verified ✅
+                lockAndPlaceOrder(txid, usdt, btn, false);
+            } else {
+                setVerifyStatus('❌ Verification failed: ' + (data.error || 'Transaction not found or invalid.'), 'error');
+                btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+            }
+        })
+        .catch(function() {
+            // PHP proxy unavailable → backup mode
+            runBackupVerification(txid, usdt, btn);
+        });
+    });
+}
+
+// Backup mode: no Binance API check — only Supabase double-spend lock
+function runBackupVerification(txid, usdt, btn) {
+    setVerifyStatus('⚠️ Auto-verification unavailable. Recording for manual review...', 'loading');
+    setTimeout(function() {
+        lockAndPlaceOrder(txid, usdt, btn, true);
+    }, 800);
+}
+
+// Save to verified_payments and place order
+function lockAndPlaceOrder(txid, usdt, btn, isBackup) {
+    var coinVal = intlPayMode === 'binance_pay' ? 'USDT' : intlCoinSymbol;
+    var netVal  = intlPayMode === 'binance_pay' ? 'Binance Pay' : intlNetworkName;
+    var method  = intlPayMode === 'binance_pay' ? 'binance_pay' : 'crypto';
+
+    sb.from('verified_payments').insert([{
+        transaction_id: txid,
+        order_id:       'PENDING',
+        amount:         usdt,
+        currency:       'USDT',
+        method:         method,
+        coin:           coinVal,
+        network:        netVal
+    }]).then(function(insRes) {
+        if (insRes.error && insRes.error.code === '23505') {
+            // Unique constraint — already used
+            setVerifyStatus('❌ Transaction ID already recorded. Double-spend blocked.', 'error');
+            btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+            return;
+        }
+        intlVerified = true;
+        var msg = isBackup
+            ? '✅ Recorded! Your payment will be manually reviewed by admin. Placing order...'
+            : '✅ Verified on Binance! Placing order...';
+        setVerifyStatus(msg, 'success');
+        btn.textContent = '✅ Verified — Placing Order...';
+        setTimeout(function() { placeCryptoOrder(txid, usdt, isBackup); }, 700);
+    });
+}
+
+function placeCryptoOrder(txid, usdt, isBackup) {
+    var name  = document.getElementById('custName').value.trim();
+    var phone = document.getElementById('custPhone').value.trim();
+    var email = document.getElementById('custEmail').value.trim();
+    var div   = isPickup ? 'Pickup' : document.getElementById('divSelect').value;
+    var dist  = isPickup ? 'Pickup' : document.getElementById('distSelect').value;
+    var upa   = isPickup ? 'Pickup' : document.getElementById('upaSelect').value;
+    var addr  = isPickup ? (settings.store_address || 'Store Pickup') : document.getElementById('custAddress').value.trim();
+    var total = updateSummaryTotals();
+
+    var methodLabel = intlPayMode === 'binance_pay'
+        ? 'Binance Pay (USDT)'
+        : 'Crypto ' + intlCoinSymbol + ' [' + intlNetworkName + ']';
+
+    var payStatus = isBackup ? 'Manual Review' : 'Paid';
+    var ordStatus = isBackup ? 'Pending' : 'Confirmed';
+
+    var subtotal = cart.reduce(function(s,i){return s+i.price*(i.quantity||1);},0);
+    var orderId  = genOrderId();
+
+    var orderData = {
+        id:              orderId,
+        customer_name:   name,
+        customer_phone:  phone,
+        customer_email:  email,
+        division:        div,
+        district:        dist,
+        upazila:         upa,
+        address:         addr,
+        items:           cart,
+        addons:          selectedAddons.map(function(a){return a.name;}).join(', ') || 'None',
+        subtotal:        subtotal,
+        addon_total:     addonTotal,
+        delivery_charge: deliveryCharge,
+        promo_code:      promoCode || null,
+        promo_discount:  promoDiscount,
+        grand_total:     total,
+        advance_payable: 0,
+        payment_method:  methodLabel,
+        payment_status:  payStatus,
+        payment_trx_id:  txid,
+        payment_sender:  usdt + ' USDT',
+        status:          ordStatus,
+        order_type:      isPickup ? 'pickup' : 'delivery'
+    };
+
+    sb.from('orders').insert([orderData]).then(function(r) {
+        if (r.error) {
+            setVerifyStatus('❌ Order save error: ' + r.error.message, 'error');
+            var btn = document.getElementById('verifyCryptoBtn');
+            btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+            return;
+        }
+        // Update verified_payments with real order_id
+        sb.from('verified_payments').update({ order_id: orderId }).eq('transaction_id', txid);
+
+        sendOrderNotification(orderData);
+        if (isDirectOrder) { localStorage.removeItem(DIRECT_KEY); }
+        else               { localStorage.removeItem(CONFIG.CART_KEY); }
+        window.location.href = 'success.html?id=' + orderId;
+    });
+}
 </script>
+
 
     <!-- Premium Icons & Offline Logic (Dynamic Injected) -->
     <script src="https://unpkg.com/lucide@latest"></script>

@@ -3,6 +3,15 @@
 // binance_proxy.php — Binance API Proxy (Server-Side Only)
 // Deploy this to: mypay.freelancingbyrifat.top/binance_proxy.php
 // ⚠️ NEVER expose API_KEY or API_SECRET in frontend code
+//
+// ── STANDALONE MODE ──────────────────────────────────────────
+// This file runs 100% independently — NO Supabase dependency.
+// It only calls Binance REST API directly using HMAC-SHA256.
+// Double-spend protection is handled separately in Supabase
+// verified_payments table (checkout.html → Supabase insert).
+// ── BACKUP MODE ──────────────────────────────────────────────
+// If cPanel is unavailable, checkout falls back automatically:
+// skip Binance API → Supabase-only TxID lock → Manual Review.
 // ============================================================
 
 // ── CONFIGURATION ────────────────────────────────────────────

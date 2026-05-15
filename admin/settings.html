@@ -271,7 +271,14 @@
                 <div class="form-group">
                     <label class="form-label">Binance Pay Proxy URL</label>
                     <input class="form-input" id="binanceProxyUrl" placeholder="https://mypay.freelancingbyrifat.top/binance_proxy.php">
-                    <div class="form-hint">Server-এ deploy করা <code>binance_proxy.php</code> এর URL।</div>
+                    <div class="form-hint">Server-এ deploy করা <code>binance_proxy.php</code> এর URL। cPanel access না থাকলে খালি রাখো — backup mode চলবে।</div>
+                </div>
+
+                <!-- USD Rate -->
+                <div class="form-group" style="background:rgba(240,185,11,0.06);border:1px solid rgba(240,185,11,0.3);border-radius:10px;padding:14px;">
+                    <label class="form-label" style="color:#B8860B;">💱 1 USD = ? BDT (Exchange Rate)</label>
+                    <input class="form-input" id="usdToBdtRate" type="number" step="0.01" placeholder="e.g. 110" style="font-size:18px;font-weight:800;">
+                    <div class="form-hint">Checkout এ BDT total থেকে USDT amount এই rate দিয়ে calculate হবে। আজকের rate দাও।</div>
                 </div>
 
                 <hr class="section-divider">
@@ -485,6 +492,7 @@
             // Crypto & Binance Pay
             setVal('binancePayUid', s.binance_pay_uid || '');
             setVal('binanceProxyUrl', s.binance_proxy_url || CONFIG.BINANCE_PROXY_URL || '');
+            setVal('usdToBdtRate', s.usd_to_bdt_rate || '110');
             cryptoCoins = s.crypto_coins || [];
             renderCryptoCoins();
         });
@@ -582,6 +590,7 @@
             pickup_chat_id:       document.getElementById('pickupChatId').value.trim(),
             binance_pay_uid:      document.getElementById('binancePayUid').value.trim(),
             binance_proxy_url:    document.getElementById('binanceProxyUrl').value.trim(),
+            usd_to_bdt_rate:      parseFloat(document.getElementById('usdToBdtRate').value) || 110,
             crypto_coins:         collectCryptoCoins(),
             id: 1
         };

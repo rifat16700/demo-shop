@@ -211,10 +211,10 @@
                 <!-- ── Transfer Type Tab Bar ── -->
                 <div class="transfer-tab-bar" id="transferTabBar">
                     <button class="transfer-tab-btn active" id="tabNational" onclick="switchTransferTab('national')">
-                        🇧🇩 BD Local Payment
+                        🇧🇩 National Transfer
                     </button>
                     <button class="transfer-tab-btn" id="tabInternational" onclick="switchTransferTab('international')">
-                        🪙 Crypto Payment
+                        🌐 International Transfer
                     </button>
                 </div>
 
@@ -260,6 +260,9 @@
 
                     <!-- Crypto Payment Options (Binance Pay + Coins) -->
                     <div id="cryptoPaymentOptions"></div>
+
+                    <!-- Coin Selection (shown after Crypto picked) -->
+                    <div id="cryptoCoinSelectBox" style="display:none;"></div>
 
                     <!-- Network Selection (shown after coin picked) -->
                     <div id="cryptoNetworkDetails" style="display:none;"></div>
@@ -1436,19 +1439,18 @@ function buildInternationalOptions() {
 
     // Crypto coins
     var coins = settings.crypto_coins || [];
-    coins.forEach(function(coin) {
-        if (!coin.symbol || !coin.networks || !coin.networks.length) return;
-        var nets = coin.networks.map(function(n) { return n.name; }).join(' / ');
-        html += '<div class="crypto-opt" id="copt_' + coin.symbol + '" onclick="selectIntlCoin(\'' + coin.symbol + '\')">' +
+    var hasCoins = coins.some(function(c) { return c.symbol && c.networks && c.networks.length; });
+    
+    if (hasCoins) {
+        html += '<div class="crypto-opt" id="copt_crypto_main" onclick="selectIntlMethod(\'crypto_main\')">' +
             '<span style="font-size:26px;">🪙</span>' +
             '<div style="flex:1;">' +
-                '<div style="font-weight:800;font-size:14px;">' + coin.symbol +
-                    '<span style="font-size:12px;font-weight:400;color:#888;margin-left:6px;">' + (coin.name || '') + '</span></div>' +
-                '<div style="font-size:12px;color:#888;">Networks: ' + nets + '</div>' +
+                '<div style="font-weight:800;font-size:14px;">Crypto Payment</div>' +
+                '<div style="font-size:12px;color:#888;">Pay via USDT, BTC, ETH, etc.</div>' +
             '</div>' +
-            '<input type="radio" name="intlMethod" value="coin_' + coin.symbol + '" style="width:18px;height:18px;accent-color:#627EEA;">' +
+            '<input type="radio" name="intlMethod" value="crypto_main" style="width:18px;height:18px;accent-color:#627EEA;">' +
             '</div>';
-    });
+    }
 
     if (!html) {
         html = '<div style="text-align:center;padding:24px;color:#999;font-size:13px;border:1.5px dashed var(--border);border-radius:12px;">' +
@@ -1456,6 +1458,7 @@ function buildInternationalOptions() {
     }
 
     document.getElementById('cryptoPaymentOptions').innerHTML = html;
+    document.getElementById('cryptoCoinSelectBox').style.display = 'none';
     document.getElementById('cryptoNetworkDetails').style.display = 'none';
     document.getElementById('cryptoWalletBox').style.display = 'none';
     document.getElementById('cryptoTxidWrap').style.display = 'none';
@@ -1483,6 +1486,7 @@ function selectIntlMethod(method) {
 
     if (method === 'binance_pay') {
         selectedPayMethod = 'crypto_binance_pay';
+        document.getElementById('cryptoCoinSelectBox').style.display = 'none';
         document.getElementById('cryptoNetworkDetails').style.display = 'none';
 
         var uid   = settings.binance_pay_uid;
@@ -1494,7 +1498,7 @@ function selectIntlMethod(method) {
         document.getElementById('cryptoWalletBox').innerHTML =
             '<div class="wallet-addr-box" style="border-color:#F0B90B;background:rgba(240,185,11,0.05);">' +
                 '<div style="font-size:12px;font-weight:700;color:#B8860B;margin-bottom:6px;">🟡 Binance Pay Instructions</div>' +
-                '<div style="font-size:13px;color:#555;margin-bottom:6px;">Send exactly <strong style="color:#1a1a2e;">' + usdt + ' USDT</strong> to:</div>' +
+                '<div style="font-size:13px;color:#555;margin-bottom:6px;display:flex;align-items:center;gap:6px;">Send exactly <strong style="color:#1a1a2e;">' + usdt + ' USDT</strong> <button class="copy-btn" style="background:none;border:none;color:#888;padding:2px;min-width:auto;" onclick="copyText(\'' + usdt + '\',this)" title="Copy Amount"><i data-lucide="copy" class="lucide-icon" style="width:14px;height:14px;"></i></button> to:</div>' +
                 '<div class="wallet-addr-text" style="border-color:rgba(240,185,11,0.4);">' +
                     '<span id="binanceUidDisplay" style="font-size:18px;letter-spacing:2px;font-weight:900;">UID: ' + uid + '</span>' +
                     '<button class="copy-btn" style="background:#F0B90B;color:#1a1a2e;" onclick="copyText(\'' + uid + '\',this)">📋 Copy</button>' +
@@ -1506,6 +1510,34 @@ function selectIntlMethod(method) {
         document.getElementById('verifyCryptoBtn').style.display = 'flex';
         setVerifyStatus('', '');
         intlVerified = false;
+        if(typeof lucide !== 'undefined') lucide.createIcons();
+    } else if (method === 'crypto_main') {
+        selectedPayMethod = 'crypto_main';
+        document.getElementById('cryptoNetworkDetails').style.display = 'none';
+        document.getElementById('cryptoWalletBox').style.display = 'none';
+        document.getElementById('cryptoTxidWrap').style.display = 'none';
+        document.getElementById('verifyCryptoBtn').style.display = 'none';
+        setVerifyStatus('', '');
+
+        var coins = settings.crypto_coins || [];
+        var coinHtml = '<div style="margin-top:10px;"><div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:8px;text-transform:uppercase;">🪙 Select Crypto</div>';
+        coins.forEach(function(coin) {
+            if (!coin.symbol || !coin.networks || !coin.networks.length) return;
+            var nets = coin.networks.map(function(n) { return n.name; }).join(' / ');
+            coinHtml += '<div class="crypto-opt" id="copt_' + coin.symbol + '" onclick="selectIntlCoin(\'' + coin.symbol + '\')" style="margin-bottom:6px;border-color:rgba(98,126,234,0.3);">' +
+                '<span style="font-size:20px;">💠</span>' +
+                '<div style="flex:1;">' +
+                    '<div style="font-weight:800;font-size:13px;">' + coin.symbol +
+                        '<span style="font-size:11px;font-weight:400;color:#888;margin-left:6px;">' + (coin.name || '') + '</span></div>' +
+                    '<div style="font-size:11px;color:#888;">Networks: ' + nets + '</div>' +
+                '</div>' +
+                '<input type="radio" name="coinMethod" value="' + coin.symbol + '" style="width:16px;height:16px;accent-color:#627EEA;">' +
+                '</div>';
+        });
+        coinHtml += '</div>';
+
+        document.getElementById('cryptoCoinSelectBox').innerHTML = coinHtml;
+        document.getElementById('cryptoCoinSelectBox').style.display = 'block';
     }
 }
 
@@ -1517,7 +1549,7 @@ function selectIntlCoin(symbol) {
     selectedPayMethod = 'crypto_' + symbol;
 
     // Highlight coin
-    document.querySelectorAll('#cryptoPaymentOptions .crypto-opt').forEach(function(el) {
+    document.querySelectorAll('#cryptoCoinSelectBox .crypto-opt').forEach(function(el) {
         el.classList.remove('selected', 'binance-selected');
     });
     var el = document.getElementById('copt_' + symbol);
@@ -1620,7 +1652,7 @@ function selectIntlNetwork(netName, addr, qrUrl) {
         document.getElementById('cryptoWalletBox').innerHTML =
             '<div class="wallet-addr-box">' +
                 '<div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:6px;">🔷 ' + sym + ' — ' + netName + ' Wallet</div>' +
-                '<div style="font-size:13px;color:#555;margin-bottom:6px;">Send exactly <strong style="color:#1a1a2e;font-size:16px;">' + cryptoAmt + ' ' + sym + '</strong> to:</div>' +
+                '<div style="font-size:13px;color:#555;margin-bottom:6px;display:flex;align-items:center;gap:6px;">Send exactly <strong style="color:#1a1a2e;font-size:16px;">' + cryptoAmt + ' ' + sym + '</strong> <button class="copy-btn" style="background:none;border:none;color:#888;padding:2px;min-width:auto;" onclick="copyText(\'' + cryptoAmt + '\',this)" title="Copy Amount"><i data-lucide="copy" class="lucide-icon" style="width:14px;height:14px;"></i></button> to:</div>' +
                 '<div class="wallet-addr-text">' +
                     '<span id="walletAddrSpan" style="font-family:monospace;font-size:12px;">' + (addr || 'Address not set') + '</span>' +
                     (addr ? '<button class="copy-btn" onclick="copyText(\'' + addr.replace(/'/g, "\\'") + '\',this)">📋 Copy</button>' : '') +

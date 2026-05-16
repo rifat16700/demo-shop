@@ -737,22 +737,22 @@
     }
 
     function addCryptoNetwork(cIdx) {
+        cryptoCoins = collectCryptoCoins(true); // Save current inputs including empty ones before re-render
+        if (!cryptoCoins[cIdx]) return;
         if (!cryptoCoins[cIdx].networks) cryptoCoins[cIdx].networks = [];
         cryptoCoins[cIdx].networks.push({ name: '', address: '' });
-        // Save current inputs before re-render
-        cryptoCoins = collectCryptoCoins();
         renderCryptoCoins();
     }
 
     function removeCryptoNetwork(cIdx, nIdx) {
-        cryptoCoins = collectCryptoCoins(); // sync inputs
+        cryptoCoins = collectCryptoCoins(true); // sync inputs
         if (cryptoCoins[cIdx] && cryptoCoins[cIdx].networks) {
             cryptoCoins[cIdx].networks.splice(nIdx, 1);
         }
         renderCryptoCoins();
     }
 
-    function collectCryptoCoins() {
+    function collectCryptoCoins(keepEmpty) {
         var wrap = document.getElementById('cryptoCoinsWrap');
         if (!wrap) return [];
         var result = [];
@@ -770,11 +770,11 @@
                 var nName = netRows[j].value.trim();
                 var nAddr = addrRows[j].value.trim();
                 var nQr   = qrRows[j].value.trim();
-                if (nName || nAddr) {
+                if (keepEmpty || nName || nAddr) {
                     nets.push({ name: nName, address: nAddr, qr_url: nQr });
                 }
             }
-            if (symbol || name || nets.length > 0) {
+            if (keepEmpty || symbol || name || nets.length > 0) {
                 result.push({ symbol: symbol, name: name, networks: nets });
             }
         }

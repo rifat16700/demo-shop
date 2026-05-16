@@ -231,9 +231,36 @@
                     var found = allOrders.find(function(o) { return o.id === urlId; });
                     if (found) openOrderModal(found);
                 }
+
+                autoCleanupOrders();
             });
         });
     });
+
+    function autoCleanupOrders() {
+        var thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        var dateStr = thirtyDaysAgo.toISOString();
+        
+        sb.from('orders').delete()
+          .in('status', ['Delivered', 'Cancelled'])
+          .lt('created_at', dateStr)
+          .then(function(r) {
+              if (r.error) {
+                  console.error('Auto cleanup failed:', r.error);
+              }
+          });
+    }
+
+    function deleteOrder(id) {
+        if (!confirm('Are you sure you want to permanently delete order ' + id + '?')) return;
+        sb.from('orders').delete().eq('id', id).then(function(r) {
+            if (r.error) { showToast('Failed to delete: ' + r.error.message, 'error'); return; }
+            showToast('Order deleted successfully!', 'success');
+            allOrders = allOrders.filter(function(o) { return o.id !== id; });
+            filterOrders();
+        });
+    }
 
 
     function filterOrders() {
@@ -302,7 +329,10 @@
                 '<td>' + statusBadge(o.status) + '</td>' +
                 '<td style="font-size:12px;color:#8E8E93;">' + formatDate(o.created_at) + '</td>' +
                 '<td>' +
-                    '<button class="btn btn-ghost btn-sm" onclick="openOrderModal(' + JSON.stringify(o).replace(/"/g,'&quot;') + ')">View</button>' +
+                    '<div style="display:flex;gap:6px;align-items:center;">' +
+                        '<button class="btn btn-ghost btn-sm" onclick="openOrderModal(' + JSON.stringify(o).replace(/"/g,'&quot;') + ')">View</button>' +
+                        '<button class="btn btn-ghost btn-sm" style="color:var(--danger);padding:4px 8px;" onclick="deleteOrder(\'' + o.id + '\')" title="Delete Order"><i data-lucide="trash-2" class="lucide-icon" style="width:16px;height:16px;"></i></button>' +
+                    '</div>' +
                 '</td>' +
             '</tr>';
         });

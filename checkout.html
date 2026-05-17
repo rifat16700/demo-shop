@@ -1784,32 +1784,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-        var qrHtml = '';
-        if (qrUrl) {
-            qrHtml = '<div style="margin-top:16px;text-align:center;">' +
-                        '<img src="' + qrUrl + '" style="max-width:100%; width:220px; height:auto; border-radius:12px; border:2px solid var(--border); padding:6px; background:#fff; box-shadow:0 4px 12px rgba(0,0,0,0.05);">' +
-                     '</div>';
-        }
-
-        document.getElementById('cryptoWalletBox').innerHTML =
-            '<div class="wallet-addr-box">' +
-                '<div style="font-size:12px;font-weight:700;color:#627EEA;margin-bottom:6px;">🔷 ' + sym + ' — ' + netName + ' Wallet</div>' +
-                '<div style="font-size:13px;color:#555;margin-bottom:6px;display:flex;align-items:center;gap:6px;">Send exactly <strong style="color:#1a1a2e;font-size:16px;">' + cryptoAmt + ' ' + sym + '</strong> <button class="copy-btn" style="background:none;border:none;color:#888;padding:2px;min-width:auto;" onclick="copyText(\'' + cryptoAmt + '\',this)" title="Copy Amount"><i data-lucide="copy" class="lucide-icon" style="width:14px;height:14px;"></i></button> to:</div>' +
-                '<div class="wallet-addr-text">' +
-                    '<span id="walletAddrSpan" style="font-family:monospace;font-size:12px;">' + (addr || 'Address not set') + '</span>' +
-                    (addr ? '<button class="copy-btn" onclick="copyText(\'' + addr.replace(/'/g, "\\'") + '\',this)">📋 Copy</button>' : '') +
-                '</div>' +
-                qrHtml +
-                '<div style="font-size:11px;color:#dc2626;font-weight:600;margin-top:10px;">⚠️ Only send ' + sym + ' via <strong>' + netName + '</strong>. Wrong network = lost funds!</div>' +
-            '</div>';
-
-        document.getElementById('cryptoTxidWrap').style.display = 'block';
-        document.getElementById('verifyCryptoBtn').style.display = 'flex';
-        setVerifyStatus('', '');
-        intlVerified = false;
-        if(typeof lucide !== 'undefined') lucide.createIcons();
-    });
-}
 
 function copyText(text, btn) {
     if (!text) return;

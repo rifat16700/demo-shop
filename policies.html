@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Policies & Terms — Freelancing By Rifat</title>
+    <meta name="description" content="Read our Privacy Policy, User Policy, Payment Policy, Refund Policy, and Terms & Conditions.">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/premium-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/supabase-init.js"></script>
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
+    <style>
+        .policy-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 40px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-light);
+        }
+        .policy-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px dashed #eee;
+        }
+        .policy-header h1 {
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+        .policy-header p {
+            color: #666;
+            font-size: 15px;
+        }
+        .policy-section {
+            margin-bottom: 40px;
+        }
+        .policy-section h2 {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .policy-section p, .policy-section li {
+            font-size: 15px;
+            color: #444;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+        .policy-section ul {
+            padding-left: 20px;
+            margin-bottom: 16px;
+        }
+        .policy-section ul li::marker {
+            color: var(--primary);
+        }
+        .policy-box {
+            background: #fdf2f2;
+            border: 1px solid rgba(255, 77, 77, 0.2);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+        .policy-box h4 {
+            color: var(--primary);
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .policy-container { margin: 20px; padding: 25px; }
+            .policy-header h1 { font-size: 26px; }
+        }
+    </style>
+</head>
+<body style="display:flex;flex-direction:column;min-height:100vh;background:#fafafa;">
+
+<!-- Navbar -->
+<nav class="navbar" id="mainNavbar">
+    <a href="index.html" class="nav-icon-btn">←</a>
+    <a href="index.html" class="navbar-brand">
+        <div id="navLogo" style="font-size:22px;"><i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i></div>
+        <span id="navBrand">Shop</span>
+    </a>
+    <div style="flex:1;"></div>
+    <div class="navbar-actions">
+        <a href="track.html" class="nav-icon-btn" title="Track Order"><i data-lucide="package" class="lucide-icon icon-bounce"></i></a>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main style="flex:1;">
+    <div class="policy-container">
+        <div class="policy-header">
+            <h1>Policies & Terms of Service</h1>
+            <p>Last updated: 18 May 2026</p>
+        </div>
+
+        <div class="policy-section">
+            <h2><i data-lucide="shield-check" class="lucide-icon text-primary"></i> 1. User Policy</h2>
+            <p>Welcome to our platform. By accessing or using our services, you agree to abide by these terms. Users must provide accurate and complete information during registration and checkout. Any fraudulent activity, fake orders, or abuse of the platform will result in immediate account suspension and potential legal action.</p>
+            <p>You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.</p>
+        </div>
+
+        <div class="policy-section">
+            <h2><i data-lucide="lock" class="lucide-icon text-primary"></i> 2. Privacy Policy</h2>
+            <p>Your privacy is important to us. We collect necessary information such as your name, phone number, email address, and delivery address solely for the purpose of order processing, delivery, and customer support.</p>
+            <ul>
+                <li>We do not sell, trade, or rent your personal information to third parties.</li>
+                <li>Payment details are processed securely and are never stored on our local servers.</li>
+                <li>We may use your contact information to send you updates regarding your order status or promotional offers (you may opt-out at any time).</li>
+            </ul>
+        </div>
+
+        <div class="policy-section">
+            <h2><i data-lucide="credit-card" class="lucide-icon text-primary"></i> 3. Payment Policy</h2>
+            <p>We offer multiple payment methods for your convenience, including Cash on Delivery (COD), Mobile Banking (bKash, Nagad), and International options. Please adhere to the following payment rules:</p>
+            <div class="policy-box">
+                <h4>⚠️ Incorrect Payments & Communication</h4>
+                <p>If money is sent to a wrong number, or if an incorrect amount is sent, and no prior or immediate communication is made with our support team, the order and any potential refund will <strong>not be considered valid</strong>. You must contact us immediately if a payment mistake occurs.</p>
+            </div>
+            <div class="policy-box">
+                <h4>🌐 Crypto Payment Policy (Important)</h4>
+                <p>Cryptocurrency payments are primarily intended for our international customers. <strong>Using Cryptocurrency is restricted in Bangladesh.</strong> If any Bangladeshi user chooses to use the Crypto payment method, they do so entirely at their <strong>own risk and responsibility</strong>. We hold no legal responsibility or liability for any regulatory issues arising from a user in Bangladesh utilizing this payment gateway.</p>
+            </div>
+        </div>
+
+        <div class="policy-section">
+            <h2><i data-lucide="refresh-ccw" class="lucide-icon text-primary"></i> 4. Refund & Return Policy</h2>
+            <p>We strive to ensure you are fully satisfied with your purchase. If a valid issue arises (such as receiving a damaged or incorrect item), you may request a refund subject to the following conditions.</p>
+            
+            <p><strong>Customized Products:</strong> If you order a customized or personalized product, <strong>NO refund will be issued</strong>. Customized items cannot be resold to others, making this a mandatory condition of purchase.</p>
+
+            <p>If you are eligible for a refund, we offer three (3) distinct refund methods. Note: For any cash refund method, incurred costs (such as packaging and delivery charges) will be deducted from the initial amount.</p>
+            
+            <ul>
+                <li><strong>Option 1 - Store Voucher:</strong> We will provide a store voucher with a bonus! You will receive the original amount plus up to 5% extra (maximum of 150 BDT bonus). No packaging/delivery costs are deducted for this option.</li>
+                <li><strong>Option 2 - Full Cash Refund:</strong> You will receive a direct cash refund. However, any costs we incurred due to the order (packaging cost, delivery cost) will be deducted. You will receive <strong>90% of the remaining balance</strong> after these deductions.</li>
+                <li><strong>Option 3 - 50/50 System:</strong> You will receive a mixed refund—50% in cash (subject to the same cost deductions mentioned above) and 50% as a store voucher.</li>
+            </ul>
+        </div>
+
+        <div class="policy-section">
+            <h2><i data-lucide="file-text" class="lucide-icon text-primary"></i> 5. Terms & Conditions</h2>
+            <p>By purchasing from our store, you automatically agree to all the policies stated on this page. We reserve the right to update or modify these terms at any time without prior notice. It is your responsibility to review these terms periodically.</p>
+            <p>All content, logos, and images on this website are the intellectual property of the store and may not be used without explicit permission.</p>
+        </div>
+
+    </div>
+</main>
+
+<footer class="footer" style="margin-top:20px; text-align:center; padding:30px; background:#fff; border-top:1px solid #eee;">
+    <div class="footer-bottom">
+        <span id="footerCopy">© 2026 Freelancing By Rifat. All rights reserved.</span>
+    </div>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var p1 = sb.from('settings').select('*').eq('id', 1).single();
+    p1.then(function(res) {
+        if(res.data) {
+            var name = res.data.store_name || CONFIG.STORE_NAME;
+            document.title = 'Policies — ' + name;
+            document.getElementById('navBrand').textContent = name;
+            document.getElementById('footerCopy').textContent = '© ' + new Date().getFullYear() + ' ' + name + '. All rights reserved.';
+            if (res.data.logo_url) {
+                document.getElementById('navLogo').innerHTML = '<img src="' + res.data.logo_url + '" style="height:36px;width:auto;">';
+            }
+        }
+    });
+});
+</script>
+
+<!-- Premium Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if(typeof lucide !== 'undefined') lucide.createIcons();
+    });
+</script>
+</body>
+</html>

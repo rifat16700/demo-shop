@@ -134,8 +134,8 @@
             <div class="footer-title">Support</div>
             <a href="#" id="footerWa">WhatsApp</a>
             <a href="track.html">Track Order</a>
-            <a href="admin/index.html">Admin Login</a>
-            <a href="javascript:void(0)" onclick="simulateOfflineMode()" style="color:#FF3B30;font-weight:600;"><i data-lucide="wifi-off" class="lucide-icon icon-sm"></i> Go Offline</a>
+            <a href="policies.html">Policies & Terms</a>
+            <a href="#" id="footerStoreLocBtn" target="_blank" style="color:#34C759;font-weight:600;"><i data-lucide="map-pin" class="lucide-icon icon-sm"></i> Store Location</a>
         </div>
     </div>
     <div id="footerStoreLoc" style="display:none; text-align:center; padding: 20px 20px 0; max-width:400px; margin:0 auto;">
@@ -202,6 +202,16 @@ function applySettings(s) {
     if (s.youtube_url)   { document.getElementById('footerYt').href = s.youtube_url; }
     if (s.whatsapp_number) {
         document.getElementById('footerWa').href = 'https://wa.me/' + s.whatsapp_number;
+    }
+    var storeBtn = document.getElementById('footerStoreLocBtn');
+    if (storeBtn) {
+        if (s.store_map_link) {
+            storeBtn.href = s.store_map_link;
+        } else if (s.store_address) {
+            storeBtn.href = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(s.store_address);
+        } else {
+            storeBtn.style.display = 'none';
+        }
     }
     var lg = document.getElementById('navLogo');
     if (s.logo_url) {

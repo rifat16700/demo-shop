@@ -75,6 +75,30 @@
             margin-bottom: 10px;
         }
         
+        .lang-toggle-wrap {
+            display: inline-flex;
+            background: #f0f0f5;
+            padding: 4px;
+            border-radius: 30px;
+            margin-top: 15px;
+        }
+        .lang-btn {
+            padding: 8px 24px;
+            border: none;
+            background: transparent;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .lang-btn.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+        }
+        
         @media (max-width: 768px) {
             .policy-container { margin: 20px; padding: 25px; }
             .policy-header h1 { font-size: 26px; }
@@ -100,60 +124,174 @@
 <main style="flex:1;">
     <div class="policy-container">
         <div class="policy-header">
-            <h1>Policies & Terms of Service</h1>
-            <p>Last updated: 18 May 2026</p>
-        </div>
-
-        <div class="policy-section">
-            <h2><i data-lucide="shield-check" class="lucide-icon text-primary"></i> 1. User Policy</h2>
-            <p>Welcome to our platform. By accessing or using our services, you agree to abide by these terms. Users must provide accurate and complete information during registration and checkout. Any fraudulent activity, fake orders, or abuse of the platform will result in immediate account suspension and potential legal action.</p>
-            <p>You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.</p>
-        </div>
-
-        <div class="policy-section">
-            <h2><i data-lucide="lock" class="lucide-icon text-primary"></i> 2. Privacy Policy</h2>
-            <p>Your privacy is important to us. We collect necessary information such as your name, phone number, email address, and delivery address solely for the purpose of order processing, delivery, and customer support.</p>
-            <ul>
-                <li>We do not sell, trade, or rent your personal information to third parties.</li>
-                <li>Payment details are processed securely and are never stored on our local servers.</li>
-                <li>We may use your contact information to send you updates regarding your order status or promotional offers (you may opt-out at any time).</li>
-            </ul>
-        </div>
-
-        <div class="policy-section">
-            <h2><i data-lucide="credit-card" class="lucide-icon text-primary"></i> 3. Payment Policy</h2>
-            <p>We offer multiple payment methods for your convenience, including Cash on Delivery (COD), Mobile Banking (bKash, Nagad), and International options. Please adhere to the following payment rules:</p>
-            <div class="policy-box">
-                <h4>⚠️ Incorrect Payments & Communication</h4>
-                <p>If money is sent to a wrong number, or if an incorrect amount is sent, and no prior or immediate communication is made with our support team, the order and any potential refund will <strong>not be considered valid</strong>. You must contact us immediately if a payment mistake occurs.</p>
-            </div>
-            <div class="policy-box">
-                <h4>🌐 Crypto Payment Policy (Important)</h4>
-                <p>Cryptocurrency payments are primarily intended for our international customers. <strong>Using Cryptocurrency is restricted in Bangladesh.</strong> If any Bangladeshi user chooses to use the Crypto payment method, they do so entirely at their <strong>own risk and responsibility</strong>. We hold no legal responsibility or liability for any regulatory issues arising from a user in Bangladesh utilizing this payment gateway.</p>
+            <h1 id="pageTitle">Policies & Terms of Service</h1>
+            <p id="pageDate">Last updated: 18 May 2026</p>
+            
+            <!-- Language Toggle -->
+            <div class="lang-toggle-wrap">
+                <button class="lang-btn active" id="btnEn" onclick="switchLang('en')">English</button>
+                <button class="lang-btn" id="btnBn" onclick="switchLang('bn')">বাংলা (Bengali)</button>
             </div>
         </div>
 
-        <div class="policy-section">
-            <h2><i data-lucide="refresh-ccw" class="lucide-icon text-primary"></i> 4. Refund & Return Policy</h2>
-            <p>We strive to ensure you are fully satisfied with your purchase. If a valid issue arises (such as receiving a damaged or incorrect item), you may request a refund subject to the highly specific conditions detailed below.</p>
-            
-            <p><strong>Customized Products:</strong> If you order a customized or personalized product, <strong>NO refund will be issued under any circumstances</strong>. Customized items cannot be resold to others, making their acceptance a mandatory condition of purchase. By ordering a custom product, you agree to this strict no-refund policy.</p>
+        <!-- ENGLISH CONTENT -->
+        <div id="contentEn">
+            <div class="policy-section">
+                <h2><i data-lucide="shield-check" class="lucide-icon text-primary"></i> 1. User Policy & Account Management</h2>
+                <p>Welcome to our platform. By accessing or using our services, you agree to abide by these terms. Users must provide accurate and complete information during registration and checkout.</p>
+                <p><strong>Strict Action on Fake Orders:</strong> Any fraudulent activity, fake orders, abusive behavior, or misuse of the platform will result in an immediate permanent ban. We reserve the right to share details of fraudulent users with national E-commerce blacklist databases.</p>
+            </div>
 
-            <p><strong>Important Cost Deduction Rule:</strong> If an order is canceled or returned, our store incurs operational costs. Therefore, <strong>packaging costs and delivery charges will be deducted from the total paid amount before ANY refund is calculated. This deduction applies strictly to ALL three (3) refund options listed below.</strong></p>
-            
-            <p>After deducting the packaging and delivery costs, the remaining eligible balance can be refunded via one of the following methods:</p>
-            
-            <ul>
-                <li><strong>Option 1 - Store Voucher:</strong> You will receive the remaining balance as a digital store voucher, plus an additional bonus of up to 5% (maximum of 150 BDT bonus) on top of the remaining balance. This voucher can be used for future purchases.</li>
-                <li><strong>Option 2 - Full Cash Refund:</strong> You will receive a direct cash refund. However, for a cash refund, you will receive exactly <strong>90% of the remaining balance</strong> (after the packaging and delivery costs have already been deducted).</li>
-                <li><strong>Option 3 - 50/50 System:</strong> You will receive a mixed refund of the remaining balance. 50% will be sent to you as cash, and the other 50% will be provided as a store voucher.</li>
-            </ul>
+            <div class="policy-section">
+                <h2><i data-lucide="lock" class="lucide-icon text-primary"></i> 2. Privacy Policy</h2>
+                <p>Your privacy is strictly respected. We collect necessary information such as your name, phone number, and delivery address solely for the purpose of order processing and delivery.</p>
+                <ul>
+                    <li>We never sell, trade, or rent your personal information to third parties.</li>
+                    <li>Payment details are processed securely through payment gateways and are not stored locally.</li>
+                </ul>
+            </div>
+
+            <div class="policy-section">
+                <h2><i data-lucide="credit-card" class="lucide-icon text-primary"></i> 3. Payment Policy</h2>
+                <p>We offer Cash on Delivery (COD), Mobile Banking (bKash, Nagad), and International options. Please adhere to the following rules:</p>
+                <div class="policy-box">
+                    <h4>⚠️ Incorrect Payments & Communication</h4>
+                    <p>If money is sent to a wrong number, or if an incorrect amount is sent, and no immediate communication is made with our support team, the order and any potential refund will <strong>not be considered valid</strong>.</p>
+                </div>
+                <div class="policy-box">
+                    <h4>🌐 Crypto Payment Policy (Important)</h4>
+                    <p>Cryptocurrency payments are intended for international customers. <strong>Cryptocurrency transactions are restricted in Bangladesh.</strong> Any Bangladeshi user utilizing this method does so entirely at their <strong>own legal risk and responsibility</strong>. We hold no liability for any regulatory issues arising from this.</p>
+                </div>
+            </div>
+
+            <div class="policy-section">
+                <h2><i data-lucide="truck" class="lucide-icon text-primary"></i> 4. Cash On Delivery (COD) Rules (STRICT)</h2>
+                <p>We provide COD for your convenience, but it is built on mutual trust. Please read carefully before ordering:</p>
+                <ul>
+                    <li><strong>Binding Commitment:</strong> Placing a COD order is a binding agreement. You are confirming that you will receive and pay for the parcel.</li>
+                    <li><strong>Refusal Penalty:</strong> If you cancel the order after it has been shipped, or refuse to accept the parcel from the delivery rider for any unjustified reason, you are legally and morally obligated to pay the <strong>two-way delivery charge and packaging fee</strong> as a penalty.</li>
+                    <li><strong>Blacklisting:</strong> Failure to pay this penalty will result in your details (Name, Phone, Address) being added to national E-commerce seller blacklist groups. This will prevent you from ordering from other reputable online shops in the future. We also reserve the right to take legal action (e.g., Consumer Rights complaints).</li>
+                </ul>
+            </div>
+
+            <div class="policy-section">
+                <h2><i data-lucide="video" class="lucide-icon text-primary"></i> 5. Mandatory Unboxing Video Protocol</h2>
+                <p>To claim any issues (damaged, missing, or wrong items), an <strong>unboxing video is absolutely MANDATORY</strong>.</p>
+                <ul>
+                    <li>The video must be recorded from the moment you start opening the intact package.</li>
+                    <li>The video must be <strong>uncut, unedited, and not paused</strong>.</li>
+                    <li>The shipping label on the package must be clearly visible at the beginning of the video.</li>
+                    <li><strong>Without a valid unboxing video, NO claims will be entertained under any circumstances. No exceptions.</strong></li>
+                </ul>
+            </div>
+
+            <div class="policy-section">
+                <h2><i data-lucide="refresh-ccw" class="lucide-icon text-primary"></i> 6. Refund, Return & Exchange Policy</h2>
+                <p>We strive to ensure you are satisfied, but returns are subject to the highly specific conditions detailed below to prevent disputes.</p>
+                
+                <ul>
+                    <li><strong>Customized Products:</strong> NO refunds or returns will be issued for customized or personalized products, as they cannot be resold.</li>
+                    <li><strong>Minor Variations:</strong> Slight color differences due to lighting/monitor resolution, and minor size variations (0.5 to 1 inch) in clothing are industry standard and <strong>do not qualify</strong> as valid grounds for return or refund.</li>
+                    <li><strong>Size Exchanges:</strong> If you ordered the wrong size by your own mistake, you must bear both the return shipping and the new shipping charges for an exchange.</li>
+                </ul>
+
+                <div class="policy-box">
+                    <h4>💰 Refund Calculation (Strict Deduction Rule)</h4>
+                    <p>If an order is canceled or returned, our store incurs operational costs. Therefore, <strong>packaging costs and delivery charges will be DEDUCTED FIRST from the total paid amount before ANY refund is calculated.</strong> This applies strictly to all refund options.</p>
+                </div>
+                
+                <p>After deductions, the remaining eligible balance can be refunded via one of the following methods:</p>
+                <ul>
+                    <li><strong>Option 1 - Store Voucher:</strong> You receive the remaining balance as a digital voucher, plus a <strong>5% bonus</strong> (maximum 150 BDT) on top. Valid for future purchases.</li>
+                    <li><strong>Option 2 - Full Cash Refund:</strong> You receive exactly <strong>90% of the remaining balance</strong> (after packaging and delivery deductions) as a direct cash transfer.</li>
+                    <li><strong>Option 3 - 50/50 System:</strong> 50% of the remaining balance is sent as cash, and the other 50% is provided as a store voucher.</li>
+                </ul>
+            </div>
+
+            <div class="policy-section">
+                <h2><i data-lucide="file-text" class="lucide-icon text-primary"></i> 7. Terms & Conditions</h2>
+                <p>By purchasing from our store, you automatically agree to all the policies stated on this page. If you do not agree with any of these strict rules, we politely request you not to place an order. We reserve the right to update or modify these terms at any time without prior notice.</p>
+            </div>
         </div>
 
-        <div class="policy-section">
-            <h2><i data-lucide="file-text" class="lucide-icon text-primary"></i> 5. Terms & Conditions</h2>
-            <p>By purchasing from our store, you automatically agree to all the policies stated on this page. We reserve the right to update or modify these terms at any time without prior notice. It is your responsibility to review these terms periodically.</p>
-            <p>All content, logos, and images on this website are the intellectual property of the store and may not be used without explicit permission.</p>
+        <!-- BENGALI CONTENT (Hidden by default) -->
+        <div id="contentBn" style="display:none;">
+            <div class="policy-section">
+                <h2><i data-lucide="shield-check" class="lucide-icon text-primary"></i> ১. ব্যবহারকারী নীতিমালা (User Policy)</h2>
+                <p>আমাদের প্ল্যাটফর্মে স্বাগতম। সার্ভিস ব্যবহার করার মাধ্যমে আপনি আমাদের শর্তাবলিতে সম্মতি জানাচ্ছেন। অর্ডার করার সময় অবশ্যই সঠিক তথ্য প্রদান করতে হবে।</p>
+                <p><strong>ফেক অর্ডারের বিরুদ্ধে কঠোর ব্যবস্থা:</strong> ফেক অর্ডার করা, প্ল্যাটফর্মের অপব্যবহার বা অশালীন আচরণের প্রমাণ পেলে অ্যাকাউন্ট চিরতরে ব্যান করা হবে। প্রতারক ক্রেতাদের তথ্য আমরা জাতীয় ই-কমার্স ব্ল্যাকলিস্ট ডেটাবেসে শেয়ার করার অধিকার রাখি।</p>
+            </div>
+
+            <div class="policy-section">
+                <h2><i data-lucide="lock" class="lucide-icon text-primary"></i> ২. গোপনীয়তা নীতিমালা (Privacy Policy)</h2>
+                <p>আপনার ব্যক্তিগত তথ্যের গোপনীয়তা রক্ষায় আমরা প্রতিশ্রুতিবদ্ধ। আমরা কেবল অর্ডার প্রসেসিং এবং ডেলিভারির জন্য প্রয়োজনীয় তথ্য (নাম, নাম্বার, ঠিকানা) সংগ্রহ করি।</p>
+                <ul>
+                    <li>কোনো থার্ড পার্টির কাছে আপনার তথ্য বিক্রি বা শেয়ার করা হয় না।</li>
+                    <li>পেমেন্টের তথ্য সম্পূর্ণ সুরক্ষিত থাকে এবং আমাদের নিজস্ব সার্ভারে সেভ করা হয় না।</li>
+                </ul>
+            </div>
+
+            <div class="policy-section">
+                <h2><i data-lucide="credit-card" class="lucide-icon text-primary"></i> ৩. পেমেন্ট নীতিমালা (Payment Policy)</h2>
+                <p>আমাদের এখানে ক্যাশ অন ডেলিভারি (COD), মোবাইল ব্যাংকিং (বিকাশ, নগদ) এবং ইন্টারন্যাশনাল পেমেন্টের সুবিধা রয়েছে।</p>
+                <div class="policy-box">
+                    <h4>⚠️ ভুল পেমেন্ট এবং যোগাযোগ</h4>
+                    <p>যদি ভুল নাম্বারে টাকা পাঠানো হয় বা ভুল অ্যামাউন্ট পাঠানো হয়, এবং সাথে সাথে আমাদের সাপোর্ট টিমের সাথে যোগাযোগ না করা হয়, তবে ওই অর্ডার বা রিফান্ড <strong>গ্রহণযোগ্য বলে গণ্য হবে না</strong>।</p>
+                </div>
+                <div class="policy-box">
+                    <h4>🌐 ক্রিপ্টোকারেন্সি পেমেন্ট (অত্যন্ত গুরুত্বপূর্ণ)</h4>
+                    <p>ক্রিপ্টো পেমেন্ট মূলত ইন্টারন্যাশনাল কাস্টমারদের জন্য। <strong>বাংলাদেশে ক্রিপ্টোকারেন্সি ব্যবহার সম্পূর্ণ নিষিদ্ধ।</strong> বাংলাদেশের কোনো ইউজার যদি এই মেথড ব্যবহার করে পেমেন্ট করেন, তবে এর দায়ভার সম্পূর্ণ ইউজারের নিজের। এ সংক্রান্ত কোনো আইনি জটিলতায় আমরা বিন্দুমাত্র দায়বদ্ধ থাকবো না।</p>
+                </div>
+            </div>
+
+            <div class="policy-section">
+                <h2><i data-lucide="truck" class="lucide-icon text-primary"></i> ৪. ক্যাশ অন ডেলিভারি (COD) এবং অর্ডার কনফার্মেশন (কঠোর শর্ত)</h2>
+                <p>আমরা আপনাদের সুবিধার্থে COD সুবিধা দিয়ে থাকি, যা পারস্পরিক বিশ্বাসের ওপর নির্ভরশীল। অর্ডার করার আগে ভালোভাবে পড়ুন:</p>
+                <ul>
+                    <li><strong>অর্ডার একটি চুক্তি:</strong> COD-তে অর্ডার করা মানে আপনি পণ্যটি রিসিভ করতে এবং মূল্য পরিশোধ করতে আইনত ও নৈতিকভাবে বাধ্য।</li>
+                    <li><strong>জরিমানা:</strong> পার্সেল কুরিয়ারে বুকিং হওয়ার পর যদি আপনি অর্ডার বাতিল করেন বা ডেলিভারি ম্যানের কাছ থেকে অযৌক্তিক কারণে পার্সেল রিসিভ করতে অস্বীকৃতি জানান, তবে আপনাকে অবশ্যই <strong>যাতায়াত (আপ-ডাউন) ডেলিভারি চার্জ এবং প্যাকেজিং খরচ</strong> জরিমানা হিসেবে প্রদান করতে হবে। </li>
+                    <li><strong>ব্ল্যাকলিস্টিং:</strong> জরিমানা দিতে অস্বীকৃতি জানালে বা প্রতারণা করলে, আপনার নাম, নাম্বার এবং ঠিকানা বিভিন্ন ই-কমার্স সেলার ব্ল্যাকলিস্ট গ্রুপে রিপোর্ট করা হবে। এর ফলে ভবিষ্যতে আপনি অন্য কোনো অনলাইন শপ থেকে কেনাকাটা করতে পারবেন না। প্রয়োজনে আমরা ভোক্তা অধিকারে বা আইনি ব্যবস্থা নেওয়ার অধিকার রাখি।</li>
+                </ul>
+            </div>
+
+            <div class="policy-section">
+                <h2><i data-lucide="video" class="lucide-icon text-primary"></i> ৫. বাধ্যতামূলক আনবক্সিং ভিডিও (Unboxing Video)</h2>
+                <p>পার্সেল সংক্রান্ত যেকোনো অভিযোগের (ছেঁড়া, ফাটা, ভুল পণ্য বা প্রোডাক্ট মিসিং) ক্ষেত্রে <strong>একটি স্পষ্ট আনবক্সিং ভিডিও থাকা সম্পূর্ণ বাধ্যতামূলক</strong>।</p>
+                <ul>
+                    <li>ইনট্যাক্ট পার্সেল খোলা শুরু করা থেকে শেষ পর্যন্ত পুরো ভিডিওটি একবারে করতে হবে।</li>
+                    <li>ভিডিওটি কোনোভাবেই <strong>কাট, এডিট বা পজ (Pause) করা যাবে না</strong>।</li>
+                    <li>ভিডিওর শুরুতেই পার্সেলের গায়ে লাগানো লেবেলটি (যেখানে নাম ঠিকানা লেখা থাকে) স্পষ্ট দেখাতে হবে।</li>
+                    <li><strong>সঠিক আনবক্সিং ভিডিও ছাড়া কোনো ধরনের অভিযোগ কোনো অবস্থাতেই গ্রহণ করা হবে না। এক্ষেত্রে কোনো এক্সকিউজ বা তর্ক গ্রহণযোগ্য নয়।</strong></li>
+                </ul>
+            </div>
+
+            <div class="policy-section">
+                <h2><i data-lucide="refresh-ccw" class="lucide-icon text-primary"></i> ৬. রিটার্ন, রিফান্ড ও এক্সচেঞ্জ পলিসি (Refund & Exchange Policy)</h2>
+                <p>যেকোনো অনাকাঙ্ক্ষিত ঝামেলা এড়াতে আমাদের রিটার্ন পলিসি খুব নির্দিষ্টভাবে সাজানো হয়েছে:</p>
+                
+                <ul>
+                    <li><strong>কাস্টমাইজড পণ্য:</strong> কাস্টমাইজড বা পার্সোনালাইজড পণ্যের ক্ষেত্রে কোনোভাবেই রিফান্ড বা রিটার্ন প্রযোজ্য হবে না।</li>
+                    <li><strong>সামান্য অমিল:</strong> ক্যামেরার আলো বা স্ক্রিন রেজুলেশনের কারণে পণ্যের কালার সামান্য ভিন্ন হতে পারে এবং কাপড়ের ক্ষেত্রে ০.৫ থেকে ১ ইঞ্চি সাইজ এদিক-সেদিক হওয়াটা স্বাভাবিক। এগুলো কোনো রিটার্ন বা রিফান্ডের কারণ হিসেবে গ্রহণযোগ্য নয়।</li>
+                    <li><strong>সাইজ এক্সচেঞ্জ:</strong> যদি আপনি নিজের ভুলে ভুল সাইজ অর্ডার করেন, তবে এক্সচেঞ্জ করতে চাইলে আপ-ডাউন দুই বারের ডেলিভারি চার্জ আপনাকেই বহন করতে হবে।</li>
+                </ul>
+
+                <div class="policy-box">
+                    <h4>💰 রিফান্ড ক্যালকুলেশন (কঠোর নিয়ম)</h4>
+                    <p>যেকোনো অর্ডার ক্যান্সেল বা রিটার্ন হলে আমাদের কিছু খরচ লোকসান হয়। তাই, <strong>যেকোনো রিফান্ডের ক্ষেত্রে প্রথমেই মোট পেমেন্ট থেকে ডেলিভারি চার্জ এবং প্যাকেজিং খরচ (সাধারণত ৫০ টাকা) কেটে নেওয়া হবে।</strong> এরপর অবশিষ্ট টাকার ওপর নিচের রিফান্ড অপশনগুলো কাজ করবে।</p>
+                </div>
+                
+                <p>খরচ কাটার পর অবশিষ্ট টাকা আপনি ৩টি উপায়ে রিফান্ড নিতে পারবেন:</p>
+                <ul>
+                    <li><strong>অপশন ১ - স্টোর ভাউচার:</strong> অবশিষ্ট টাকার সাথে <strong>৫% বোনাস</strong> (সর্বোচ্চ ১৫০ টাকা) যুক্ত করে আপনাকে একটি ভাউচার দেওয়া হবে, যা দিয়ে পরে আমাদের শপ থেকে কেনাকাটা করা যাবে।</li>
+                    <li><strong>অপশন ২ - ক্যাশ রিফান্ড:</strong> আপনি চাইলে সরাসরি ক্যাশ রিফান্ড নিতে পারেন। তবে এক্ষেত্রে অবশিষ্ট টাকার ঠিক **৯০%** ক্যাশ হিসেবে আপনার বিকাশ/নগদ নাম্বারে পাঠানো হবে।</li>
+                    <li><strong>অপশন ৩ - ৫০/৫০ পদ্ধতি:</strong> অবশিষ্ট টাকার ৫০% ক্যাশ হিসেবে দেওয়া হবে এবং বাকি ৫০% স্টোর ভাউচার হিসেবে দেওয়া হবে।</li>
+                </ul>
+            </div>
+
+            <div class="policy-section">
+                <h2><i data-lucide="file-text" class="lucide-icon text-primary"></i> ৭. শর্তাবলি (Terms & Conditions)</h2>
+                <p>আমাদের ওয়েবসাইট থেকে অর্ডার করার অর্থই হলো আপনি ওপরের সকল কড়া শর্তাবলির সাথে ১০০% একমত। আপনি যদি এই শর্তগুলোর সাথে একমত না হন, তবে অনুগ্রহ করে অর্ডার করা থেকে বিরত থাকুন। আমরা যেকোনো সময় কোনো পূর্ব নোটিশ ছাড়াই পলিসি পরিবর্তন করার অধিকার রাখি।</p>
+            </div>
         </div>
 
     </div>
@@ -166,6 +304,24 @@
 </footer>
 
 <script>
+function switchLang(lang) {
+    document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('contentEn').style.display = 'none';
+    document.getElementById('contentBn').style.display = 'none';
+    
+    if (lang === 'en') {
+        document.getElementById('btnEn').classList.add('active');
+        document.getElementById('contentEn').style.display = 'block';
+        document.getElementById('pageTitle').innerText = 'Policies & Terms of Service';
+        document.getElementById('pageDate').innerText = 'Last updated: 18 May 2026';
+    } else {
+        document.getElementById('btnBn').classList.add('active');
+        document.getElementById('contentBn').style.display = 'block';
+        document.getElementById('pageTitle').innerText = 'নীতিমালা এবং শর্তাবলি';
+        document.getElementById('pageDate').innerText = 'সর্বশেষ আপডেট: ১৮ মে ২০২৬';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     var p1 = sb.from('settings').select('*').eq('id', 1).single();
     p1.then(function(res) {

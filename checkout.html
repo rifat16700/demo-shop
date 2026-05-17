@@ -1665,6 +1665,7 @@ function selectIntlNetwork(netName, addr, qrUrl) {
         document.getElementById('verifyCryptoBtn').style.display = 'flex';
         setVerifyStatus('', '');
         intlVerified = false;
+        if(typeof lucide !== 'undefined') lucide.createIcons();
     });
 }
 

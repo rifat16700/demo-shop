@@ -230,7 +230,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!id) { window.location.href = '404.html'; return; }
 
     var p1 = sb.from('settings').select('*').eq('id',1).single();
-    var p2 = sb.from('products').select('*').eq('id', id).single();
+    // Fetch single product via Cloudflare proxy instead of direct Supabase call
+    var p2 = fetch('/api/get-single-product?id=' + id).then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) && data.length ? data[0] : null }; });
     var p3 = sb.from('reviews').select('*').eq('product_id', id).eq('is_approved', true).order('created_at', { ascending: false });
 
     Promise.all([p1, p2, p3]).then(function(results) {

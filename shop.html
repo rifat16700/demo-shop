@@ -209,7 +209,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var p1 = sb.from('settings').select('*').eq('id',1).single();
     var p2 = sb.from('categories').select('*').eq('is_active',true).order('sort_order');
-    var p3 = sb.from('products').select('*').eq('is_active',true).order('created_at',{ascending:false});
+    // Fetch all products via Cloudflare proxy instead of direct Supabase call
+    var p3 = fetch('/api/get-products-list').then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) ? data : [] }; });
     var p4 = sb.from('product_categories').select('*');
 
     Promise.all([p1, p2, p3, p4]).then(function(results) {

@@ -1141,15 +1141,36 @@ function _updateAdvanceFunUI(isCod, advAmt, total) {
     }
 }
 
-// ── copyText helper (for inline copy buttons) ─────────────────
+// ── copyText helper — delegates to copyElementText with button feedback
 function copyText(elId) {
     var el = document.getElementById(elId);
     if (!el) return;
-    var txt = el.textContent || el.innerText || el.value || '';
-    navigator.clipboard.writeText(txt.trim()).then(function() {
-        var orig = el.nextElementSibling;
-        if (orig && orig.tagName === 'BUTTON') { orig.textContent = '✅ Copied!'; setTimeout(function(){ orig.textContent = 'Copy'; }, 1500); }
-    }).catch(function(){ /* fallback: do nothing */ });
+    var text = (el.textContent || el.innerText || el.value || '').trim();
+    // Find the nearest button sibling to show feedback
+    var btn = el.nextElementSibling;
+    if (!btn || btn.tagName !== 'BUTTON') btn = el.parentElement ? el.parentElement.querySelector('button') : null;
+
+    var fallback = function() {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch(e) {}
+        document.body.removeChild(ta);
+    };
+
+    var showDone = function() {
+        if (!btn) return;
+        var orig = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        btn.style.color = '#15803d';
+        setTimeout(function() { btn.textContent = orig; btn.style.color = ''; }, 1600);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(showDone).catch(function() { fallback(); showDone(); });
+    } else {
+        fallback(); showDone();
+    }
 }
 
 // ── Legacy selectPayment — kept for any external callers ──────
@@ -2255,14 +2276,27 @@ function placeCryptoOrder(txid, usdt, isBackup) {
 function copyElementText(elId) {
     var el = document.getElementById(elId);
     if (!el) return;
-    var text = el.textContent.replace(/[৳]/g, '').trim();
-    navigator.clipboard.writeText(text).then(function() {
+    var text = (el.textContent || el.innerText || '').replace(/[৳]/g, '').trim();
+
+    var fallback = function() {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch(e) {}
+        document.body.removeChild(ta);
+    };
+
+    var done = function() {
         var og = el.style.color;
-        el.style.color = '#34C759'; // show success color
-        setTimeout(function() { el.style.color = og; }, 500);
-    }).catch(function() {
-        alert('Could not copy automatically. Please copy it manually.');
-    });
+        el.style.color = '#34C759';
+        setTimeout(function() { el.style.color = og; }, 600);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function() { fallback(); done(); });
+    } else {
+        fallback(); done();
+    }
 }
 </script>
 

@@ -913,14 +913,14 @@ function buildPaymentOptions() {
             subCards += buildSubCard(
                 'manual_bkash', '💜', 'bKash',
                 'Send to ' + settings.bkash_number,
-                buildManualDetail(settings.bkash_number, 'bKash', '৳' + Math.round(total))
+                buildManualDetail(settings.bkash_number, 'bKash', '৳' + Math.round(total), 'bkash')
             );
         }
         if (hasNagad) {
             subCards += buildSubCard(
                 'manual_nagad', '🧡', 'Nagad',
                 'Send to ' + settings.nagad_number,
-                buildManualDetail(settings.nagad_number, 'Nagad', '৳' + Math.round(total))
+                buildManualDetail(settings.nagad_number, 'Nagad', '৳' + Math.round(total), 'nagad')
             );
         }
         if (hasBinanceM) {
@@ -992,41 +992,46 @@ function buildSubCard(value, icon, label, desc, bodyHtml) {
     '</div>';
 }
 
-function buildManualDetail(number, methodName, amtLabel) {
-    var uid = 'mpd_' + methodName.toLowerCase();
+function buildManualDetail(number, methodName, amtLabel, methodKey) {
+    var sId = 'senderNumber_' + methodKey;
+    var tId = 'trxId_' + methodKey;
     return '<div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;">' +
-            'Send <span id="' + uid + '_amt" style="color:var(--primary);font-size:16px;">' + amtLabel + '</span>' +
-            ' <button type="button" onclick="copyText(\'' + uid + '_amt\')" style="background:none;border:none;cursor:pointer;color:#aaa;padding:2px;">📋</button> to:' +
+            'Send <span style="color:var(--primary);font-size:16px;">' + amtLabel + '</span>' +
+            ' <button type="button" onclick="copyDirect(this,\'' + amtLabel + '\')" style="background:none;border:none;cursor:pointer;color:#aaa;font-size:14px;padding:2px 4px;border-radius:4px;" title="Copy amount">📋</button> to:' +
         '</div>' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">' +
-            '<div style="font-size:20px;font-weight:900;color:var(--text-dark);" id="' + uid + '_num">' + number + '</div>' +
-            '<button type="button" onclick="copyText(\'' + uid + '_num\')" style="background:rgba(0,0,0,0.06);border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:700;color:#555;">Copy</button>' +
+            '<div style="font-size:20px;font-weight:900;color:var(--text-dark);">' + number + '</div>' +
+            '<button type="button" onclick="copyDirect(this,\'' + number + '\')" style="background:rgba(0,0,0,0.06);border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:700;color:#555;">Copy</button>' +
         '</div>' +
         '<div style="font-size:12px;color:#888;margin-bottom:14px;">' + methodName + ' Personal</div>' +
         '<div class="form-group" style="margin-bottom:10px;">' +
             '<label class="form-label">Sender Number *</label>' +
-            '<input class="form-input" id="senderNumber" placeholder="Number you sent from" type="tel">' +
+            '<input class="form-input" id="' + sId + '" data-role="senderInput" placeholder="Number you sent from" type="tel">' +
         '</div>' +
         '<div class="form-group" style="margin-bottom:0;">' +
             '<label class="form-label">Transaction ID *</label>' +
-            '<input class="form-input" id="trxId" placeholder="TrxID / Reference Number">' +
+            '<input class="form-input" id="' + tId + '" data-role="trxInput" placeholder="TrxID / Reference Number">' +
         '</div>';
 }
 
 function buildBinanceManualDetail(uid, total) {
     var rate = parseFloat(settings.usd_to_bdt_rate || 110);
     var usdtAmt = (total / rate).toFixed(2);
+    var tId = 'trxId_binance';
     return '<div style="background:rgba(240,185,11,0.07);border:1.5px solid rgba(240,185,11,0.3);border-radius:10px;padding:12px;margin-bottom:12px;">' +
         '<div style="font-size:12px;color:#92710B;font-weight:700;margin-bottom:6px;">🟡 Send USDT (Binance Pay)</div>' +
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
-            '<div style="font-size:18px;font-weight:900;color:#B8860B;" id="bmUidDisplay">' + uid + '</div>' +
-            '<button type="button" onclick="copyText(\'bmUidDisplay\')" style="background:rgba(240,185,11,0.15);border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:700;color:#92710B;">Copy UID</button>' +
+            '<div style="font-size:18px;font-weight:900;color:#B8860B;">' + uid + '</div>' +
+            '<button type="button" onclick="copyDirect(this,\'' + uid + '\')" style="background:rgba(240,185,11,0.15);border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:11px;font-weight:700;color:#92710B;">Copy UID</button>' +
         '</div>' +
         '<div style="font-size:12px;color:#888;">Amount: ~' + usdtAmt + ' USDT <span style="color:#aaa;">(৳' + Math.round(total) + ' ÷ ' + rate + ')</span></div>' +
+        '<div style="margin-top:6px;">' +
+            '<button type="button" onclick="copyDirect(this,\'' + usdtAmt + '\')" style="background:rgba(240,185,11,0.15);border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:700;color:#92710B;">Copy Amount</button>' +
+        '</div>' +
     '</div>' +
     '<div class="form-group" style="margin-bottom:0;">' +
         '<label class="form-label">Binance Transaction ID / TxID *</label>' +
-        '<input class="form-input" id="trxId" placeholder="Binance Pay Transaction ID">' +
+        '<input class="form-input" id="' + tId + '" data-role="trxInput" placeholder="Binance Pay Transaction ID">' +
         '<div style="font-size:11px;color:#aaa;margin-top:4px;">Binance App → Pay History → সেই transaction এর ID দাও</div>' +
     '</div>';
 }
@@ -1141,35 +1146,48 @@ function _updateAdvanceFunUI(isCod, advAmt, total) {
     }
 }
 
+// ── copyDirect: pass text directly — no ID needed, most reliable ──────
+function copyDirect(btn, text) {
+    var fallback = function() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        try { document.execCommand('copy'); } catch(e) {}
+        document.body.removeChild(ta);
+    };
+    var done = function() {
+        var orig = btn.textContent;
+        var origColor = btn.style.color;
+        btn.textContent = '✅ Copied!';
+        btn.style.color = '#15803d';
+        setTimeout(function() {
+            btn.textContent = orig;
+            btn.style.color = origColor;
+        }, 1600);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done).catch(function() { fallback(); done(); });
+    } else {
+        fallback(); done();
+    }
+}
+
 // ── copyText helper — delegates to copyElementText with button feedback
 function copyText(elId) {
     var el = document.getElementById(elId);
     if (!el) return;
     var text = (el.textContent || el.innerText || el.value || '').trim();
-    // Find the nearest button sibling to show feedback
     var btn = el.nextElementSibling;
-    if (!btn || btn.tagName !== 'BUTTON') btn = el.parentElement ? el.parentElement.querySelector('button') : null;
-
-    var fallback = function() {
-        var ta = document.createElement('textarea');
-        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-        document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); } catch(e) {}
-        document.body.removeChild(ta);
-    };
-
-    var showDone = function() {
-        if (!btn) return;
-        var orig = btn.textContent;
-        btn.textContent = '✅ Copied!';
-        btn.style.color = '#15803d';
-        setTimeout(function() { btn.textContent = orig; btn.style.color = ''; }, 1600);
-    };
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(showDone).catch(function() { fallback(); showDone(); });
+    if (!btn || btn.tagName !== 'BUTTON') {
+        btn = el.parentElement ? el.parentElement.querySelector('button') : null;
+    }
+    if (btn) {
+        copyDirect(btn, text);
     } else {
-        fallback(); showDone();
+        // no button found — just copy silently
+        copyDirect({ textContent: '', style: {} }, text);
     }
 }
 
@@ -1411,12 +1429,24 @@ function placeOrder() {
     var effectiveDeliveryPO = Math.max(0, deliveryCharge - delDiscPO);
     var total    = subtotal + addonTotal + effectiveDeliveryPO - promoDiscount;
 
+    // ── Manual payment inputs: read from active sub-card ────────────
     var senderNum = '', trxId = '';
-    var manualBox = document.getElementById('manualPayBox');
-    if (manualBox.style.display !== 'none') {
-        senderNum = document.getElementById('senderNumber').value.trim();
-        trxId     = document.getElementById('trxId').value.trim();
-        if (!senderNum || !trxId) { alert('Please enter Sender Number and Transaction ID'); return; }
+    var isManualPay = (selectedPayMethod === 'manual_bkash' || selectedPayMethod === 'manual_nagad' || selectedPayMethod === 'manual_binance');
+    if (isManualPay) {
+        // Find the visible (selected) sub-card's inputs
+        var activeSub = document.querySelector('.pay-sub-card.selected');
+        if (activeSub) {
+            var sEl = activeSub.querySelector('[data-role="senderInput"]');
+            var tEl = activeSub.querySelector('[data-role="trxInput"]');
+            if (sEl) senderNum = sEl.value.trim();
+            if (tEl) trxId = tEl.value.trim();
+        }
+        // Binance manual: no sender number needed
+        if (selectedPayMethod === 'manual_binance') {
+            if (!trxId) { alert('Please enter the Binance Transaction ID'); return; }
+        } else {
+            if (!senderNum || !trxId) { alert('Please enter Sender Number and Transaction ID'); return; }
+        }
     }
 
     var orderId = genOrderId();

@@ -144,16 +144,28 @@
 
         <!-- RIGHT COLUMN -->
         <div>
-            <!-- Payment — bKash / Nagad -->
+            <!-- Payment — bKash / Nagad / Binance Manual -->
             <div class="card" style="margin-bottom:20px;">
                 <div class="settings-section-title"><i data-lucide="credit-card" class="lucide-icon icon-bounce"></i> Manual Payment Numbers</div>
+
                 <div class="form-group">
-                    <label class="form-label">bKash Number</label>
+                    <label class="form-label">💜 bKash Number</label>
                     <input class="form-input" id="bkashNumber" placeholder="01XXXXXXXXX" maxlength="11">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Nagad Number</label>
+                    <label class="form-label">🧡 Nagad Number</label>
                     <input class="form-input" id="nagadNumber" placeholder="01XXXXXXXXX" maxlength="11">
+                </div>
+
+                <!-- Binance Manual UID — separate from API-based auto verify -->
+                <div style="border-top:1.5px dashed rgba(240,185,11,0.35);margin:14px 0 14px;"></div>
+                <div class="form-group" style="margin-bottom:4px;">
+                    <label class="form-label">🟡 Binance Manual Pay UID</label>
+                    <input class="form-input" id="binanceManualUid" placeholder="e.g. 123456789" type="text">
+                    <div class="form-hint">
+                        Checkout এ customer এই UID এ USDT পাঠাবে, তারপর TxID দিতে হবে — <strong>সব মানুয়াল ভেরিফায়</strong>।<br>
+                        <span style="color:#aaa;">(Auto verify Binance API অন্য account এর — নিচে স্বতন্ত্রভাবে set করো)</span>
+                    </div>
                 </div>
             </div>
 
@@ -521,11 +533,12 @@
             mainChatIds = s.telegram_main_chats || [];
             renderChatIds();
 
-            // Payment — Gateway URL কে CONFIG থেকে default দাও
-            setVal('bkashNumber',    s.bkash_number     || '');
-            setVal('nagadNumber',    s.nagad_number     || '');
-            setVal('gatewayProxyUrl',s.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL);
-            setVal('gatewayApiKey',  s.gateway_api_key  || '');
+            // Payment — Manual numbers
+            setVal('bkashNumber',     s.bkash_number      || '');
+            setVal('nagadNumber',     s.nagad_number      || '');
+            setVal('binanceManualUid',s.binance_manual_uid|| '');
+            setVal('gatewayProxyUrl', s.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL);
+            setVal('gatewayApiKey',   s.gateway_api_key   || '');
             setVal('advanceAmount',  s.advance_amount !== undefined && s.advance_amount !== null ? s.advance_amount : 0);
 
             document.getElementById('advanceMethod').value = s.advance_method || 'manual';
@@ -641,6 +654,7 @@
             youtube_url:          document.getElementById('youtubeUrl').value.trim(),
             bkash_number:         document.getElementById('bkashNumber').value.trim(),
             nagad_number:         document.getElementById('nagadNumber').value.trim(),
+            binance_manual_uid:   document.getElementById('binanceManualUid').value.trim(),
             gateway_proxy_url:    document.getElementById('gatewayProxyUrl').value.trim(),
             gateway_api_key:      document.getElementById('gatewayApiKey').value.trim(),
             allow_cod:            codEnabled,

@@ -17,6 +17,39 @@
         .payment-label { font-size: 14px; font-weight: 700; flex: 1; }
         .payment-desc  { font-size: 12px; color: var(--text-muted); }
         .manual-pay-box { background: rgba(255,77,77,0.05); border: 1.5px dashed var(--primary); border-radius: var(--radius-md); padding: 16px; margin-top: 12px; display: none; }
+
+        /* ── Accordion Payment Cards ─────────────────────────── */
+        .pay-card { border: 2px solid var(--border); border-radius: 14px; margin-bottom: 10px; overflow: hidden; transition: border-color 0.2s; }
+        .pay-card.selected { border-color: var(--primary); }
+        .pay-card-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; transition: background 0.15s; }
+        .pay-card-header:hover { background: rgba(0,0,0,0.025); }
+        .pay-card.selected .pay-card-header { background: rgba(255,77,77,0.04); }
+        .pay-card-radio { width: 18px; height: 18px; accent-color: var(--primary); flex-shrink: 0; }
+        .pay-card-icon { font-size: 22px; flex-shrink: 0; line-height: 1; }
+        .pay-card-info { flex: 1; }
+        .pay-card-label { font-size: 14px; font-weight: 800; color: var(--text-dark); }
+        .pay-card-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .pay-card-chevron { font-size: 18px; color: #ccc; transition: transform 0.25s; flex-shrink: 0; }
+        .pay-card.selected .pay-card-chevron { transform: rotate(90deg); color: var(--primary); }
+        .pay-card-body { display: none; border-top: 1.5px solid var(--border); padding: 14px 16px; background: #fafafa; animation: paySlide 0.22s ease; }
+        .pay-card.selected .pay-card-body { display: block; }
+        @keyframes paySlide { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Sub-options inside Manual group */
+        .pay-sub-card { border: 1.5px solid var(--border); border-radius: 10px; margin-bottom: 8px; overflow: hidden; transition: border-color 0.2s; }
+        .pay-sub-card.selected { border-color: var(--primary); }
+        .pay-sub-header { display: flex; align-items: center; gap: 10px; padding: 11px 14px; cursor: pointer; transition: background 0.15s; }
+        .pay-sub-header:hover { background: rgba(0,0,0,0.03); }
+        .pay-sub-card.selected .pay-sub-header { background: rgba(255,77,77,0.04); }
+        .pay-sub-radio { width: 16px; height: 16px; accent-color: var(--primary); flex-shrink: 0; }
+        .pay-sub-icon { font-size: 20px; flex-shrink: 0; }
+        .pay-sub-info { flex: 1; }
+        .pay-sub-label { font-size: 13px; font-weight: 700; color: var(--text-dark); }
+        .pay-sub-desc { font-size: 11px; color: var(--text-muted); }
+        .pay-sub-chevron { font-size: 14px; color: #ccc; transition: transform 0.2s; }
+        .pay-sub-card.selected .pay-sub-chevron { transform: rotate(90deg); color: var(--primary); }
+        .pay-sub-body { display: none; border-top: 1px solid var(--border); padding: 12px 14px; background: #fff; }
+        .pay-sub-card.selected .pay-sub-body { display: block; }
         .adv-box { background: rgba(255,149,0,0.06); border: 1.5px solid rgba(255,149,0,0.3); border-radius: 12px; padding: 14px; margin-bottom:16px; }
         .addon-item { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; transition: var(--transition); margin-bottom: 8px; }
         .addon-item:hover { border-color: var(--primary); }
@@ -220,21 +253,18 @@
 
                 <!-- ── NATIONAL PANEL ── -->
                 <div id="nationalPayPanel">
-                    <!-- Payment Options -->
-                    <div id="paymentOptions">
-                        <!-- Will be populated from settings -->
-                    </div>
+                    <!-- Accordion Payment Options — built by buildPaymentOptions() -->
+                    <div id="paymentOptions"></div>
 
-                    <!-- Manual payment details -->
-                    <div class="manual-pay-box" id="manualPayBox">
-                        <div style="font-size:13px;font-weight:700;margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                    <!-- Legacy manualPayBox kept for COD+advance compatibility -->
+                    <div class="manual-pay-box" id="manualPayBox" style="display:none;">
+                        <div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
                             Send <span id="manualPayAmt" style="color:var(--primary);font-size:16px;">৳0</span>
-                            <button type="button" onclick="copyElementText('manualPayAmt')" style="background:none;border:none;cursor:pointer;color:#888;padding:2px;" title="Copy Amount"><i data-lucide="copy" class="lucide-icon" style="width:14px;height:14px;"></i></button>
-                            to:
+                            <button type="button" onclick="copyElementText('manualPayAmt')" style="background:none;border:none;cursor:pointer;color:#888;padding:2px;"><i data-lucide="copy" class="lucide-icon" style="width:14px;height:14px;"></i></button> to:
                         </div>
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
                             <div style="font-size:20px;font-weight:800;color:var(--text-dark);" id="manualPayNumber">01XXXXXXXXX</div>
-                            <button type="button" onclick="copyElementText('manualPayNumber')" style="background:rgba(0,0,0,0.05);border:none;border-radius:6px;padding:4px 8px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#666;transition:all 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.1)'" onmouseout="this.style.background='rgba(0,0,0,0.05)'"><i data-lucide="copy" class="lucide-icon" style="width:12px;height:12px;"></i> Copy</button>
+                            <button type="button" onclick="copyElementText('manualPayNumber')" style="background:rgba(0,0,0,0.05);border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;font-weight:600;color:#666;">Copy</button>
                         </div>
                         <div style="font-size:12px;color:#888;margin-bottom:14px;" id="manualPayMethodName">bKash / Nagad</div>
                         <div class="form-group" style="margin-bottom:12px;">
@@ -843,132 +873,293 @@ function buildPaymentOptions() {
     }
 
     // Payment method filtering by coupon restriction
-    var allowed = promoPaymentRestrictions; // [] = all allowed
+    var allowed = promoPaymentRestrictions;
     function isAllowed(key) {
         if (!allowed.length) return true;
         return allowed.some(function(pm){ return key.toLowerCase().includes(pm.toLowerCase()); });
     }
 
-    var opts = '';
     var proxyUrl = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;
-    if (proxyUrl && isAllowed('online')) {
-        opts += payOpt('auto_gateway', '<i data-lucide="globe" class="lucide-icon icon-spin"></i>', 'Pay Online', 'bKash/Rocket/Card via payment gateway', '');
+    var hasGateway   = !!(proxyUrl && isAllowed('online'));
+    var hasBkash     = !!(settings.bkash_number && isAllowed('bkash'));
+    var hasNagad     = !!(settings.nagad_number && isAllowed('nagad'));
+    var hasBinanceM  = !!(settings.binance_pay_uid && isAllowed('binance'));
+    var hasManual    = hasBkash || hasNagad || hasBinanceM;
+    var hasCod       = settings.allow_cod && !isPickup && isAllowed('cod');
+
+    var total = updateSummaryTotals();
+    var html = '';
+
+    // ── 1. Auto Payment Gateway ───────────────────────────────
+    if (hasGateway) {
+        html += buildPayCard(
+            'auto_gateway',
+            '<i data-lucide="globe" class="lucide-icon icon-spin" style="font-size:20px;"></i>',
+            'Auto Payment',
+            'bKash / Nagad / Card — via payment gateway',
+            // body: redirect button rendered by gateway flow
+            '<div style="padding:4px 0 2px;">' +
+                '<div style="font-size:12px;color:#666;margin-bottom:10px;">Click "Place Order" below to be redirected to the secure payment gateway.</div>' +
+                '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#888;"><span>🔒</span> Secured by payment gateway</div>' +
+            '</div>'
+        );
     }
-    if (settings.bkash_number && isAllowed('bkash')) {
-        opts += payOpt('manual_bkash', '💜', 'bKash', 'Send to ' + settings.bkash_number, 'personal');
+
+    // ── 2. Manual Payment (accordion with sub-options) ────────
+    if (hasManual) {
+        var subCards = '';
+
+        if (hasBkash) {
+            subCards += buildSubCard(
+                'manual_bkash', '💜', 'bKash',
+                'Send to ' + settings.bkash_number,
+                buildManualDetail(settings.bkash_number, 'bKash', '৳' + Math.round(total))
+            );
+        }
+        if (hasNagad) {
+            subCards += buildSubCard(
+                'manual_nagad', '🧡', 'Nagad',
+                'Send to ' + settings.nagad_number,
+                buildManualDetail(settings.nagad_number, 'Nagad', '৳' + Math.round(total))
+            );
+        }
+        if (hasBinanceM) {
+            subCards += buildSubCard(
+                'manual_binance', '🟡', 'Binance Manual',
+                'Send USDT to UID: ' + settings.binance_pay_uid,
+                buildBinanceManualDetail(settings.binance_pay_uid, total)
+            );
+        }
+
+        html += buildPayCard(
+            'manual_group',
+            '💳',
+            'Manual Payment',
+            'bKash / Nagad / Binance — send & enter TrxID',
+            subCards
+        );
     }
-    if (settings.nagad_number && isAllowed('nagad')) {
-        opts += payOpt('manual_nagad', '🧡', 'Nagad', 'Send to ' + settings.nagad_number, 'personal');
-    }
-    if (settings.allow_cod && !isPickup && isAllowed('cod')) {
+
+    // ── 3. COD ────────────────────────────────────────────────
+    if (hasCod) {
         var codLabel = advancePayable > 0 ? 'Hybrid COD (Advance + Delivery)' : 'Cash on Delivery';
         var codDesc  = advancePayable > 0 ? 'Pay ৳' + advancePayable + ' advance, rest on delivery' : 'Pay when product is received';
-        opts += payOpt('cod', '💵', codLabel, codDesc, '');
+        html += buildPayCard('cod', '💵', codLabel, codDesc,
+            '<div style="font-size:12px;color:#666;padding:2px 0;">✅ No advance payment needed online. Pay the delivery agent when your order arrives.</div>'
+        );
     }
     if (isPickup) {
-        opts += payOpt('cod', '💵', 'Pay at Pickup', 'Pay when you collect your order', '');
+        html += buildPayCard('cod', '🏪', 'Pay at Pickup', 'Pay when you collect your order',
+            '<div style="font-size:12px;color:#666;padding:2px 0;">✅ Pay at the store when you arrive to pick up your order.</div>'
+        );
     }
 
-    if (!opts) opts = '<div style="padding:20px;text-align:center;color:#999;font-size:13px;">⚠️ No payment method available for this coupon. Please remove the coupon or contact support.</div>';
+    if (!html) html = '<div style="padding:20px;text-align:center;color:#999;font-size:13px;">⚠️ No payment method available for this coupon. Please remove the coupon or contact support.</div>';
 
-    document.getElementById('paymentOptions').innerHTML = opts;
+    document.getElementById('paymentOptions').innerHTML = html;
+    document.getElementById('manualPayBox').style.display = 'none'; // legacy hidden
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
+// ── Accordion card builders ───────────────────────────────────
+function buildPayCard(value, icon, label, desc, bodyHtml) {
+    return '<div class="pay-card" id="pc-' + value + '" data-paycard="' + value + '">' +
+        '<div class="pay-card-header" onclick="selectPayCard(\'' + value + '\')">' +
+            '<input class="pay-card-radio" type="radio" name="payMethod" value="' + value + '">' +
+            '<span class="pay-card-icon">' + icon + '</span>' +
+            '<div class="pay-card-info">' +
+                '<div class="pay-card-label">' + label + '</div>' +
+                '<div class="pay-card-desc">' + desc + '</div>' +
+            '</div>' +
+            '<span class="pay-card-chevron">›</span>' +
+        '</div>' +
+        '<div class="pay-card-body">' + bodyHtml + '</div>' +
+    '</div>';
+}
 
+function buildSubCard(value, icon, label, desc, bodyHtml) {
+    return '<div class="pay-sub-card" id="psc-' + value + '" data-subcardval="' + value + '">' +
+        '<div class="pay-sub-header" onclick="selectSubCard(\'' + value + '\')">' +
+            '<input class="pay-sub-radio" type="radio" name="paySubMethod" value="' + value + '">' +
+            '<span class="pay-sub-icon">' + icon + '</span>' +
+            '<div class="pay-sub-info">' +
+                '<div class="pay-sub-label">' + label + '</div>' +
+                '<div class="pay-sub-desc">' + desc + '</div>' +
+            '</div>' +
+            '<span class="pay-sub-chevron">›</span>' +
+        '</div>' +
+        '<div class="pay-sub-body">' + bodyHtml + '</div>' +
+    '</div>';
+}
 
+function buildManualDetail(number, methodName, amtLabel) {
+    var uid = 'mpd_' + methodName.toLowerCase();
+    return '<div style="font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;">' +
+            'Send <span id="' + uid + '_amt" style="color:var(--primary);font-size:16px;">' + amtLabel + '</span>' +
+            ' <button type="button" onclick="copyText(\'' + uid + '_amt\')" style="background:none;border:none;cursor:pointer;color:#aaa;padding:2px;">📋</button> to:' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">' +
+            '<div style="font-size:20px;font-weight:900;color:var(--text-dark);" id="' + uid + '_num">' + number + '</div>' +
+            '<button type="button" onclick="copyText(\'' + uid + '_num\')" style="background:rgba(0,0,0,0.06);border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:700;color:#555;">Copy</button>' +
+        '</div>' +
+        '<div style="font-size:12px;color:#888;margin-bottom:14px;">' + methodName + ' Personal</div>' +
+        '<div class="form-group" style="margin-bottom:10px;">' +
+            '<label class="form-label">Sender Number *</label>' +
+            '<input class="form-input" id="senderNumber" placeholder="Number you sent from" type="tel">' +
+        '</div>' +
+        '<div class="form-group" style="margin-bottom:0;">' +
+            '<label class="form-label">Transaction ID *</label>' +
+            '<input class="form-input" id="trxId" placeholder="TrxID / Reference Number">' +
+        '</div>';
+}
+
+function buildBinanceManualDetail(uid, total) {
+    var rate = parseFloat(settings.usd_to_bdt_rate || 110);
+    var usdtAmt = (total / rate).toFixed(2);
+    return '<div style="background:rgba(240,185,11,0.07);border:1.5px solid rgba(240,185,11,0.3);border-radius:10px;padding:12px;margin-bottom:12px;">' +
+        '<div style="font-size:12px;color:#92710B;font-weight:700;margin-bottom:6px;">🟡 Send USDT (Binance Pay)</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+            '<div style="font-size:18px;font-weight:900;color:#B8860B;" id="bmUidDisplay">' + uid + '</div>' +
+            '<button type="button" onclick="copyText(\'bmUidDisplay\')" style="background:rgba(240,185,11,0.15);border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:700;color:#92710B;">Copy UID</button>' +
+        '</div>' +
+        '<div style="font-size:12px;color:#888;">Amount: ~' + usdtAmt + ' USDT <span style="color:#aaa;">(৳' + Math.round(total) + ' ÷ ' + rate + ')</span></div>' +
+    '</div>' +
+    '<div class="form-group" style="margin-bottom:0;">' +
+        '<label class="form-label">Binance Transaction ID / TxID *</label>' +
+        '<input class="form-input" id="trxId" placeholder="Binance Pay Transaction ID">' +
+        '<div style="font-size:11px;color:#aaa;margin-top:4px;">Binance App → Pay History → সেই transaction এর ID দাও</div>' +
+    '</div>';
+}
+
+// legacy payOpt kept for backward compat (not used in main flow)
 function payOpt(value, icon, name, desc, badge) {
     return '<div class="payment-option" onclick="selectPayment(\'' + value + '\')" data-payval="' + value + '">' +
         '<input type="radio" name="payMethod" value="' + value + '">' +
         '<span style="font-size:22px;">' + icon + '</span>' +
-        '<div>' +
-            '<div class="payment-label">' + name + (badge ? ' <span style="font-size:10px;background:#eee;padding:2px 6px;border-radius:10px;">' + badge + '</span>' : '') + '</div>' +
-            '<div class="payment-desc">' + desc + '</div>' +
-        '</div>' +
+        '<div><div class="payment-label">' + name + '</div><div class="payment-desc">' + desc + '</div></div>' +
     '</div>';
 }
 
-function selectPayment(value) {
-    selectedPayMethod = value;
-    document.querySelectorAll('.payment-option').forEach(function(el) {
-        el.classList.toggle('selected', el.dataset.payval === value);
-        var radio = el.querySelector('input[type="radio"]');
-        if (radio) radio.checked = el.dataset.payval === value;
-    });
+// ── Accordion: select a top-level pay card ───────────────────
+function selectPayCard(value) {
+    // Toggle: click same card again to collapse
+    var isSame = (selectedPayMethod === value || (value === 'manual_group' && selectedPayMethod && selectedPayMethod.startsWith('manual_')));
+    if (isSame && document.getElementById('pc-' + value) && document.getElementById('pc-' + value).classList.contains('selected')) {
+        // collapse
+        document.querySelectorAll('.pay-card').forEach(function(c){ c.classList.remove('selected'); c.querySelector('.pay-card-radio').checked = false; });
+        selectedPayMethod = '';
+        _updateAdvanceFunUI(false, 0, updateSummaryTotals());
+        return;
+    }
 
-    var manualBox  = document.getElementById('manualPayBox');
+    // Deselect all cards
+    document.querySelectorAll('.pay-card').forEach(function(c){ c.classList.remove('selected'); c.querySelector('.pay-card-radio').checked = false; });
+    // Deselect all sub-cards
+    document.querySelectorAll('.pay-sub-card').forEach(function(c){ c.classList.remove('selected'); });
+
+    var card = document.getElementById('pc-' + value);
+    if (!card) return;
+    card.classList.add('selected');
+    card.querySelector('.pay-card-radio').checked = true;
+
+    var total = updateSummaryTotals();
+
+    if (value === 'manual_group') {
+        // Don't set selectedPayMethod yet — wait for sub-card selection
+        // Clear any previous manual selection
+        if (!selectedPayMethod || !selectedPayMethod.startsWith('manual_')) {
+            selectedPayMethod = '';
+        }
+        _updateAdvanceFunUI(false, 0, total);
+    } else {
+        selectedPayMethod = value;
+        var isCod = (value === 'cod');
+        _updateAdvanceFunUI(isCod, advancePayable, total);
+
+        // COD + advance + manual bKash
+        var manualBox = document.getElementById('manualPayBox');
+        if (isCod && advancePayable > 0 && settings.advance_method === 'manual') {
+            document.getElementById('manualPayNumber').textContent     = settings.bkash_number || '';
+            document.getElementById('manualPayMethodName').textContent = 'bKash (Advance — ৳' + advancePayable + ')';
+            document.getElementById('manualPayAmt').textContent        = '৳' + advancePayable;
+            manualBox.style.display = 'block';
+        } else {
+            manualBox.style.display = 'none';
+        }
+    }
+}
+
+// ── Accordion: select a sub-card inside Manual group ─────────
+function selectSubCard(value) {
+    // Deselect all sub-cards
+    document.querySelectorAll('.pay-sub-card').forEach(function(c){ c.classList.remove('selected'); c.querySelector('.pay-sub-radio').checked = false; });
+
+    var sub = document.getElementById('psc-' + value);
+    if (!sub) return;
+    sub.classList.add('selected');
+    sub.querySelector('.pay-sub-radio').checked = true;
+
+    selectedPayMethod = value; // e.g. 'manual_bkash', 'manual_nagad', 'manual_binance'
+
+    _updateAdvanceFunUI(false, 0, updateSummaryTotals());
+    document.getElementById('manualPayBox').style.display = 'none';
+}
+
+// ── Shared advance + fun-checkbox UI updater ─────────────────
+function _updateAdvanceFunUI(isCod, advAmt, total) {
     var advSection = document.getElementById('advanceSection');
     var advPayLine = document.getElementById('advPayLine');
     var codPayLine = document.getElementById('codPayLine');
-    var total = updateSummaryTotals();
 
-    var isCod    = (value === 'cod');
-    var isOnline = (value === 'auto_gateway');
-    var isManual = (value === 'manual_bkash' || value === 'manual_nagad');
-
-    // ── Advance section: শুধু COD এ দেখাবে (advance configured থাকলে) ──
-    if (isCod && advancePayable > 0 && !isPickup) {
+    if (isCod && advAmt > 0 && !isPickup) {
         advSection.style.display = 'block';
         advPayLine.style.display = 'flex';
         codPayLine.style.display = 'flex';
-        document.getElementById('advanceInfoText').textContent   = 'Remaining ৳' + Math.round(total - advancePayable) + ' will be paid on delivery.';
-        document.getElementById('advanceAmountLabel').textContent = '৳' + advancePayable;
-        document.getElementById('smAdvPay').textContent           = '৳' + advancePayable;
-        document.getElementById('smCod').textContent              = '৳' + Math.round(total - advancePayable);
+        document.getElementById('advanceInfoText').textContent    = 'Remaining ৳' + Math.round(total - advAmt) + ' will be paid on delivery.';
+        document.getElementById('advanceAmountLabel').textContent = '৳' + advAmt;
+        document.getElementById('smAdvPay').textContent           = '৳' + advAmt;
+        document.getElementById('smCod').textContent              = '৳' + Math.round(total - advAmt);
     } else {
-        // bKash, Nagad, Online Gateway — advance দেখানোর দরকার নেই, full pay করবে
         advSection.style.display = 'none';
         advPayLine.style.display = 'none';
         codPayLine.style.display = 'none';
     }
 
-    // ── Manual pay box (bKash / Nagad) ──────────────────────────────────
-    // bKash manual → full total
-    if (value === 'manual_bkash') {
-        document.getElementById('manualPayNumber').textContent     = settings.bkash_number || '';
-        document.getElementById('manualPayMethodName').textContent = 'bKash';
-        document.getElementById('manualPayAmt').textContent        = '৳' + Math.round(total);
-        manualBox.style.display = 'block';
-        return;
-    }
-
-    // Nagad manual → full total
-    if (value === 'manual_nagad') {
-        document.getElementById('manualPayNumber').textContent     = settings.nagad_number || '';
-        document.getElementById('manualPayMethodName').textContent = 'Nagad';
-        document.getElementById('manualPayAmt').textContent        = '৳' + Math.round(total);
-        manualBox.style.display = 'block';
-        return;
-    }
-
-    // COD + advance configured + manual bKash advance method
-    // COD + advance configured + manual bKash advance method
-    if (isCod && advancePayable > 0 && settings.advance_method === 'manual') {
-        document.getElementById('manualPayNumber').textContent     = settings.bkash_number || '';
-        document.getElementById('manualPayMethodName').textContent = 'bKash (Advance only — ৳' + advancePayable + ')';
-        document.getElementById('manualPayAmt').textContent        = '৳' + advancePayable;
-        manualBox.style.display = 'block';
-    } else {
-        manualBox.style.display = 'none';
-    }
-
-    // Toggle fun promise wrapper based on setting and if COD is selected
-    var funPromiseWrapper = document.getElementById('funPromiseWrapper');
-    if (funPromiseWrapper) {
+    var funWrap = document.getElementById('funPromiseWrapper');
+    if (funWrap) {
         if (settings.enable_fun_checkbox && isCod) {
-            funPromiseWrapper.style.display = 'flex';
+            funWrap.style.display = 'flex';
         } else {
-            funPromiseWrapper.style.display = 'none';
-            var cb1 = document.getElementById('funPromiseCheck1');
-            if (cb1) cb1.checked = false;
-            var tt1 = document.getElementById('funTooltip1');
-            if (tt1) { tt1.style.opacity = '0'; tt1.style.visibility = 'hidden'; }
-
-            var cb2 = document.getElementById('funPromiseCheck2');
-            if (cb2) cb2.checked = false;
-            var tt2 = document.getElementById('funTooltip2');
-            if (tt2) { tt2.style.opacity = '0'; tt2.style.visibility = 'hidden'; }
+            funWrap.style.display = 'none';
+            ['funPromiseCheck1','funPromiseCheck2'].forEach(function(id){
+                var el = document.getElementById(id); if(el) el.checked = false;
+            });
+            ['funTooltip1','funTooltip2'].forEach(function(id){
+                var el = document.getElementById(id); if(el){ el.style.opacity='0'; el.style.visibility='hidden'; }
+            });
         }
+    }
+}
+
+// ── copyText helper (for inline copy buttons) ─────────────────
+function copyText(elId) {
+    var el = document.getElementById(elId);
+    if (!el) return;
+    var txt = el.textContent || el.innerText || el.value || '';
+    navigator.clipboard.writeText(txt.trim()).then(function() {
+        var orig = el.nextElementSibling;
+        if (orig && orig.tagName === 'BUTTON') { orig.textContent = '✅ Copied!'; setTimeout(function(){ orig.textContent = 'Copy'; }, 1500); }
+    }).catch(function(){ /* fallback: do nothing */ });
+}
+
+// ── Legacy selectPayment — kept for any external callers ──────
+function selectPayment(value) {
+    // Delegate to new accordion system
+    if (value === 'manual_bkash' || value === 'manual_nagad' || value === 'manual_binance') {
+        selectPayCard('manual_group');
+        selectSubCard(value);
+    } else {
+        selectPayCard(value);
     }
 }
 

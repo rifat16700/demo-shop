@@ -1,38 +1,40 @@
 // ============================================================
-// config.js — Global Configuration
+// config.js — Bootstrap Configuration
 // Project: Freelancing By Rifat E-Commerce
-// ⚠️ FILL IN YOUR SUPABASE CREDENTIALS BELOW
+// ============================================================
+//
+// ✅ এই ফাইলে শুধু সেই values আছে যেগুলো Supabase connect করার
+//    আগেই দরকার — বাকি সব Admin Panel → settings table থেকে আসে।
+//
+// ── কী এখানে আছে? ───────────────────────────────────────────
+//   🔵 SUPABASE_URL + SUPABASE_ANON_KEY
+//      → ছাড়া settings table ই read করা যাবে না
+//
+//   🟢 CART_KEY / DIRECT_ORDER_KEY / SESSION_KEY
+//      → Pure frontend localStorage keys, DB তে নেই
+//
+//   🟢 ADMIN_PATH
+//      → Pure frontend routing constant
+//
+// ── বাকি সব Admin Panel থেকে আসে ───────────────────────────
+//   GATEWAY_PROXY_URL  → settings.gateway_proxy_url
+//   GATEWAY_API_KEY    → settings.gateway_api_key
+//   BINANCE_PROXY_URL  → settings.binance_proxy_url
+//   STORE_NAME         → settings.store_name
+//   IMGBB_API_KEY      → settings.imgbb_api_key
 // ============================================================
 
 var CONFIG = {
 
-    // ── Supabase ─────────────────────────────────────────────
-    // Supabase Dashboard → Settings → API এ পাবে
-    SUPABASE_URL: 'https://qdkppbwjgkkxzgzgsykv.supabase.co',
+    // ── 🔵 SUPABASE — এই দুটোই শুধু এখানে থাকে ──────────────
+    // Supabase Dashboard → Project Settings → API
+    SUPABASE_URL:      'https://qdkppbwjgkkxzgzgsykv.supabase.co',
     SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFka3BwYndqZ2treHpnemdzeWt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzY2NjgsImV4cCI6MjA5MDgxMjY2OH0.i1x16UGnM_4C2hVGZS9JreM2FJDxsIYeiHkA4BMOfrk',
 
-    // ── Payment Gateway Proxy ────────────────────────────────
-    // mypay.freelancingbyrifat.top — PHP cPanel proxy (active)
-    GATEWAY_PROXY_URL: 'https://mypay.freelancingbyrifat.top/api_proxy.php',
-    // Gateway API Key — Admin panel settings থেকে override হবে
-    GATEWAY_API_KEY: '8QFIJJNzDGGw1qmhdCJcK5xcvuh8PwRXviUfDlLatVhgkjXlZv',
+    // ── 🟢 Frontend Constants — DB ছাড়াই কাজ করে ─────────────
+    CART_KEY:         'fbr_cart',
+    DIRECT_ORDER_KEY: 'fbr_direct_order',
+    SESSION_KEY:      'fbr_session',
+    ADMIN_PATH:       '/admin',
 
-    // ── App Defaults (settings table থেকে override হবে) ─────
-    STORE_NAME: 'Freelancing By Rifat',
-    CART_KEY: 'fbr_cart',          // localStorage key - main cart
-    DIRECT_ORDER_KEY: 'fbr_direct_order', // Buy Now / Direct Order — main cart কে touch করে না
-    SESSION_KEY: 'fbr_session',
-
-    // ── Admin Panel ───────────────────────────────────────────
-    ADMIN_PATH: '/admin',
-
-    // ── Binance Pay & Crypto Payment Proxy ───────────────────
-    // binance_proxy.php কে তোমার cPanel server-এ deploy করো
-    // API Key + Secret ওই PHP file-এ থাকবে — এখানে শুধু proxy URL
-    BINANCE_PROXY_URL: 'https://mypay.freelancingbyrifat.top/binance_proxy.php',
-
-    // ── ImgBB Image Upload ────────────────────────────────────
-    // imgbb.com/api → API Key নিয়ে এখানে দাও
-    // অথবা Admin → Settings → ImgBB API Key থেকে সেট করো
-    IMGBB_API_KEY: '', // 'your_imgbb_api_key_here'
 };

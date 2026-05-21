@@ -1,6 +1,19 @@
-const CACHE_NAME = 'fbr-offline-v3';
+// ============================================================
+// sw.js — Service Worker
+// Project: Freelancing By Rifat E-Commerce
+// ============================================================
+//
+// Cache strategy:
+//   ✅ HTML pages     → Network-first, offline fallback (cached)
+//   ✅ Static assets  → Stale-while-revalidate (CSS/JS/fonts)
+//   ❌ API/DB data    → NEVER cached — always network only
+//      (Supabase, /api/*, Binance, payment proxies, BD APIs)
+//      Product prices, stock, orders must always be fresh.
+// ============================================================
 
-// Assets to precache for offline display
+const CACHE_NAME = 'fbr-offline-v4';
+
+// Static assets to precache
 const PRECACHE_ASSETS = [
     '/',
     '/index.html',
@@ -17,6 +30,25 @@ const PRECACHE_ASSETS = [
     '/assets/js/offline-handler.js'
 ];
 
+// ── URLs that must NEVER be cached ────────────────────────────
+// Product/order/payment data must always be fresh from server.
+// Stale cache এ থাকলে outdated stock বা price দেখাবে — dangerous!
+function isNeverCache(url) {
+    return (
+        url.includes('supabase.co')                  || // Supabase (REST/Auth/Storage/Edge)
+        url.includes('/rest/v1/')                    || // Supabase REST
+        url.includes('/auth/v1/')                    || // Supabase Auth
+        url.includes('/storage/v1/')                 || // Supabase Storage
+        url.includes('/functions/v1/')               || // Supabase Edge Functions
+        url.includes('/api/')                        || // Cloudflare Pages Functions
+        url.includes('binance.com')                  || // Binance API
+        url.includes('mypay.freelancingbyrifat.top') || // Payment proxy (cPanel)
+        url.includes('bdapis.com')                   || // Bangladesh address API
+        url.includes('api.imgbb.com')                   // ImgBB image upload
+    );
+}
+
+// ── Offline fallback HTML ─────────────────────────────────────
 const OFFLINE_HTML = `
 <!DOCTYPE html>
 <html lang="en">
@@ -90,6 +122,7 @@ const OFFLINE_HTML = `
 </html>
 `;
 
+// ── Install: precache static assets ──────────────────────────
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
@@ -98,6 +131,7 @@ self.addEventListener('install', (event) => {
     );
 });
 
+// ── Activate: clear old caches ────────────────────────────────
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
@@ -112,58 +146,65 @@ self.addEventListener('activate', (event) => {
     );
 });
 
+// ── Fetch: routing strategy ───────────────────────────────────
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
 
     const requestURL = new URL(event.request.url);
 
-    // Network First, Fallback to Cache for HTML pages and API
-    if (event.request.mode === 'navigate' || 
-        event.request.headers.get('accept').includes('text/html') || 
-        requestURL.href.includes('supabase.co/rest/v1/')) {
-        
+    // ── ❌ API/DB calls: bypass SW entirely — pure network ────
+    // No caching, no interception. Product data must be fresh.
+    if (isNeverCache(requestURL.href)) {
+        return; // SW does nothing — browser fetches normally
+    }
+
+    // ── ✅ HTML navigation: Network-first, offline fallback ───
+    const isNavigation = (
+        event.request.mode === 'navigate' ||
+        (event.request.headers.get('accept') || '').includes('text/html')
+    );
+
+    if (isNavigation) {
         event.respondWith(
             fetch(event.request)
                 .then((networkResponse) => {
-                    const responseClone = networkResponse.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseClone);
-                    });
+                    if (networkResponse.ok) {
+                        const responseClone = networkResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, responseClone);
+                        });
+                    }
                     return networkResponse;
                 })
                 .catch(async () => {
                     const cachedResponse = await caches.match(event.request);
-                    if (cachedResponse) {
-                        return cachedResponse;
-                    }
-                    
-                    // If HTML request not in cache, return the custom offline HTML string
-                    if (event.request.mode === 'navigate' || event.request.headers.get('accept').includes('text/html')) {
-                        return new Response(OFFLINE_HTML, {
-                            headers: { 'Content-Type': 'text/html' }
-                        });
-                    }
-                    
-                    return new Response('Offline and not in cache', { status: 503, statusText: 'Offline' });
+                    if (cachedResponse) return cachedResponse;
+                    return new Response(OFFLINE_HTML, {
+                        headers: { 'Content-Type': 'text/html' }
+                    });
                 })
         );
-    } 
-    // Stale-While-Revalidate for static assets
-    else {
-        event.respondWith(
-            caches.match(event.request).then((cachedResponse) => {
-                const fetchPromise = fetch(event.request).then((networkResponse) => {
+        return;
+    }
+
+    // ── ✅ Static assets: Stale-while-revalidate ──────────────
+    // CSS, JS, fonts, images — serve from cache immediately,
+    // update in background for next visit.
+    event.respondWith(
+        caches.match(event.request).then((cachedResponse) => {
+            const fetchPromise = fetch(event.request).then((networkResponse) => {
+                if (networkResponse.ok) {
                     const responseClone = networkResponse.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                         cache.put(event.request, responseClone);
                     });
-                    return networkResponse;
-                }).catch(() => {
-                    // Ignore network errors for static assets
-                });
-                
-                return cachedResponse || fetchPromise;
-            })
-        );
-    }
+                }
+                return networkResponse;
+            }).catch(() => {
+                // Network error for static asset — ignore silently
+            });
+
+            return cachedResponse || fetchPromise;
+        })
+    );
 });

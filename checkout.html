@@ -1840,18 +1840,55 @@ function verifyCryptoPayment() {
         }
 
         // ── Layer 2: Route based on verify_mode ──────────────────────
-        var proxyUrl = (settings.binance_proxy_url || CONFIG.BINANCE_PROXY_URL || '').trim();
-
-        // 'supabase_only' → skip PHP, go straight to Edge Function
-        if (verifyMode === 'supabase_only' || !proxyUrl) {
-            runSupabaseEdgeBackup(txid, targetAmt, btn);
-            return;
-        }
+        //
+        // ☁️ cloudflare  → /api/binance-cf-proxy  (NEW default — Cloudflare Edge)
+        // 🔄 auto        → PHP proxy, fail হলে Supabase backup (legacy)
+        // 🔵 php_only    → PHP proxy only, no fallback (legacy)
+        // 🟠 supabase_only → Supabase Edge Function only (legacy)
+        //
+        // সব legacy path অক্ষত আছে — কোনো কিছু delete করা হয়নি
 
         var body = intlPayMode === 'binance_pay'
             ? { action: 'verify-pay',     order_ref: txid, expected_amount: targetAmt }
             : { action: 'verify-deposit', tx_hash: txid, coin: intlCoinSymbol, expected_amount: targetAmt };
 
+        // ── ☁️ NEW: Cloudflare Edge Proxy (Recommended) ──────────────
+        if (verifyMode === 'cloudflare') {
+            var cfTimeout = new Promise(function(_, reject) {
+                setTimeout(function() { reject(new Error('timeout')); }, 15000);
+            });
+            Promise.race([
+                fetch('/api/binance-cf-proxy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                }).then(function(r) { return r.json(); }),
+                cfTimeout
+            ])
+            .then(function(data) {
+                if (data.success) {
+                    saveTxidAndPlace(txid, targetAmt, btn, false);
+                } else {
+                    setVerifyStatus('❌ Verification failed: ' + (data.error || 'Transaction not confirmed on Binance.'), 'error');
+                    btn.disabled = false; btn.textContent = '✅ Verify & Pay';
+                }
+            })
+            .catch(function() {
+                // Cloudflare proxy fail হলে Supabase backup
+                setVerifyStatus('⚠️ Cloudflare proxy unavailable. Switching to Supabase backup...', 'loading');
+                runSupabaseEdgeBackup(txid, targetAmt, btn);
+            });
+            return;
+        }
+
+        // ── 🟠 Supabase Edge Only (legacy) ────────────────────────────
+        var proxyUrl = (settings.binance_proxy_url || '').trim();
+        if (verifyMode === 'supabase_only' || !proxyUrl) {
+            runSupabaseEdgeBackup(txid, targetAmt, btn);
+            return;
+        }
+
+        // ── 🔄 Auto / 🔵 PHP Only (legacy) ───────────────────────────
         var phpTimeout = new Promise(function(_, reject) {
             setTimeout(function() { reject(new Error('timeout')); }, 12000);
         });

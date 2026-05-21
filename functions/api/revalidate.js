@@ -11,15 +11,25 @@
 // Security: Caller must supply  Authorization: Bearer rifat123R@16700
 // ============================================================
 
-const ZONE_ID     = '0598dcc4092772e88de3339f0b65e327';
-const CF_API_TOKEN = 'cfut_8J1aiCc2zW6cOgPqKsfh93baK4SOydqIn1fWEz2q6838b037';
+// ── Secrets must be set in Cloudflare Pages → Settings → Environment Variables ──
+// CF_ZONE_ID    = your Cloudflare Zone ID
+// CF_API_TOKEN  = your Cloudflare API Token (Cache Purge permission)
+// REVALIDATE_SECRET = your webhook bearer token (e.g. rifat123R@16700)
+//
+// ⚠️ NEVER hardcode these values here — GitHub secret scanning will block the push
 
-const CF_PURGE_URL = `https://api.cloudflare.com/client/v4/zones/${ZONE_ID}/purge_cache`;
+
 
 export async function onRequestPost(context) {
+    // ── Read secrets from Cloudflare Environment Variables ─────
+    const REVALIDATE_SECRET = context.env.REVALIDATE_SECRET || '';
+    const CF_ZONE_ID        = context.env.CF_ZONE_ID        || '';
+    const CF_API_TOKEN      = context.env.CF_API_TOKEN      || '';
+    const CF_PURGE_URL      = `https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache`;
+
     // ── 1. Verify secret token ─────────────────────────────────
     const secret = context.request.headers.get('Authorization');
-    if (secret !== 'Bearer rifat123R@16700') {
+    if (!REVALIDATE_SECRET || secret !== `Bearer ${REVALIDATE_SECRET}`) {
         return new Response(
             JSON.stringify({ error: 'Unauthorized' }),
             {

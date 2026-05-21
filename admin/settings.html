@@ -291,25 +291,45 @@
                 </div>
 
                 <!-- Verification System Mode -->
+                <!-- Binance API Keys (used by Cloudflare Proxy) -->
+                <div style="background:rgba(240,185,11,0.06);border:1.5px solid rgba(240,185,11,0.3);border-radius:12px;padding:16px;margin-bottom:14px;">
+                    <div style="font-size:12px;font-weight:800;color:#B8860B;margin-bottom:10px;">🔑 Binance API Keys <span style="font-weight:400;color:#888;">(Cloudflare Proxy এর জন্য)</span></div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-size:11px;">Binance API Key</label>
+                        <input class="form-input" id="binanceApiKey" type="password" placeholder="Your Binance API Key" style="font-size:12px;">
+                        <div class="form-hint">Binance → API Management → Create API → "Enable Reading" permission দিলেই হবে।</div>
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" style="font-size:11px;">Binance API Secret</label>
+                        <input class="form-input" id="binanceApiSecret" type="password" placeholder="Your Binance API Secret" style="font-size:12px;">
+                        <div class="form-hint">⚠️ Secret শুধু Supabase DB তে store হবে — source code বা browser এ দেখা যাবে না।</div>
+                    </div>
+                </div>
+
                 <div style="background:rgba(98,126,234,0.06);border:1.5px solid rgba(98,126,234,0.25);border-radius:12px;padding:16px;margin-top:14px;">
                     <div style="font-size:12px;font-weight:800;color:#627EEA;margin-bottom:10px;">⚙️ কোন Verification System ব্যবহার হবে?</div>
                     <select class="form-select" id="verifyMode" style="font-weight:700;margin-bottom:10px;">
-                        <option value="auto">🔄 Auto — PHP চেষ্টা করবে, fail হলে Supabase backup (recommended)</option>
+                        <option value="cloudflare">☁️ Cloudflare Proxy (Default &amp; Recommended) — Edge-এ secure verify, no cPanel needed</option>
+                        <option value="auto">🔄 Auto — PHP চেষ্টা করবে, fail হলে Supabase backup</option>
                         <option value="php_only">🔵 PHP Proxy Only — cPanel available আছে</option>
                         <option value="supabase_only">🟠 Supabase Edge Only — cPanel নেই, Edge Function use করো</option>
                     </select>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+                        <div style="font-size:11px;padding:8px;background:rgba(99,102,241,0.08);border-radius:8px;border:2px solid #6366f1;">
+                            <div style="font-weight:800;color:#4f46e5;">☁️ Cloudflare</div>
+                            <div style="color:#666;margin-top:2px;">Recommended। Edge-এ Binance API সরাসরি verify। কোনো server লাগে না।</div>
+                        </div>
                         <div style="font-size:11px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e0e8ff;">
                             <div style="font-weight:700;color:#15803d;">🔄 Auto</div>
                             <div style="color:#666;margin-top:2px;">PHP verify → fail হলে Supabase backup চলবে</div>
                         </div>
                         <div style="font-size:11px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e0e8ff;">
                             <div style="font-weight:700;color:#1d4ed8;">🔵 PHP Only</div>
-                            <div style="color:#666;margin-top:2px;">cPanel আছে, Binance API সরাসরি verify</div>
+                            <div style="color:#666;margin-top:2px;">cPanel আছে, PHP proxy দিয়ে verify</div>
                         </div>
                         <div style="font-size:11px;padding:8px;background:#fff;border-radius:8px;border:1px solid #e0e8ff;">
                             <div style="font-weight:700;color:#c2610b;">🟠 Supabase Only</div>
-                            <div style="color:#666;margin-top:2px;">cPanel নেই, Supabase Edge Function only</div>
+                            <div style="color:#666;margin-top:2px;">cPanel নেই, Edge Function only</div>
                         </div>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
@@ -531,11 +551,13 @@
             setVal('pickupChatId', s.pickup_chat_id || '');
 
             // Crypto & Binance Pay
-            setVal('binancePayUid', s.binance_pay_uid || '');
-            setVal('binanceProxyUrl', s.binance_proxy_url || CONFIG.BINANCE_PROXY_URL || '');
-            setVal('usdToBdtRate', s.usd_to_bdt_rate || '110');
-            document.getElementById('verifyMode').value = s.verify_mode || 'auto';
-            setVal('supabaseEdgeUrl', s.supabase_edge_url || '');
+            setVal('binancePayUid',    s.binance_pay_uid    || '');
+            setVal('binanceProxyUrl',  s.binance_proxy_url  || '');
+            setVal('usdToBdtRate',     s.usd_to_bdt_rate    || '110');
+            setVal('binanceApiKey',    s.binance_api_key    || '');
+            setVal('binanceApiSecret', s.binance_api_secret || '');
+            document.getElementById('verifyMode').value = s.verify_mode || 'cloudflare';
+            setVal('supabaseEdgeUrl',  s.supabase_edge_url  || '');
             cryptoCoins = s.crypto_coins || [];
             renderCryptoCoins();
         });
@@ -639,6 +661,8 @@
             pickup_chat_id:       document.getElementById('pickupChatId').value.trim(),
             binance_pay_uid:      document.getElementById('binancePayUid').value.trim(),
             binance_proxy_url:    document.getElementById('binanceProxyUrl').value.trim(),
+            binance_api_key:      document.getElementById('binanceApiKey').value.trim(),
+            binance_api_secret:   document.getElementById('binanceApiSecret').value.trim(),
             usd_to_bdt_rate:      parseFloat(document.getElementById('usdToBdtRate').value) || 110,
             verify_mode:          document.getElementById('verifyMode').value,
             supabase_edge_url:    document.getElementById('supabaseEdgeUrl').value.trim(),

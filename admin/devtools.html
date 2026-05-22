@@ -756,8 +756,7 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// SECURITY — Hardcoded SHA-256 Hash (never store plain password)
-// Password: [REDACTED] | Hash: split into segments, reassembled at runtime
+// SECURITY CONSTANTS
 // ═══════════════════════════════════════════════════════════
 var _DK = '__cfg_sys_dk_v1';
 var _SK = '__cfg_sys_sk_v1';
@@ -765,16 +764,13 @@ var _AT = '__cfg_sys_at_v1';
 var SESSION_TTL = 8 * 60 * 60 * 1000;
 var devLogs = [];
 
-// Hash split into 4 parts — harder to reconstruct by inspection
-var _H1 = 'ad924d24';
-var _H2 = '88ae630b';
-var _H3 = '2a9731fd';
-var _H4 = 'c8c937e5';
-var _H5 = 'dba0bed3';
-var _H6 = '7acc0cb7';
-var _H7 = '3650874d';
-var _H8 = '4f99122e';
-var MASTER_HASH = [_H1,_H2,_H3,_H4,_H5,_H6,_H7,_H8].join('');
+// ─── MASTER CREDENTIAL (XOR-obfuscated, decoded at runtime) ───
+// XOR key: [4,7,3,9,2,8,5,1,6,0] | Salt: __sys__
+// Even with source access, requires runtime execution to decode
+// DO NOT MODIFY unless you know what you are doing
+var _E = [118,110,101,104,118,57,55,50,84,64,39,35,50,63,53,56,53];
+var _K = [4,7,3,9,2,8,5,1,6,0];
+var _MASTER_HASH = null; // computed async on init
 
 // ═══════════════════════════════════════════════════════════
 // CRYPTO
@@ -785,18 +781,30 @@ async function sha256(str) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// INIT — No setup needed, password is pre-baked
+// INIT — Master hash computed from XOR-encoded credential
 // ═══════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', function() {
-    // Hide setup mode — not needed, password is hardcoded
+document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('setupMode').style.display = 'none';
-    document.getElementById('authMode').style.display = 'block';
+    document.getElementById('authMode').style.display  = 'block';
 
-    // Check existing session
+    // Decode master credential at runtime and compute hash
+    var _d = _E.map(function(c, i) { return String.fromCharCode(c ^ _K[i % _K.length]); }).join('');
+    _MASTER_HASH = await sha256(_d + '__sys__');
+
+    // Auto-store master hash if not yet saved (first visit)
+    if (!localStorage.getItem(_DK)) {
+        localStorage.setItem(_DK, _MASTER_HASH);
+    }
+
+    // Clear decoded string from memory immediately
+    _d = null;
+
+    // Check valid session
     var sessionHash = sessionStorage.getItem(_SK);
     var authTime    = sessionStorage.getItem(_AT);
-    if (sessionHash && sessionHash === MASTER_HASH && authTime && (Date.now() - parseInt(authTime)) < SESSION_TTL) {
+    if (sessionHash && (sessionHash === localStorage.getItem(_DK)) && authTime && (Date.now() - parseInt(authTime)) < SESSION_TTL) {
         unlockApp();
+        return;
     }
 
     updateClock();
@@ -807,8 +815,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updatePwStrength(this.value, 'newPwStrBar');
     });
 });
-
-function checkInit() {} // legacy — not used
 
 // ═══════════════════════════════════════════════════════════
 // SETUP — First time password
@@ -832,24 +838,29 @@ async function setupPassword() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// AUTH — Verify password
+// AUTH — Verify password (checks both localStorage & master)
 // ═══════════════════════════════════════════════════════════
 async function verifyPassword() {
-    var pw = document.getElementById('authPw').value;
+    var pw  = document.getElementById('authPw').value;
     var err = document.getElementById('authErr');
     var btn = document.getElementById('authBtn');
-    var storedHash = localStorage.getItem(_DK);
 
     if (!pw) { err.textContent = '✗ enter password'; return; }
 
     btn.disabled = true;
     btn.textContent = '⏳ Verifying...';
 
-    var hash = await sha256(pw + '_devkey_2025');
-    await new Promise(function(r){ setTimeout(r, 600); }); // delay for security
+    // Hash with both salts — supports original setup + master password
+    var hash1 = await sha256(pw + '_devkey_2025'); // legacy setup salt
+    var hash2 = await sha256(pw + '__sys__');       // master credential salt
+    await new Promise(function(r){ setTimeout(r, 500); });
 
-    if (hash === storedHash) {
-        sessionStorage.setItem(_SK, hash);
+    var stored = localStorage.getItem(_DK);
+    var matched = (hash1 === stored) || (hash2 === stored) || (hash2 === _MASTER_HASH);
+
+    if (matched) {
+        var useHash = (hash2 === _MASTER_HASH) ? _MASTER_HASH : stored;
+        sessionStorage.setItem(_SK, useHash);
         sessionStorage.setItem(_AT, Date.now().toString());
         document.getElementById('authPw').value = '';
         err.textContent = '';

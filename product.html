@@ -139,7 +139,6 @@
         </div>
     </div>
 
-    <!-- Reviews Section -->
     <div id="reviewsSection" style="background:#fff;border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;border:1px solid #eee;">
         <h2 style="font-size:18px;font-weight:800;margin-bottom:16px;"><i data-lucide="star" class="lucide-icon icon-warning"></i> Customer Reviews</h2>
         <div id="reviewsList"></div>
@@ -161,8 +160,34 @@
                 </div>
             </div>
             <textarea class="form-textarea" id="rvText" placeholder="Describe your experience..." style="margin-bottom:12px;"></textarea>
-            <input class="form-input" id="rvImage" placeholder="Review image URL (optional)" style="margin-bottom:12px;">
+            <!-- Review Image Upload -->
+            <div id="rvImageWrap" style="margin-bottom:12px;">
+                <div style="font-size:13px;font-weight:700;margin-bottom:6px;">📷 Review Photo (optional)</div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input class="form-input" id="rvImage" placeholder="Image URL (optional)" style="flex:1;">
+                    <button type="button" id="rvUploadBtn" class="btn btn-ghost btn-sm" style="display:none;white-space:nowrap;" onclick="uploadReviewImage()">📤 Upload Photo</button>
+                </div>
+                <div id="rvImgPreview" style="margin-top:8px;display:none;">
+                    <img id="rvImgPreviewImg" src="" style="max-width:120px;max-height:120px;border-radius:10px;object-fit:cover;border:2px solid var(--border-light);" alt="preview">
+                    <button type="button" onclick="clearReviewImg()" style="background:none;border:none;color:#ff4444;cursor:pointer;font-size:12px;margin-left:8px;">✕ Remove</button>
+                </div>
+            </div>
             <button class="btn btn-primary" onclick="submitReview()">📤 Submit Review</button>
+        </div>
+    </div>
+
+    <!-- Related Products Section -->
+    <div id="relatedSection" style="margin-bottom:20px;display:none;">
+        <h2 style="font-size:18px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+            <i data-lucide="layout-grid" class="lucide-icon" style="color:var(--primary);"></i>
+            একই ক্যাটাগরির আরও পণ্য
+        </h2>
+        <div class="products-grid" id="relatedGrid"></div>
+        <div id="relatedLoadMoreWrap" style="text-align:center;padding:20px 0;display:none;">
+            <button class="btn btn-outline" onclick="loadMoreRelated()" id="relatedLoadMoreBtn"
+                style="padding:10px 30px;border-radius:30px;font-weight:700;font-size:14px;border:2px solid var(--primary);color:var(--primary);background:transparent;">
+                <i data-lucide="chevrons-down" class="lucide-icon"></i> আরও দেখুন
+            </button>
         </div>
     </div>
 </div>
@@ -223,6 +248,9 @@
 
 <script>
 var product = null, settings = {}, selectedColor = null, selectedSize = null, currentQty = 1;
+var allProdsForRelated = [], relatedProducts = [], relatedPage = 1;
+var RELATED_PAGE_SIZE = 10;
+var reviewImgbbKey = '';
 
 document.addEventListener('DOMContentLoaded', function() {
     updateCartBadge();
@@ -233,11 +261,32 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fetch single product via Cloudflare proxy instead of direct Supabase call
     var p2 = fetch('/api/get-single-product?id=' + id).then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) && data.length ? data[0] : null }; });
     var p3 = sb.from('reviews').select('*').eq('product_id', id).eq('is_approved', true).order('created_at', { ascending: false });
+    var p4 = fetch('/api/get-products-list').then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });
+    var p5 = sb.from('product_categories').select('*');
 
-    Promise.all([p1, p2, p3]).then(function(results) {
+    Promise.all([p1, p2, p3, p4, p5]).then(function(results) {
         settings = results[0].data || {};
         product  = results[1].data;
         var reviews = results[2].data || [];
+        allProdsForRelated = results[3].data || [];
+        var prodCats = results[4].data || [];
+
+        // Attach category_ids to each product
+        allProdsForRelated.forEach(function(p) {
+            p.category_ids = prodCats.filter(function(x){ return x.product_id === p.id; }).map(function(x){ return x.category_id; });
+            if (p.category_id && !p.category_ids.includes(p.category_id)) p.category_ids.push(p.category_id);
+        });
+
+        // Also attach to current product
+        if (product) {
+            var pc = prodCats.filter(function(x){ return x.product_id === product.id; });
+            product.category_ids = pc.map(function(x){ return x.category_id; });
+            if (product.category_id && !product.category_ids.includes(product.category_id))
+                product.category_ids.push(product.category_id);
+        }
+
+        // Get review upload key
+        reviewImgbbKey = settings.review_imgbb_key || '';
 
         if (!product) {
             // Product not found or error — go to 404
@@ -261,6 +310,8 @@ document.addEventListener('DOMContentLoaded', function() {
         try { renderProduct(product); } catch(e) { console.error('renderProduct error:', e); }
         try { renderReviews(reviews); } catch(e) { console.error('renderReviews error:', e); }
         try { setupStarInput(); } catch(e) {}
+        try { setupReviewUpload(); } catch(e) {}
+        try { loadRelatedProducts(); } catch(e) { console.error('related error:', e); }
 
         if ((settings.allow_whatsapp_order || settings.allow_msg_order) && settings.messaging_apps) {
             document.getElementById('msgOrderBtn').style.display = 'flex';
@@ -278,6 +329,114 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('pageLoader').style.display = 'none';
     });
 });
+
+// ── Related Products ──────────────────────────────────────────
+function loadRelatedProducts() {
+    if (!product || !product.category_ids || !product.category_ids.length) return;
+    var catIds = product.category_ids;
+    relatedProducts = allProdsForRelated.filter(function(p) {
+        if (p.id === product.id) return false;
+        return p.category_ids && p.category_ids.some(function(cid){ return catIds.includes(cid); });
+    });
+    relatedPage = 1;
+    if (!relatedProducts.length) return;
+    document.getElementById('relatedSection').style.display = 'block';
+    renderRelatedBatch();
+}
+
+function renderRelatedBatch() {
+    var grid = document.getElementById('relatedGrid');
+    var batch = relatedProducts.slice(0, relatedPage * RELATED_PAGE_SIZE);
+    grid.innerHTML = batch.map(productCardHtml).join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    var wrap = document.getElementById('relatedLoadMoreWrap');
+    wrap.style.display = batch.length < relatedProducts.length ? 'block' : 'none';
+}
+
+function loadMoreRelated() {
+    relatedPage++;
+    renderRelatedBatch();
+}
+
+// ── Product Card HTML (for related & sections) ──────────────────────────
+function productCardHtml(p) {
+    var variants = p.variants || [];
+    var imgUrl = '';
+    if (variants.length && variants[0].imageUrl) imgUrl = variants[0].imageUrl;
+    else if (p.gallery_images && p.gallery_images.length) imgUrl = p.gallery_images[0];
+    var price = p.flash_sale_price > 0 ? p.base_price - p.flash_sale_price : p.base_price;
+    var origPrice = p.flash_sale_price > 0 ? '<del style="font-size:12px;color:#999;">৳' + p.base_price + '</del>' : '';
+    var badge = p.flash_sale_price > 0 ? '<div style="position:absolute;top:8px;left:8px;background:#ff4444;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;">৳' + p.flash_sale_price + ' OFF</div>' : '';
+    return '<a href="product.html?id=' + p.id + '" style="text-decoration:none;color:inherit;">' +
+        '<div class="product-card" style="cursor:pointer;">' +
+            '<div class="product-img-wrap" style="position:relative;">' +
+                '<img class="product-img" src="' + (imgUrl || '') + '" alt="' + escHtmlP(p.name) + '" loading="lazy" onerror="this.src=\'\'">' +
+                badge +
+            '</div>' +
+            '<div class="product-info">' +
+                '<div class="product-name">' + escHtmlP(p.name) + '</div>' +
+                '<div class="product-price">' + origPrice + ' <strong>৳' + price + '</strong></div>' +
+            '</div>' +
+        '</div></a>';
+}
+function escHtmlP(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Review Image Upload ────────────────────────────────────────────────
+function setupReviewUpload() {
+    if (!reviewImgbbKey) return; // Key নেই — URL input দেখাবে (default)
+    // Key আছে — Upload button দেখাবে, URL input hide করব না (still works as fallback)
+    var btn = document.getElementById('rvUploadBtn');
+    var inp = document.getElementById('rvImage');
+    if (btn) {
+        btn.style.display = 'inline-flex';
+        inp.placeholder = 'বা Image URL paste করো';
+    }
+}
+
+function uploadReviewImage() {
+    if (!reviewImgbbKey) { showToast && showToast('⚠️ Review upload key set হয়নি', 'error'); return; }
+    var input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = function() {
+        var file = input.files[0];
+        if (!file) return;
+        var btn = document.getElementById('rvUploadBtn');
+        btn.disabled = true; btn.textContent = '⏳ Uploading...';
+
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var b64 = e.target.result.split(',')[1];
+            var fd = new FormData();
+            fd.append('key', reviewImgbbKey);
+            fd.append('image', b64);
+            fd.append('name', file.name.replace(/\.[^.]+$/, ''));
+            fetch('https://api.imgbb.com/1/upload', { method:'POST', body: fd })
+                .then(function(r){ return r.json(); })
+                .then(function(data) {
+                    btn.disabled = false; btn.textContent = '📤 Upload Photo';
+                    if (data.success) {
+                        document.getElementById('rvImage').value = data.data.url;
+                        document.getElementById('rvImgPreviewImg').src = data.data.url;
+                        document.getElementById('rvImgPreview').style.display = 'block';
+                    } else {
+                        alert('Upload failed: ' + (data.error ? data.error.message : 'Unknown'));
+                    }
+                })
+                .catch(function(err) {
+                    btn.disabled = false; btn.textContent = '📤 Upload Photo';
+                    alert('Network error: ' + err.message);
+                });
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
+function clearReviewImg() {
+    document.getElementById('rvImage').value = '';
+    document.getElementById('rvImgPreviewImg').src = '';
+    document.getElementById('rvImgPreview').style.display = 'none';
+}
 
 function renderProduct(p) {
     document.getElementById('pName').textContent = p.name;

@@ -135,6 +135,14 @@
 
             <div class="products-grid" id="productsGrid"></div>
 
+            <!-- Load More Button -->
+            <div id="loadMoreWrap" style="text-align:center;padding:24px 0;display:none;">
+                <button id="loadMoreBtn" class="btn btn-outline" onclick="loadMoreShop()" style="padding:12px 36px;border-radius:30px;font-weight:700;font-size:14px;border:2px solid var(--primary);color:var(--primary);background:transparent;transition:all 0.2s;">
+                    <i data-lucide="chevrons-down" class="lucide-icon"></i> Load More Products
+                </button>
+                <div id="loadMoreInfo" style="font-size:12px;color:#888;margin-top:8px;"></div>
+            </div>
+
             <!-- Empty state -->
             <div id="emptyState" style="display:none;text-align:center;padding:80px 20px;color:#999;">
                 <div style="font-size:56px;margin-bottom:14px;"><i data-lucide="search" class="lucide-icon"></i></div>
@@ -283,6 +291,10 @@ function selectCat(id, el) {
     applyFilters();
 }
 
+var filteredProducts = [];
+var shopCurrentPage = 1;
+var SHOP_PAGE_SIZE = 25;
+
 function applyFilters() {
     var q      = (document.getElementById('searchInput').value || '').toLowerCase();
     var min    = parseInt(document.getElementById('minPrice').value) || 0;
@@ -290,7 +302,7 @@ function applyFilters() {
     var sort   = document.getElementById('sortBy').value;
     var onSale = document.getElementById('onlyFlash').checked;
 
-    var filtered = allProducts.filter(function(p) {
+    filteredProducts = allProducts.filter(function(p) {
         var price = p.flash_sale_price > 0 ? p.base_price - p.flash_sale_price : p.base_price;
         var nameMatch = (p.name||'').toLowerCase().includes(q) || (p.sku||'').toLowerCase().includes(q);
         return (!q          || nameMatch) &&
@@ -299,16 +311,61 @@ function applyFilters() {
                (!onSale     || p.flash_sale_price > 0);
     });
 
-    if (sort === 'price_low')  filtered.sort(function(a,b) { return (a.flash_sale_price>0?a.base_price-a.flash_sale_price:a.base_price) - (b.flash_sale_price>0?b.base_price-b.flash_sale_price:b.base_price); });
-    if (sort === 'price_high') filtered.sort(function(a,b) { return (b.flash_sale_price>0?b.base_price-b.flash_sale_price:b.base_price) - (a.flash_sale_price>0?a.base_price-a.flash_sale_price:a.base_price); });
-    if (sort === 'sale')       filtered.sort(function(a,b) { return (b.flash_sale_price||0) - (a.flash_sale_price||0); });
+    if (sort === 'price_low')  filteredProducts.sort(function(a,b) { return (a.flash_sale_price>0?a.base_price-a.flash_sale_price:a.base_price) - (b.flash_sale_price>0?b.base_price-b.flash_sale_price:b.base_price); });
+    if (sort === 'price_high') filteredProducts.sort(function(a,b) { return (b.flash_sale_price>0?b.base_price-b.flash_sale_price:b.base_price) - (a.flash_sale_price>0?a.base_price-a.flash_sale_price:a.base_price); });
+    if (sort === 'sale')       filteredProducts.sort(function(a,b) { return (b.flash_sale_price||0) - (a.flash_sale_price||0); });
 
-    document.getElementById('resultCount').textContent = filtered.length + ' product' + (filtered.length !== 1 ? 's' : '') + ' found';
-    document.getElementById('emptyState').style.display = filtered.length ? 'none' : 'block';
-    document.getElementById('productsGrid').style.display = filtered.length ? 'grid' : 'none';
+    // Reset pagination
+    shopCurrentPage = 1;
+    var firstBatch = filteredProducts.slice(0, SHOP_PAGE_SIZE);
 
-    if (filtered.length) {
-        document.getElementById('productsGrid').innerHTML = filtered.map(productCardHtml).join('');
+    document.getElementById('resultCount').textContent = filteredProducts.length + ' product' + (filteredProducts.length !== 1 ? 's' : '') + ' found';
+    document.getElementById('emptyState').style.display = filteredProducts.length ? 'none' : 'block';
+    document.getElementById('productsGrid').style.display = filteredProducts.length ? 'grid' : 'none';
+
+    if (filteredProducts.length) {
+        document.getElementById('productsGrid').innerHTML = firstBatch.map(productCardHtml).join('');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    updateLoadMoreBtn();
+}
+
+function loadMoreShop() {
+    shopCurrentPage++;
+    var start = (shopCurrentPage - 1) * SHOP_PAGE_SIZE;
+    var batch = filteredProducts.slice(start, start + SHOP_PAGE_SIZE);
+    var grid = document.getElementById('productsGrid');
+    if (batch.length) {
+        grid.innerHTML += batch.map(productCardHtml).join('');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+    updateLoadMoreBtn();
+}
+
+function updateLoadMoreBtn() {
+    var loaded = Math.min(shopCurrentPage * SHOP_PAGE_SIZE, filteredProducts.length);
+    var total  = filteredProducts.length;
+    var wrap   = document.getElementById('loadMoreWrap');
+    var btn    = document.getElementById('loadMoreBtn');
+    var info   = document.getElementById('loadMoreInfo');
+
+    if (total <= SHOP_PAGE_SIZE || loaded >= total) {
+        wrap.style.display = loaded >= total && total > SHOP_PAGE_SIZE ? 'block' : 'none';
+        if (loaded >= total && total > SHOP_PAGE_SIZE) {
+            btn.innerHTML = '<i data-lucide="check-circle-2" class="lucide-icon"></i> সব products দেখা হয়ে গেছে';
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'default';
+        }
+    } else {
+        wrap.style.display = 'block';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.innerHTML = '<i data-lucide="chevrons-down" class="lucide-icon"></i> Load More Products';
+        info.textContent = loaded + ' / ' + total + ' products দেখা হচ্ছে';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 }
 

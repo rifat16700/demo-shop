@@ -43,6 +43,10 @@ var SIDEBAR_HTML = `
             <span class="nav-icon">🖼️</span>
             <span>Banners</span>
         </a>
+        <a href="sections.html" class="nav-item" data-page="sections">
+            <span class="nav-icon">🏠</span>
+            <span>Homepage Sections</span>
+        </a>
 
         <div class="nav-section-label">Manage</div>
         <a href="delivery.html" class="nav-item" data-page="delivery">

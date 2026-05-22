@@ -80,8 +80,11 @@
             <div class="products-grid" id="flashGrid"></div>
         </section>
 
-        <!-- All Products -->
-        <section class="section">
+        <!-- Dynamic Homepage Sections -->
+        <div id="homeSectionsWrap"></div>
+
+        <!-- All Products (fallback / always last) -->
+        <section class="section" id="allProductsSection">
             <h2 class="section-title" id="productsTitle">
                 <i data-lucide="shopping-bag" class="lucide-icon icon-pulse"></i> All Products
                 <span><a href="shop.html" style="color:var(--primary);">View All →</a></span>
@@ -167,19 +170,29 @@ function loadSiteData() {
     var p3 = sb.from('categories').select('*').eq('is_active', true).order('sort_order');
     // Fetch all products via Cloudflare proxy instead of direct Supabase call
     var p4 = fetch('/api/get-products-list').then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) ? data : [] }; });
+    var p5 = sb.from('home_sections').select('*').eq('is_active', true).order('sort_order');
+    var p6 = sb.from('product_categories').select('*');
 
-    Promise.all([p1, p2, p3, p4]).then(function(results) {
-        var settings  = results[0].data || {};
-        var banners   = results[1].data || [];
-        var cats      = results[2].data || [];
-        allProducts   = results[3].data || [];
+    Promise.all([p1, p2, p3, p4, p5, p6]).then(function(results) {
+        var settings    = results[0].data || {};
+        var banners     = results[1].data || [];
+        var cats        = results[2].data || [];
+        allProducts     = results[3].data || [];
+        var homeSects   = results[4].data || [];
+        var prodCats    = results[5].data || [];
+
+        // Attach category_ids to each product
+        allProducts.forEach(function(p) {
+            p.category_ids = prodCats.filter(function(x){ return x.product_id === p.id; }).map(function(x){ return x.category_id; });
+            if (p.category_id && !p.category_ids.includes(p.category_id)) p.category_ids.push(p.category_id);
+        });
 
         siteSettings = settings;
         applySettings(settings);
         renderHero(banners);
         renderCategories(cats);
-        renderProducts(allProducts);
         renderFlashDeals();
+        renderHomeSections(homeSects);
 
         document.getElementById('pageLoader').style.display = 'none';
     }).catch(function(err) {
@@ -365,7 +378,62 @@ function startFlashTimer(end) {
 
 function pad(n) { return n < 10 ? '0' + n : n; }
 
-// ── Products ──────────────────────────────────────────────────
+// ── Homepage Dynamic Sections ─────────────────────────────────────
+function renderHomeSections(sections) {
+    var wrap = document.getElementById('homeSectionsWrap');
+    var allProdSection = document.getElementById('allProductsSection');
+
+    if (!sections || !sections.length) {
+        // No sections configured — show default All Products
+        renderProducts(allProducts);
+        return;
+    }
+
+    // Hide default All Products section
+    allProdSection.style.display = 'none';
+    var html = '';
+
+    sections.forEach(function(sec) {
+        var prods = [];
+        var max = sec.max_products || 10;
+
+        if (sec.type === 'all_products') {
+            prods = allProducts.slice(0, max);
+        } else if (sec.type === 'category' && sec.category_id) {
+            prods = allProducts.filter(function(p) {
+                return p.category_ids && p.category_ids.includes(sec.category_id);
+            }).slice(0, max);
+        } else if (sec.type === 'custom' && sec.product_ids && sec.product_ids.length) {
+            var ids = sec.product_ids;
+            prods = ids.map(function(id) {
+                return allProducts.find(function(p){ return p.id === id; });
+            }).filter(Boolean).slice(0, max);
+        }
+
+        if (!prods.length) return;
+
+        var viewAllLink = '';
+        if (sec.type === 'category' && sec.category_id) {
+            viewAllLink = '<span><a href="shop.html?cat=' + sec.category_id + '" style="color:var(--primary);">View All →</a></span>';
+        } else if (sec.type === 'all_products') {
+            viewAllLink = '<span><a href="shop.html" style="color:var(--primary);">View All →</a></span>';
+        }
+
+        html += '<section class="section" style="animation:fadeInUp 0.5s ease both;">' +
+            '<h2 class="section-title"><i data-lucide="layout-grid" class="lucide-icon icon-pulse"></i> ' + escHtml(sec.title) + viewAllLink + '</h2>' +
+            '<div class="products-grid">' + prods.map(productCardHtml).join('') + '</div>' +
+        '</section>';
+    });
+
+    wrap.innerHTML = html || '';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function escHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Products (fallback) ──────────────────────────────────────────
 function renderProducts(products) {
     var grid = document.getElementById('productsGrid');
     if (!products.length) {
@@ -373,6 +441,7 @@ function renderProducts(products) {
         return;
     }
     grid.innerHTML = products.slice(0, 12).map(productCardHtml).join('');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function productCardHtml(p) {

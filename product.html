@@ -984,11 +984,16 @@ function submitReview() {
         product_id: product.id, customer_name: name, customer_phone: phone,
         rating: rating, review_text: text, review_image: img || null, is_approved: false
     }]).then(function(r) {
-        if (r.error) { alert('Failed to submit review. Please try again.'); return; }
+        if (r.error) {
+            console.error('Review submit error:', r.error);
+            alert('Failed to submit review.\nError: ' + r.error.message + '\n\nFix: Supabase SQL Editor এ reviews table এ public insert policy যোগ করো।');
+            return;
+        }
         document.getElementById('reviewForm').innerHTML = '<div style="text-align:center;padding:24px;color:#22C55E;font-size:15px;font-weight:700;"><i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Review submitted! It will appear after admin approval.</div>';
         if (typeof lucide !== 'undefined') lucide.createIcons();
     });
 }
+
 
 function getCart()  { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY)||'[]'); } catch(e){ return []; } }
 function saveCart(c){ localStorage.setItem(CONFIG.CART_KEY, JSON.stringify(c)); }

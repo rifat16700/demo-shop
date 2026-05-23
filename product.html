@@ -254,7 +254,7 @@ var product = null, settings = {}, selectedColor = null, selectedSize = null, cu
 var allProdsForRelated = [], relatedProducts = [], relatedPage = 1;
 var RELATED_PAGE_SIZE = 10;
 var reviewImgbbKey = '';
-var allReviewsData = [], reviewsShown = 0;
+var totalReviewsCount = 0, reviewsShown = 0;
 var REVIEWS_PAGE_SIZE = 5;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -265,16 +265,20 @@ document.addEventListener('DOMContentLoaded', function() {
     var p1 = sb.from('settings').select('*').eq('id',1).single();
     // Fetch single product via Cloudflare proxy instead of direct Supabase call
     var p2 = fetch('/api/get-single-product?id=' + id).then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) && data.length ? data[0] : null }; });
-    var p3 = sb.from('reviews').select('*').eq('product_id', id).eq('is_approved', true).order('created_at', { ascending: false });
+    // Fetch ratings only to calculate average/count efficiently
+    var p3 = sb.from('reviews').select('rating').eq('product_id', id).eq('is_approved', true);
     var p4 = fetch('/api/get-products-list').then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });
     var p5 = sb.from('product_categories').select('*');
+    // Fetch first batch of approved reviews (limit to REVIEWS_PAGE_SIZE)
+    var p6 = sb.from('reviews').select('*').eq('product_id', id).eq('is_approved', true).order('created_at', { ascending: false }).range(0, REVIEWS_PAGE_SIZE - 1);
 
-    Promise.all([p1, p2, p3, p4, p5]).then(function(results) {
+    Promise.all([p1, p2, p3, p4, p5, p6]).then(function(results) {
         settings = results[0].data || {};
         product  = results[1].data;
-        var reviews = results[2].data || [];
+        var ratings = results[2].data || [];
         allProdsForRelated = results[3].data || [];
         var prodCats = results[4].data || [];
+        var initialReviews = results[5].data || [];
 
         // Attach category_ids to each product
         allProdsForRelated.forEach(function(p) {
@@ -320,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try { renderProduct(product); } catch(e) { console.error('renderProduct error:', e); }
-        try { renderReviews(reviews); } catch(e) { console.error('renderReviews error:', e); }
+        try { renderReviews(ratings, initialReviews); } catch(e) { console.error('renderReviews error:', e); }
         try { setupStarInput(); } catch(e) {}
         try { setupReviewUpload(); } catch(e) {}
         try { loadRelatedProducts(); } catch(e) { console.error('related error:', e); }
@@ -949,22 +953,44 @@ function pickupOrder() {
 }
 
 // Reviews
-function renderReviews(reviews) {
-    allReviewsData = reviews || [];
+function renderReviews(ratings, initialReviews) {
+    var ratingsData = ratings || [];
+    var initialBatch = initialReviews || [];
+    
+    totalReviewsCount = ratingsData.length;
     reviewsShown = 0;
+    
+    var avg = 0;
+    if (totalReviewsCount > 0) {
+        avg = ratingsData.reduce(function(s,r){return s+(r.rating||0);},0) / totalReviewsCount;
+        document.getElementById('reviewStars').textContent = '★'.repeat(Math.round(avg)) + '☆'.repeat(5-Math.round(avg));
+        document.getElementById('reviewCount').textContent = totalReviewsCount + ' review' + (totalReviewsCount>1?'s':'');
+    } else {
+        document.getElementById('reviewStars').textContent = '☆☆☆☆☆';
+        document.getElementById('reviewCount').textContent = '0 reviews';
+    }
+
     var list = document.getElementById('reviewsList');
-    if (!allReviewsData.length) {
+    if (!initialBatch.length) {
         list.innerHTML = '<div style="text-align:center;padding:30px;color:#999;font-size:14px;">No reviews yet. Be the first!</div>';
         document.getElementById('reviewsViewMoreWrap').style.display = 'none';
         return;
     }
 
-    var avg = allReviewsData.reduce(function(s,r){return s+(r.rating||0);},0) / allReviewsData.length;
-    document.getElementById('reviewStars').textContent = '★'.repeat(Math.round(avg)) + '☆'.repeat(5-Math.round(avg));
-    document.getElementById('reviewCount').textContent = allReviewsData.length + ' review' + (allReviewsData.length>1?'s':'');
-
     list.innerHTML = '';
-    showMoreReviews();
+    var html = initialBatch.map(function(r) { return buildReviewCard(r); }).join('');
+    list.innerHTML = html;
+    reviewsShown = initialBatch.length;
+
+    var remaining = totalReviewsCount - reviewsShown;
+    var wrap = document.getElementById('reviewsViewMoreWrap');
+    var btn = document.getElementById('reviewsViewMoreBtn');
+    if (remaining > 0) {
+        wrap.style.display = 'block';
+        btn.innerHTML = '📝 আরো রিভিউ দেখুন <span id="reviewsRemaining" style="font-size:11px;color:#888;">(' + remaining + ' বাকি)</span>';
+    } else {
+        wrap.style.display = 'none';
+    }
 }
 
 function buildReviewCard(r) {
@@ -980,20 +1006,41 @@ function buildReviewCard(r) {
 }
 
 function showMoreReviews() {
-    var list = document.getElementById('reviewsList');
-    var nextBatch = allReviewsData.slice(reviewsShown, reviewsShown + REVIEWS_PAGE_SIZE);
-    var html = nextBatch.map(function(r) { return buildReviewCard(r); }).join('');
-    list.insertAdjacentHTML('beforeend', html);
-    reviewsShown += nextBatch.length;
-
-    var remaining = allReviewsData.length - reviewsShown;
-    var wrap = document.getElementById('reviewsViewMoreWrap');
-    if (remaining > 0) {
-        wrap.style.display = 'block';
-        document.getElementById('reviewsRemaining').textContent = '(' + remaining + ' বাকি)';
-    } else {
-        wrap.style.display = 'none';
-    }
+    var btn = document.getElementById('reviewsViewMoreBtn');
+    btn.disabled = true;
+    var originalText = btn.innerHTML;
+    btn.textContent = '⏳ লোড হচ্ছে...';
+    
+    var id = new URLSearchParams(window.location.search).get('id');
+    sb.from('reviews')
+      .select('*')
+      .eq('product_id', id)
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false })
+      .range(reviewsShown, reviewsShown + REVIEWS_PAGE_SIZE - 1)
+      .then(function(res) {
+          btn.disabled = false;
+          var data = res.data || [];
+          if (data.length > 0) {
+              var list = document.getElementById('reviewsList');
+              var html = data.map(function(r) { return buildReviewCard(r); }).join('');
+              list.insertAdjacentHTML('beforeend', html);
+              reviewsShown += data.length;
+          }
+          
+          var remaining = totalReviewsCount - reviewsShown;
+          var wrap = document.getElementById('reviewsViewMoreWrap');
+          if (remaining > 0) {
+              wrap.style.display = 'block';
+              btn.innerHTML = '📝 আরো রিভিউ দেখুন <span id="reviewsRemaining" style="font-size:11px;color:#888;">(' + remaining + ' বাকি)</span>';
+          } else {
+              wrap.style.display = 'none';
+          }
+      }).catch(function(err) {
+          console.error('Error loading reviews:', err);
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+      });
 }
 
 function setupStarInput() {

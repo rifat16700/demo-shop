@@ -142,6 +142,9 @@
     <div id="reviewsSection" style="background:#fff;border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;border:1px solid #eee;">
         <h2 style="font-size:18px;font-weight:800;margin-bottom:16px;"><i data-lucide="star" class="lucide-icon icon-warning"></i> Customer Reviews</h2>
         <div id="reviewsList"></div>
+        <div id="reviewsViewMoreWrap" style="text-align:center;margin-top:16px;display:none;">
+            <button id="reviewsViewMoreBtn" onclick="showMoreReviews()" style="display:inline-flex;align-items:center;gap:8px;padding:10px 28px;border:1.5px solid var(--border-light);border-radius:30px;background:#fff;color:var(--text-main);font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 2px 8px rgba(0,0,0,0.04);">📝 আরো রিভিউ দেখুন <span id="reviewsRemaining" style="font-size:11px;color:#888;"></span></button>
+        </div>
         <hr style="margin:20px 0;border-color:#f0f0f0;">
         <h3 style="font-size:15px;font-weight:700;margin-bottom:14px;">Write a Review</h3>
         <div id="reviewForm">
@@ -251,6 +254,8 @@ var product = null, settings = {}, selectedColor = null, selectedSize = null, cu
 var allProdsForRelated = [], relatedProducts = [], relatedPage = 1;
 var RELATED_PAGE_SIZE = 10;
 var reviewImgbbKey = '';
+var allReviewsData = [], reviewsShown = 0;
+var REVIEWS_PAGE_SIZE = 5;
 
 document.addEventListener('DOMContentLoaded', function() {
     updateCartBadge();
@@ -945,24 +950,50 @@ function pickupOrder() {
 
 // Reviews
 function renderReviews(reviews) {
+    allReviewsData = reviews || [];
+    reviewsShown = 0;
     var list = document.getElementById('reviewsList');
-    if (!reviews.length) { list.innerHTML = '<div style="text-align:center;padding:30px;color:#999;font-size:14px;">No reviews yet. Be the first!</div>'; return; }
+    if (!allReviewsData.length) {
+        list.innerHTML = '<div style="text-align:center;padding:30px;color:#999;font-size:14px;">No reviews yet. Be the first!</div>';
+        document.getElementById('reviewsViewMoreWrap').style.display = 'none';
+        return;
+    }
 
-    var avg = reviews.reduce(function(s,r){return s+(r.rating||0);},0) / reviews.length;
+    var avg = allReviewsData.reduce(function(s,r){return s+(r.rating||0);},0) / allReviewsData.length;
     document.getElementById('reviewStars').textContent = '★'.repeat(Math.round(avg)) + '☆'.repeat(5-Math.round(avg));
-    document.getElementById('reviewCount').textContent = reviews.length + ' review' + (reviews.length>1?'s':'');
+    document.getElementById('reviewCount').textContent = allReviewsData.length + ' review' + (allReviewsData.length>1?'s':'');
 
-    list.innerHTML = reviews.map(function(r) {
-        var stars = '★'.repeat(r.rating) + '☆'.repeat(5-r.rating);
-        return '<div class="review-card-user">' +
-            '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">' +
-                '<div><b>' + (r.customer_name||'Anonymous') + '</b><div class="review-stars">' + stars + '</div></div>' +
-                '<div style="font-size:11px;color:#aaa;">' + new Date(r.created_at).toLocaleDateString() + '</div>' +
-            '</div>' +
-            (r.review_text ? '<p style="font-size:13.5px;line-height:1.6;">' + r.review_text + '</p>' : '') +
-            (r.review_image ? '<img src="' + r.review_image + '" style="width:80px;height:80px;border-radius:10px;object-fit:cover;margin-top:8px;">' : '') +
-        '</div>';
-    }).join('');
+    list.innerHTML = '';
+    showMoreReviews();
+}
+
+function buildReviewCard(r) {
+    var stars = '★'.repeat(r.rating) + '☆'.repeat(5-r.rating);
+    return '<div class="review-card-user" style="animation:fadeInUp 0.3s ease;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">' +
+            '<div><b>' + (r.customer_name||'Anonymous') + '</b><div class="review-stars">' + stars + '</div></div>' +
+            '<div style="font-size:11px;color:#aaa;">' + new Date(r.created_at).toLocaleDateString() + '</div>' +
+        '</div>' +
+        (r.review_text ? '<p style="font-size:13.5px;line-height:1.6;">' + r.review_text + '</p>' : '') +
+        (r.review_image ? '<img src="' + r.review_image + '" style="width:80px;height:80px;border-radius:10px;object-fit:cover;margin-top:8px;cursor:pointer;" onclick="window.open(this.src)">' : '') +
+    '</div>';
+}
+
+function showMoreReviews() {
+    var list = document.getElementById('reviewsList');
+    var nextBatch = allReviewsData.slice(reviewsShown, reviewsShown + REVIEWS_PAGE_SIZE);
+    var html = nextBatch.map(function(r) { return buildReviewCard(r); }).join('');
+    list.insertAdjacentHTML('beforeend', html);
+    reviewsShown += nextBatch.length;
+
+    var remaining = allReviewsData.length - reviewsShown;
+    var wrap = document.getElementById('reviewsViewMoreWrap');
+    if (remaining > 0) {
+        wrap.style.display = 'block';
+        document.getElementById('reviewsRemaining').textContent = '(' + remaining + ' বাকি)';
+    } else {
+        wrap.style.display = 'none';
+    }
 }
 
 function setupStarInput() {

@@ -6,7 +6,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../assets/js/config.js"></script><script src="../assets/js/supabase-init.js"></script>
+    <script src="../assets/js/config.js"></script><script src="../assets/js/supabase-init.js"></script><script src="../assets/js/master-db.js"></script>
     <script src="assets/js/admin-common.js?v=2"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadAddons() {
-    sb.from('addons').select('*').order('created_at').then(function(r) {
+    MasterDB.from('addons').select('*').order('created_at').then(function(r) {
         document.getElementById('pageLoader').style.display = 'none';
         document.getElementById('adminMain').style.display  = 'flex';
         allAddons = r.data || [];
@@ -133,7 +133,7 @@ function saveAddon() {
     var price = parseInt(document.getElementById('aPrice').value) || 0;
     if (!name || !price) { showToast('Name and price required', 'error'); return; }
     var payload = { name: name, icon: document.getElementById('aIcon').value.trim() || '<i data-lucide="gift" class="lucide-icon icon-bounce"></i>', price: price, is_active: aActive };
-    var req = editingId ? sb.from('addons').update(payload).eq('id', editingId) : sb.from('addons').insert([payload]);
+    var req = editingId ? MasterDB.from('addons').update(payload).eq('id', editingId) : MasterDB.from('addons').insert([payload]);
     req.then(function(r) {
         if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
         showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadAddons();
@@ -142,7 +142,7 @@ function saveAddon() {
 
 function deleteAddon(id) {
     if (!adminConfirm('Delete this add-on?')) return;
-    sb.from('addons').delete().eq('id', id).then(function(r) {
+    MasterDB.from('addons').delete().eq('id', id).then(function(r) {
         if (r.error || !true) { showToast('Delete failed', 'error'); return; }
         showToast('Deleted!', 'success'); loadAddons();
     });

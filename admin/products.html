@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/supabase-init.js"></script>
+    <script src="../assets/js/supabase-init.js"></script><script src="../assets/js/master-db.js"></script>
     <script src="assets/js/admin-common.js?v=2"></script>
     <script src="../assets/js/imgbb-uploader.js"></script>
     <style>
@@ -286,7 +286,7 @@
     });
 
     function loadCategories() {
-        sb.from('categories').select('*').eq('is_active', true).order('sort_order').then(function(r) {
+        MasterDB.from('categories').select('*').eq('is_active', true).order('sort_order').then(function(r) {
             allCategories = r.data || [];
             var catFilter  = document.getElementById('catFilter');
             var catFilterM = document.getElementById('catFilterM');
@@ -344,8 +344,8 @@
 
     function loadProducts() {
         Promise.all([
-            sb.from('products').select('*').order('created_at', { ascending: false }),
-            sb.from('product_categories').select('*')
+            MasterDB.from('products').select('*').order('created_at', { ascending: false }),
+            MasterDB.from('product_categories').select('*')
         ]).then(function(results) {
             document.getElementById('pageLoader').style.display = 'none';
             document.getElementById('adminMain').style.display  = 'flex';
@@ -466,7 +466,7 @@
         document.getElementById('pVideoType').value  = p.video_type || 'auto';
         
         // Fetch categories for this product
-        sb.from('product_categories').select('category_id').eq('product_id', p.id).then(function(catRes) {
+        MasterDB.from('product_categories').select('category_id').eq('product_id', p.id).then(function(catRes) {
             var selectedIds = (catRes.data || []).map(function(c) { return c.category_id; });
             if (p.category_id && !selectedIds.includes(p.category_id)) selectedIds.push(p.category_id);
 
@@ -788,8 +788,8 @@
         setBtnLoading(btn, true);
 
         var req = editingProductId
-            ? sb.from('products').update(payload).eq('id', editingProductId)
-            : sb.from('products').insert([payload]).select();
+            ? MasterDB.from('products').update(payload).eq('id', editingProductId)
+            : MasterDB.from('products').insert([payload]).select();
 
         req.then(function(r) {
             setBtnLoading(btn, false, '💾 Save Product');
@@ -805,10 +805,10 @@
             }
 
             if (productId) {
-                sb.from('product_categories').delete().eq('product_id', productId).then(function() {
+                MasterDB.from('product_categories').delete().eq('product_id', productId).then(function() {
                     if (selectedCats.length) {
                         var rows = selectedCats.map(function(cid) { return { product_id: productId, category_id: cid }; });
-                        sb.from('product_categories').insert(rows).then(function() {
+                        MasterDB.from('product_categories').insert(rows).then(function() {
                             finishSave();
                         }).catch(function() {
                             finishSave();
@@ -828,7 +828,7 @@
 
     function deleteProduct(id) {
         if (!adminConfirm('এই product মুছবেন? এই কাজ undo করা যাবে না।')) return;
-        sb.from('products').delete().eq('id', id).then(function(r) {
+        MasterDB.from('products').delete().eq('id', id).then(function(r) {
             if (r.error) { showToast('Delete failed', 'error'); return; }
             showToast('Deleted!', 'success');
             allProducts = allProducts.filter(function(p) { return p.id !== id; });
@@ -837,7 +837,7 @@
     }
 
     function toggleActive(id, current) {
-        sb.from('products').update({ is_active: !current }).eq('id', id).then(function(r) {
+        MasterDB.from('products').update({ is_active: !current }).eq('id', id).then(function(r) {
             if (r.error) { showToast('Update failed', 'error'); return; }
             var idx = allProducts.findIndex(function(p) { return p.id === id; });
             if (idx > -1) allProducts[idx].is_active = !current;

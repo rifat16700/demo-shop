@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/supabase-init.js"></script>
+    <script src="../assets/js/supabase-init.js"></script><script src="../assets/js/master-db.js"></script>
     <script src="assets/js/admin-common.js?v=2"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
     <style>
@@ -428,9 +428,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function loadData() {
     Promise.all([
-        sb.from('categories').select('*').eq('is_active', true).order('sort_order'),
-        sb.from('products').select('*').eq('is_active', true).order('created_at'),
-        sb.from('promos').select('*').order('created_at', { ascending: false })
+        MasterDB.from('categories').select('*').eq('is_active', true).order('sort_order'),
+        MasterDB.from('products').select('*').eq('is_active', true).order('created_at'),
+        MasterDB.from('promos').select('*').order('created_at', { ascending: false })
     ]).then(function(results) {
         document.getElementById('pageLoader').style.display = 'none';
         document.getElementById('adminMain').style.display  = 'flex';
@@ -849,7 +849,7 @@ function savePromo() {
         applicable_payments:   getChipValues('pPayments')
     };
 
-    var req = editingId ? sb.from('promos').update(payload).eq('id', editingId) : sb.from('promos').insert([payload]);
+    var req = editingId ? MasterDB.from('promos').update(payload).eq('id', editingId) : MasterDB.from('promos').insert([payload]);
     req.then(function(r) {
         if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
         showToast('✅ Coupon saved!', 'success'); closeModal(); loadData();
@@ -858,7 +858,7 @@ function savePromo() {
 
 function deletePromo(id) {
     if (!adminConfirm('Delete this promo code?')) return;
-    sb.from('promos').delete().eq('id', id).then(function(r) {
+    MasterDB.from('promos').delete().eq('id', id).then(function(r) {
         if (r.error) { showToast('Delete failed', 'error'); return; }
         showToast('Deleted!', 'success'); loadData();
     });
@@ -900,7 +900,7 @@ function saveRepeatCustConfig() {
         rep_min_spend:   parseFloat(document.getElementById('repMinSpend').value) || null,
         rep_del_reward:  document.getElementById('repDelReward').value
     };
-    var req = repRow ? sb.from('promos').update(payload).eq('id', repRow.id) : sb.from('promos').insert([payload]);
+    var req = repRow ? MasterDB.from('promos').update(payload).eq('id', repRow.id) : MasterDB.from('promos').insert([payload]);
     req.then(function(r) {
         if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
         showToast('✅ Repeat customer config saved!', 'success');

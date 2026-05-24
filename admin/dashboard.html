@@ -9,7 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/supabase-init.js"></script>
+    <script src="../assets/js/supabase-init.js"></script><script src="../assets/js/master-db.js"></script>
     <script src="assets/js/admin-common.js?v=2"></script>
     <style>
         .chart-wrap { position: relative; height: 260px; }
@@ -189,7 +189,7 @@
         var todayISO = today.toISOString();
 
         // Total orders
-        sb.from('orders').select('id, grand_total, status, created_at', { count: 'exact' })
+        MasterDB.from('orders').select('id, grand_total, status, created_at', { count: 'exact' })
           .order('created_at', { ascending: false })
           .then(function(r) {
             if (r.error) return;
@@ -229,7 +229,7 @@
         });
 
         // Products count
-        sb.from('products').select('id', { count: 'exact', head: true })
+        MasterDB.from('products').select('id', { count: 'exact', head: true })
           .eq('is_active', true)
           .then(function(r) {
             document.getElementById('statProducts').textContent = r.count || 0;

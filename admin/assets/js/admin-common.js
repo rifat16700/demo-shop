@@ -116,7 +116,7 @@ function adminInit(activePage, onReady) {
         }
 
         // Load store name for sidebar
-        sb.from('settings').select('store_name').eq('id', 1).single().then(function(r) {
+        MasterDB.from('settings').select('store_name').eq('id', 1).single().then(function(r) {
             if (r.data && r.data.store_name) {
                 var el = document.getElementById('sidebarStoreName');
                 if (el) el.textContent = r.data.store_name;
@@ -132,7 +132,7 @@ function adminInit(activePage, onReady) {
     }
 
     // ── Supabase Google OAuth session check ──
-    sb.auth.getSession().then(function(res) {
+    MasterDB.auth.getSession().then(function(res) {
         var session = res.data && res.data.session;
 
         if (!session) {
@@ -158,7 +158,7 @@ function adminInit(activePage, onReady) {
         }
 
         // Load store name for sidebar
-        sb.from('settings').select('store_name').eq('id', 1).single().then(function(r) {
+        MasterDB.from('settings').select('store_name').eq('id', 1).single().then(function(r) {
             if (r.data && r.data.store_name) {
                 var el = document.getElementById('sidebarStoreName');
                 if (el) el.textContent = r.data.store_name;
@@ -179,7 +179,7 @@ function adminInit(activePage, onReady) {
 // ── Load sidebar badge counts ────────────────────────────────
 function adminLoadBadges() {
     // Pending orders
-    sb.from('orders').select('id', { count: 'exact', head: true })
+    MasterDB.from('orders').select('id', { count: 'exact', head: true })
       .eq('status', 'Pending')
       .then(function(r) {
           var count = r.count || 0;
@@ -191,7 +191,7 @@ function adminLoadBadges() {
       });
 
     // Pending reviews (not approved)
-    sb.from('reviews').select('id', { count: 'exact', head: true })
+    MasterDB.from('reviews').select('id', { count: 'exact', head: true })
       .eq('is_approved', false)
       .then(function(r) {
           var count = r.count || 0;
@@ -212,7 +212,7 @@ function adminLogout() {
     sessionStorage.removeItem('web3_admin_wallet');
 
     // Clear Supabase session (Google login)
-    sb.auth.signOut().then(function() {
+    MasterDB.auth.signOut().then(function() {
         window.location.href = 'index.html';
     }).catch(function(){
         window.location.href = 'index.html';

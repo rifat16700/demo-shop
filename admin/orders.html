@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/supabase-init.js"></script>
+    <script src="../assets/js/supabase-init.js"></script><script src="../assets/js/master-db.js"></script>
     <script src="assets/js/admin-common.js?v=2"></script>
     <style>
         .order-detail-row { padding: 20px; background: var(--bg-card); border-radius: var(--radius-md); }
@@ -218,7 +218,7 @@
             // Check for ?id= in URL
             var urlId = new URLSearchParams(window.location.search).get('id');
 
-            sb.from('orders').select('*').order('created_at', { ascending: false }).then(function(r) {
+            MasterDB.from('orders').select('*').order('created_at', { ascending: false }).then(function(r) {
                 document.getElementById('pageLoader').style.display = 'none';
                 document.getElementById('adminMain').style.display  = 'flex';
 
@@ -242,7 +242,7 @@
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         var dateStr = thirtyDaysAgo.toISOString();
         
-        sb.from('orders').delete()
+        MasterDB.from('orders').delete()
           .in('status', ['Delivered', 'Cancelled'])
           .lt('created_at', dateStr)
           .then(function(r) {
@@ -254,7 +254,7 @@
 
     function deleteOrder(id) {
         if (!confirm('Are you sure you want to permanently delete order ' + id + '?')) return;
-        sb.from('orders').delete().eq('id', id).then(function(r) {
+        MasterDB.from('orders').delete().eq('id', id).then(function(r) {
             if (r.error) { showToast('Failed to delete: ' + r.error.message, 'error'); return; }
             showToast('Order deleted successfully!', 'success');
             allOrders = allOrders.filter(function(o) { return o.id !== id; });
@@ -421,13 +421,13 @@
 
         var currentOrder = allOrders.find(function(o) { return o.id === orderId; });
 
-        sb.from('orders').update(payload).eq('id', orderId).then(function(r) {
+        MasterDB.from('orders').update(payload).eq('id', orderId).then(function(r) {
             if (r.error) { showToast('Update failed: ' + r.error.message, 'error'); return; }
 
             // Trigger repeated customer personal coupon generation
             if (payload.status === 'Delivered' && currentOrder && currentOrder.customer_phone) {
                 var phone = currentOrder.customer_phone.trim();
-                sb.from('promos').select('*').then(function(res) {
+                MasterDB.from('promos').select('*').then(function(res) {
                     var promosList = res.data || [];
                     var repConfig = promosList.find(function(p) { return p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG'); });
                     
@@ -462,7 +462,7 @@
                                 expires_at: expiry
                             };
 
-                            sb.from('promos').insert([newPromoPayload]).then(function(insertRes) {
+                            MasterDB.from('promos').insert([newPromoPayload]).then(function(insertRes) {
                                 if (insertRes.error) { console.error('Error generating repeated customer coupon:', insertRes.error); }
                                 else { showToast('🎉 Personal coupon created for customer: ' + phone, 'success'); }
                             });

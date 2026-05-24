@@ -5,7 +5,7 @@
     <title>Product — Freelancing By Rifat</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="assets/js/config.js"></script><script src="assets/js/supabase-init.js"></script>
+    <script src="assets/js/config.js"></script><script src="assets/js/supabase-init.js"></script><script src="assets/js/master-db.js"></script>
     <style>
         .product-page { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; padding: 24px 0; }
         .gallery-main { position: relative; aspect-ratio: 1; border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-light); }
@@ -262,15 +262,15 @@ document.addEventListener('DOMContentLoaded', function() {
     var id = new URLSearchParams(window.location.search).get('id');
     if (!id) { window.location.href = '404.html'; return; }
 
-    var p1 = sb.from('settings').select('*').eq('id',1).single();
+    var p1 = MasterDB.from('settings').select('*').eq('id',1).single();
     // Fetch single product via Cloudflare proxy instead of direct Supabase call
     var p2 = fetch('/api/get-single-product?id=' + id).then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) && data.length ? data[0] : null }; });
     // Fetch ratings only to calculate average/count efficiently
-    var p3 = sb.from('reviews').select('rating').eq('product_id', id).eq('is_approved', true);
+    var p3 = MasterDB.from('reviews').select('rating').eq('product_id', id).eq('is_approved', true);
     var p4 = fetch('/api/get-products-list').then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });
-    var p5 = sb.from('product_categories').select('*');
+    var p5 = MasterDB.from('product_categories').select('*');
     // Fetch first batch of approved reviews (limit to REVIEWS_PAGE_SIZE)
-    var p6 = sb.from('reviews').select('*').eq('product_id', id).eq('is_approved', true).order('created_at', { ascending: false }).range(0, REVIEWS_PAGE_SIZE - 1);
+    var p6 = MasterDB.from('reviews').select('*').eq('product_id', id).eq('is_approved', true).order('created_at', { ascending: false }).range(0, REVIEWS_PAGE_SIZE - 1);
 
     Promise.all([p1, p2, p3, p4, p5, p6]).then(function(results) {
         settings = results[0].data || {};
@@ -1012,7 +1012,7 @@ function showMoreReviews() {
     btn.textContent = '⏳ লোড হচ্ছে...';
     
     var id = new URLSearchParams(window.location.search).get('id');
-    sb.from('reviews')
+    MasterDB.from('reviews')
       .select('*')
       .eq('product_id', id)
       .eq('is_approved', true)
@@ -1065,7 +1065,7 @@ function submitReview() {
     if (!name) { alert('Please enter your name'); return; }
     if (!rating) { alert('Please select a rating'); return; }
 
-    sb.from('reviews').insert([{
+    MasterDB.from('reviews').insert([{
         product_id: product.id, customer_name: name, customer_phone: phone,
         rating: rating, review_text: text, review_image: img || null, is_approved: false
     }]).then(function(r) {

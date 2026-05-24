@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/supabase-init.js"></script>
+    <script src="../assets/js/supabase-init.js"></script><script src="../assets/js/master-db.js"></script>
     <script src="assets/js/admin-common.js?v=2"></script>
     <script src="../assets/js/imgbb-uploader.js"></script>
     <style>
@@ -534,7 +534,7 @@
     });
 
     function loadSettings() {
-        sb.from('settings').select('*').eq('id', 1).single().then(function(r) {
+        MasterDB.from('settings').select('*').eq('id', 1).single().then(function(r) {
             document.getElementById('pageLoader').style.display  = 'none';
             document.getElementById('adminMain').style.display   = 'flex';
 
@@ -722,7 +722,7 @@
             id: 1
         };
 
-        sb.from('settings').upsert([payload]).then(function(r) {
+        MasterDB.from('settings').upsert([payload]).then(function(r) {
             if (r.error) {
                 showToast('<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Save failed: ' + r.error.message, 'error');
                 return;

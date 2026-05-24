@@ -6,7 +6,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../assets/js/config.js"></script><script src="../assets/js/supabase-init.js"></script>
+    <script src="../assets/js/config.js"></script><script src="../assets/js/supabase-init.js"></script><script src="../assets/js/master-db.js"></script>
     <script src="assets/js/admin-common.js?v=2"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
     <style>
@@ -343,8 +343,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function loadAll() {
     // Load sections + categories + products in parallel
-    var p1 = sb.from('home_sections').select('*, categories(name)').order('sort_order');
-    var p2 = sb.from('categories').select('id, name').eq('is_active', true).order('sort_order');
+    var p1 = MasterDB.from('home_sections').select('*, categories(name)').order('sort_order');
+    var p2 = MasterDB.from('categories').select('id, name').eq('is_active', true).order('sort_order');
     var p3 = fetch('/api/get-products-list').then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });
 
     Promise.all([p1, p2, p3]).then(function(results) {
@@ -573,8 +573,8 @@ function saveSection() {
     };
 
     var req = editingId
-        ? sb.from('home_sections').update(payload).eq('id', editingId)
-        : sb.from('home_sections').insert([payload]);
+        ? MasterDB.from('home_sections').update(payload).eq('id', editingId)
+        : MasterDB.from('home_sections').insert([payload]);
 
     req.then(function(r) {
         if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
@@ -586,7 +586,7 @@ function saveSection() {
 
 // ── Toggle Active ─────────────────────────────────────────────
 function toggleActive(id, newState) {
-    sb.from('home_sections').update({ is_active: newState }).eq('id', id).then(function(r) {
+    MasterDB.from('home_sections').update({ is_active: newState }).eq('id', id).then(function(r) {
         if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
         showToast(newState ? '✅ Section এখন Active' : '🙈 Section Hidden হয়েছে', 'success');
         loadAll();
@@ -596,7 +596,7 @@ function toggleActive(id, newState) {
 // ── Delete ────────────────────────────────────────────────────
 function deleteSection(id) {
     if (!adminConfirm('এই section টা delete করবেন?')) return;
-    sb.from('home_sections').delete().eq('id', id).then(function(r) {
+    MasterDB.from('home_sections').delete().eq('id', id).then(function(r) {
         if (r.error) { showToast('Delete failed', 'error'); return; }
         showToast('🗑️ Section deleted!', 'success');
         loadAll();

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/config.js"></script>
-    <script src="assets/js/supabase-init.js"></script>
+    <script src="assets/js/supabase-init.js"></script><script src="assets/js/master-db.js"></script>
     <link rel="stylesheet" href="assets/css/premium-icons.css">
     <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.10/dist/dotlottie-wc.js" type="module"></script>
 </head>
@@ -165,13 +165,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadSiteData() {
-    var p1 = sb.from('settings').select('*').eq('id', 1).single();
-    var p2 = sb.from('banners').select('*').eq('is_active', true).order('sort_order');
-    var p3 = sb.from('categories').select('*').eq('is_active', true).order('sort_order');
+    var p1 = MasterDB.from('settings').select('*').eq('id', 1).single();
+    var p2 = MasterDB.from('banners').select('*').eq('is_active', true).order('sort_order');
+    var p3 = MasterDB.from('categories').select('*').eq('is_active', true).order('sort_order');
     // Fetch all products via Cloudflare proxy instead of direct Supabase call
     var p4 = fetch('/api/get-products-list').then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) ? data : [] }; });
-    var p5 = sb.from('home_sections').select('*').eq('is_active', true).order('sort_order');
-    var p6 = sb.from('product_categories').select('*');
+    var p5 = MasterDB.from('home_sections').select('*').eq('is_active', true).order('sort_order');
+    var p6 = MasterDB.from('product_categories').select('*');
 
     Promise.all([p1, p2, p3, p4, p5, p6]).then(function(results) {
         var settings    = results[0].data || {};

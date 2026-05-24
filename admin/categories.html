@@ -6,7 +6,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../assets/js/config.js"></script><script src="../assets/js/supabase-init.js"></script>
+    <script src="../assets/js/config.js"></script><script src="../assets/js/supabase-init.js"></script><script src="../assets/js/master-db.js"></script>
     <script src="assets/js/admin-common.js?v=2"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadCats() {
-    sb.from('categories').select('*').order('sort_order').then(function(r) {
+    MasterDB.from('categories').select('*').order('sort_order').then(function(r) {
         document.getElementById('pageLoader').style.display = 'none';
         document.getElementById('adminMain').style.display  = 'flex';
         allCats = r.data || [];
@@ -132,7 +132,7 @@ function saveCat() {
     var name = document.getElementById('cName').value.trim();
     if (!name) { showToast('Category name required', 'error'); return; }
     var payload = { name: name, icon_url: document.getElementById('cIcon').value.trim(), sort_order: parseInt(document.getElementById('cSort').value)||0, is_active: cActive };
-    var req = editingId ? sb.from('categories').update(payload).eq('id', editingId) : sb.from('categories').insert([payload]);
+    var req = editingId ? MasterDB.from('categories').update(payload).eq('id', editingId) : MasterDB.from('categories').insert([payload]);
     req.then(function(r) {
         if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
         showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadCats();
@@ -141,7 +141,7 @@ function saveCat() {
 
 function deleteCat(id) {
     if (!adminConfirm('Delete this category?')) return;
-    sb.from('categories').delete().eq('id', id).then(function(r) {
+    MasterDB.from('categories').delete().eq('id', id).then(function(r) {
         if (r.error) { showToast('Delete failed', 'error'); return; }
         showToast('Deleted!', 'success'); loadCats();
     });

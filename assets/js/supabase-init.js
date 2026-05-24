@@ -13,7 +13,7 @@ if (!CONFIG.SUPABASE_URL || CONFIG.SUPABASE_URL.includes('YOUR_PROJECT')) {
 
 // Global Dynamic Favicon loader
 document.addEventListener('DOMContentLoaded', function() {
-    sb.from('settings').select('logo_url, favicon_url').eq('id', 1).single().then(function(r) {
+    MasterDB.from('settings').select('logo_url, favicon_url').eq('id', 1).single().then(function(r) {
         if (r.data) {
             var url = r.data.logo_url || r.data.favicon_url || 'assets/images/favicon.ico';
             var link = document.querySelector("link[rel~='icon']");

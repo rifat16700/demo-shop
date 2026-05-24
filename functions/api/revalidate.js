@@ -1,35 +1,24 @@
 // ============================================================
 // functions/api/revalidate.js
-// Cloudflare Pages Function — Supabase Webhook → Cache Purge
-//
-// Route:   POST /api/revalidate
-// Purpose: Receives Supabase table webhook events (INSERT / UPDATE /
-//          DELETE on the products table) and purges the affected
-//          Cloudflare cache URLs so the storefront always reflects
-//          the latest data without a full cache flush.
-//
-// Security: Caller must supply  Authorization: Bearer rifat123R@16700
+// Cloudflare Pages Function — Webhook → Cache Purge
+// Supports Supabase and Appwrite Webhooks
 // ============================================================
 
-// ── Secrets must be set in Cloudflare Pages → Settings → Environment Variables ──
-// CF_ZONE_ID    = your Cloudflare Zone ID
-// CF_API_TOKEN  = your Cloudflare API Token (Cache Purge permission)
-// REVALIDATE_SECRET = your webhook bearer token (e.g. rifat123R@16700)
-//
-// ⚠️ NEVER hardcode these values here — GitHub secret scanning will block the push
-
-
+import { getConfig } from '../utils/config.js';
 
 export async function onRequestPost(context) {
-    // ── Read secrets from Cloudflare Environment Variables ─────
-    const REVALIDATE_SECRET = context.env.REVALIDATE_SECRET || '';
-    const CF_ZONE_ID        = context.env.CF_ZONE_ID        || '';
-    const CF_API_TOKEN      = context.env.CF_API_TOKEN      || '';
-    const CF_PURGE_URL      = `https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache`;
+    const config = getConfig(context.env);
 
     // ── 1. Verify secret token ─────────────────────────────────
-    const secret = context.request.headers.get('Authorization');
-    if (!REVALIDATE_SECRET || secret !== `Bearer ${REVALIDATE_SECRET}`) {
+    // Some webhook providers (like Appwrite) might send custom headers or auth in URL
+    // We check Authorization header OR a query parameter for the secret
+    const authHeader = context.request.headers.get('Authorization');
+    const { searchParams } = new URL(context.request.url);
+    const querySecret = searchParams.get('secret');
+
+    const providedSecret = authHeader ? authHeader.replace('Bearer ', '') : querySecret;
+
+    if (!config.WEBHOOK_SECRET || providedSecret !== config.WEBHOOK_SECRET) {
         return new Response(
             JSON.stringify({ error: 'Unauthorized' }),
             {
@@ -39,7 +28,7 @@ export async function onRequestPost(context) {
         );
     }
 
-    // ── 2. Parse Supabase webhook body ─────────────────────────
+    // ── 2. Parse Webhook body ──────────────────────────────────
     let body;
     try {
         body = await context.request.json();
@@ -53,32 +42,47 @@ export async function onRequestPost(context) {
         );
     }
 
-    const record = body.record || body.old_record || {};
-    const type   = body.type; // INSERT | UPDATE | DELETE
+    // ── 3. Extract ID (Supabase vs Appwrite) ───────────────────
+    let productId = null;
+    let eventType = null;
 
-    // ── 3. Build URLs to purge ─────────────────────────────────
+    if (body.$id) {
+        // Appwrite Webhook Payload
+        productId = body.$id;
+        eventType = context.request.headers.get('X-Appwrite-Event') || 'appwrite_event';
+    } else {
+        // Supabase Webhook Payload
+        const record = body.record || body.old_record || {};
+        productId = record.id || null;
+        eventType = body.type; // INSERT | UPDATE | DELETE
+    }
+
+    // ── 4. Build URLs to purge ─────────────────────────────────
+    const CF_PURGE_URL = `https://api.cloudflare.com/client/v4/zones/${config.CF_ZONE_ID}/purge_cache`;
+    
     // Always purge the products list (new/updated/deleted item)
-    const listUrl = 'https://store.freelancingbyrifat.top/api/get-products-list';
+    // Note: Adjust the domain if your production domain is different
+    const origin = new URL(context.request.url).origin;
+    const listUrl = `${origin}/api/get-products-list`;
 
-    // Purge the specific product page only when we have a product ID
     const purgeRequests = [
         fetch(CF_PURGE_URL, {
             method:  'POST',
             headers: {
-                'Authorization': `Bearer ${CF_API_TOKEN}`,
+                'Authorization': `Bearer ${config.CF_API_TOKEN}`,
                 'Content-Type':  'application/json',
             },
             body: JSON.stringify({ files: [listUrl] }),
         }),
     ];
 
-    if (record.id) {
-        const urlToPurge = `https://store.freelancingbyrifat.top/api/get-single-product?id=${record.id}`;
+    if (productId) {
+        const urlToPurge = `${origin}/api/get-single-product?id=${productId}`;
         purgeRequests.push(
             fetch(CF_PURGE_URL, {
                 method:  'POST',
                 headers: {
-                    'Authorization': `Bearer ${CF_API_TOKEN}`,
+                    'Authorization': `Bearer ${config.CF_API_TOKEN}`,
                     'Content-Type':  'application/json',
                 },
                 body: JSON.stringify({ files: [urlToPurge] }),
@@ -86,15 +90,25 @@ export async function onRequestPost(context) {
         );
     }
 
-    // ── 4. Fire all purge requests in parallel ─────────────────
-    await Promise.all(purgeRequests);
-
-    // ── 5. Return success ──────────────────────────────────────
-    return new Response(
-        JSON.stringify({ success: true, type, id: record.id || null }),
-        {
-            status:  200,
-            headers: { 'Content-Type': 'application/json' },
-        }
-    );
+    // ── 5. Fire all purge requests in parallel ─────────────────
+    try {
+        const results = await Promise.all(purgeRequests);
+        const statuses = results.map(r => r.status);
+        
+        return new Response(
+            JSON.stringify({ success: true, type: eventType, id: productId, statuses }),
+            {
+                status:  200,
+                headers: { 'Content-Type': 'application/json' },
+            }
+        );
+    } catch (error) {
+        return new Response(
+            JSON.stringify({ error: 'Failed to purge cache', details: String(error) }),
+            {
+                status:  500,
+                headers: { 'Content-Type': 'application/json' },
+            }
+        );
+    }
 }

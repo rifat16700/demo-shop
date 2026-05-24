@@ -6,6 +6,33 @@
 
 import { getConfig } from '../utils/config.js';
 
+// JSON fields stored as strings in Appwrite — parse them back
+const JSON_FIELDS = ['variants', 'gallery_images', 'product_ids', 'category_ids'];
+
+function parseJsonFields(doc) {
+    const out = { ...doc };
+    for (const key of JSON_FIELDS) {
+        if (key in out && typeof out[key] === 'string') {
+            try { out[key] = JSON.parse(out[key]); } catch (_) {}
+        }
+    }
+    return out;
+}
+
+function mapDoc(doc) {
+    const mapped = { ...doc };
+    mapped.id         = doc.$id;
+    mapped.created_at = doc.$createdAt;
+    mapped.updated_at = doc.$updatedAt;
+    delete mapped.$id;
+    delete mapped.$createdAt;
+    delete mapped.$updatedAt;
+    delete mapped.$permissions;
+    delete mapped.$collectionId;
+    delete mapped.$databaseId;
+    return parseJsonFields(mapped);
+}
+
 export async function onRequest(context) {
     const config = getConfig(context.env);
 
@@ -16,56 +43,49 @@ export async function onRequest(context) {
         if (!id) {
             return new Response(
                 JSON.stringify({ error: 'Missing required query parameter: id' }),
-                {
-                    status:  400,
-                    headers: { 'Content-Type': 'application/json' },
-                }
+                { status: 400, headers: { 'Content-Type': 'application/json' } }
             );
         }
 
         let finalData = [];
 
         if (config.DB_PROVIDER === 'appwrite') {
-            // --- APPWRITE LOGIC ---
-            const response = await fetch(
-                `${config.APPWRITE_ENDPOINT}/databases/${config.APPWRITE_DATABASE_ID}/collections/${config.APPWRITE_COLLECTION_PRODUCTS}/documents/${id}`,
-                {
-                    headers: {
-                        'X-Appwrite-Project': config.APPWRITE_PROJECT,
-                        'X-Appwrite-Key': config.APPWRITE_API_KEY,
-                        'Content-Type': 'application/json'
+            // ── APPWRITE ──────────────────────────────────────
+            // Appwrite: fetch by document ID directly
+            const headers = {
+                'X-Appwrite-Project': config.APPWRITE_PROJECT,
+                'X-Appwrite-Key':     config.APPWRITE_API_KEY,
+                'Content-Type':       'application/json',
+            };
+
+            const url = `${config.APPWRITE_ENDPOINT}/databases/${config.APPWRITE_DATABASE_ID}/collections/${config.APPWRITE_COLLECTION_PRODUCTS}/documents/${id}`;
+            const response = await fetch(url, { headers });
+
+            if (response.status === 404) {
+                // Try searching by `id` attribute (Supabase numeric/text id stored as attribute)
+                const searchUrl  = `${config.APPWRITE_ENDPOINT}/databases/${config.APPWRITE_DATABASE_ID}/collections/${config.APPWRITE_COLLECTION_PRODUCTS}/documents`;
+                const params     = new URLSearchParams();
+                params.append('queries[]', `equal("id", ["${id}"])`);
+                params.append('queries[]', 'limit(1)');
+
+                const searchRes  = await fetch(`${searchUrl}?${params}`, { headers });
+                if (searchRes.ok) {
+                    const searchJson = await searchRes.json();
+                    if (searchJson.documents && searchJson.documents.length > 0) {
+                        finalData = [mapDoc(searchJson.documents[0])];
                     }
                 }
-            );
 
-            if (!response.ok) {
-                if (response.status === 404) {
-                    finalData = []; // Return empty array if not found (matches Supabase behavior)
-                } else {
-                    throw new Error(`Appwrite error: ${response.status} ${response.statusText}`);
-                }
+            } else if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Appwrite error: ${response.status} — ${errText}`);
             } else {
                 const doc = await response.json();
-                
-                // Map Appwrite response to Supabase format
-                const mapped = { ...doc };
-                mapped.id = doc.$id;
-                mapped.created_at = doc.$createdAt;
-                mapped.updated_at = doc.$updatedAt;
-                
-                delete mapped.$id;
-                delete mapped.$createdAt;
-                delete mapped.$updatedAt;
-                delete mapped.$permissions;
-                delete mapped.$collectionId;
-                delete mapped.$databaseId;
-                
-                // Supabase returns an array for .eq() queries
-                finalData = [mapped];
+                finalData = [mapDoc(doc)];
             }
 
         } else {
-            // --- SUPABASE LOGIC (Default) ---
+            // ── SUPABASE ──────────────────────────────────────
             const response = await fetch(
                 `${config.SUPABASE_URL}/rest/v1/products?id=eq.${id}&select=*`,
                 {
@@ -75,11 +95,7 @@ export async function onRequest(context) {
                     },
                 }
             );
-
-            if (!response.ok) {
-                throw new Error(`Supabase error: ${response.status} ${response.statusText}`);
-            }
-
+            if (!response.ok) throw new Error(`Supabase error: ${response.status}`);
             finalData = await response.json();
         }
 
@@ -94,10 +110,7 @@ export async function onRequest(context) {
     } catch (error) {
         return new Response(
             JSON.stringify({ error: 'Failed to fetch product', details: String(error) }),
-            {
-                status:  500,
-                headers: { 'Content-Type': 'application/json' },
-            }
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
 }

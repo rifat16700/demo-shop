@@ -6,6 +6,61 @@
 
 import { getConfig } from '../utils/config.js';
 
+// JSON fields stored as strings in Appwrite — parse them back
+const JSON_FIELDS = ['variants', 'gallery_images', 'product_ids', 'category_ids'];
+
+function parseJsonFields(doc) {
+    const out = { ...doc };
+    for (const key of JSON_FIELDS) {
+        if (key in out && typeof out[key] === 'string') {
+            try { out[key] = JSON.parse(out[key]); } catch (_) {}
+        }
+    }
+    return out;
+}
+
+function mapDoc(doc) {
+    const mapped = { ...doc };
+    mapped.id         = doc.$id;
+    mapped.created_at = doc.$createdAt;
+    mapped.updated_at = doc.$updatedAt;
+    delete mapped.$id;
+    delete mapped.$createdAt;
+    delete mapped.$updatedAt;
+    delete mapped.$permissions;
+    delete mapped.$collectionId;
+    delete mapped.$databaseId;
+    return parseJsonFields(mapped);
+}
+
+// Appwrite max per request is 100 — paginate to get all documents
+async function fetchAllAppwriteDocs(url, headers) {
+    let all    = [];
+    let offset = 0;
+    const limit = 100;
+
+    while (true) {
+        const params = new URLSearchParams();
+        params.append('queries[]', `limit(${limit})`);
+        params.append('queries[]', `offset(${offset})`);
+
+        const res = await fetch(`${url}?${params}`, { headers });
+        if (!res.ok) {
+            const err = await res.text();
+            throw new Error(`Appwrite error ${res.status}: ${err}`);
+        }
+
+        const json = await res.json();
+        const docs  = json.documents || [];
+        all = all.concat(docs);
+
+        if (docs.length < limit) break;   // no more pages
+        offset += limit;
+    }
+
+    return all;
+}
+
 export async function onRequest(context) {
     const config = getConfig(context.env);
 
@@ -13,45 +68,19 @@ export async function onRequest(context) {
         let finalData = [];
 
         if (config.DB_PROVIDER === 'appwrite') {
-            // --- APPWRITE LOGIC ---
-            const response = await fetch(
-                `${config.APPWRITE_ENDPOINT}/databases/${config.APPWRITE_DATABASE_ID}/collections/${config.APPWRITE_COLLECTION_PRODUCTS}/documents`,
-                {
-                    headers: {
-                        'X-Appwrite-Project': config.APPWRITE_PROJECT,
-                        'X-Appwrite-Key': config.APPWRITE_API_KEY,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
+            // ── APPWRITE ──────────────────────────────────────
+            const baseUrl = `${config.APPWRITE_ENDPOINT}/databases/${config.APPWRITE_DATABASE_ID}/collections/${config.APPWRITE_COLLECTION_PRODUCTS}/documents`;
+            const headers = {
+                'X-Appwrite-Project': config.APPWRITE_PROJECT,
+                'X-Appwrite-Key':     config.APPWRITE_API_KEY,
+                'Content-Type':       'application/json',
+            };
 
-            if (!response.ok) {
-                throw new Error(`Appwrite error: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            
-            // Map Appwrite response to Supabase format
-            finalData = data.documents.map(doc => {
-                const mapped = { ...doc };
-                // Map system fields
-                mapped.id = doc.$id;
-                mapped.created_at = doc.$createdAt;
-                mapped.updated_at = doc.$updatedAt;
-                
-                // Remove Appwrite system fields to keep it clean (optional but good practice)
-                delete mapped.$id;
-                delete mapped.$createdAt;
-                delete mapped.$updatedAt;
-                delete mapped.$permissions;
-                delete mapped.$collectionId;
-                delete mapped.$databaseId;
-                
-                return mapped;
-            });
+            const docs = await fetchAllAppwriteDocs(baseUrl, headers);
+            finalData  = docs.map(mapDoc);
 
         } else {
-            // --- SUPABASE LOGIC (Default) ---
+            // ── SUPABASE ──────────────────────────────────────
             const response = await fetch(
                 `${config.SUPABASE_URL}/rest/v1/products?select=*`,
                 {
@@ -61,11 +90,7 @@ export async function onRequest(context) {
                     },
                 }
             );
-
-            if (!response.ok) {
-                throw new Error(`Supabase error: ${response.status} ${response.statusText}`);
-            }
-
+            if (!response.ok) throw new Error(`Supabase error: ${response.status}`);
             finalData = await response.json();
         }
 
@@ -74,16 +99,15 @@ export async function onRequest(context) {
             headers: {
                 'Content-Type':                'application/json',
                 'Access-Control-Allow-Origin': '*',
+                // Cache for 60s at Cloudflare edge
+                'Cache-Control': 'public, s-maxage=60',
             },
         });
 
     } catch (error) {
         return new Response(
             JSON.stringify({ error: 'Failed to fetch products', details: String(error) }),
-            {
-                status:  500,
-                headers: { 'Content-Type': 'application/json' },
-            }
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
 }

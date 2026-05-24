@@ -32,9 +32,11 @@ function deserializeJsonFields(row) {
     if (!row || typeof row !== 'object') return row;
     const out = { ...row };
     for (const key of JSON_FIELDS) {
-        if (key in out && typeof out[key] === 'string' && out[key].trim().startsWith('[') || 
-            key in out && typeof out[key] === 'string' && out[key].trim().startsWith('{')) {
-            try { out[key] = JSON.parse(out[key]); } catch (_) {}
+        if (key in out && typeof out[key] === 'string') {
+            const trimmed = out[key].trim();
+            if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+                try { out[key] = JSON.parse(out[key]); } catch (_) {}
+            }
         }
     }
     return out;

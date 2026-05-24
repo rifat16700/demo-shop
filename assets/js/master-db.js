@@ -15,6 +15,7 @@ class MasterDBQueryBuilder {
         this.payloadData = null;
         this.headFlag = false;
         this.countType = null;
+        this.rangeArr = null;
     }
 
     select(cols = '*', opts = {}) {
@@ -31,6 +32,7 @@ class MasterDBQueryBuilder {
     delete()     { this.action = 'delete'; return this; }
     
     eq(col, val)  { this.filters.push({ method: 'eq', args: [col, val] }); return this; }
+    neq(col, val) { this.filters.push({ method: 'neq', args: [col, val] }); return this; }
     lt(col, val)  { this.filters.push({ method: 'lt', args: [col, val] }); return this; }
     gt(col, val)  { this.filters.push({ method: 'gt', args: [col, val] }); return this; }
     gte(col, val) { this.filters.push({ method: 'gte', args: [col, val] }); return this; }
@@ -40,7 +42,9 @@ class MasterDBQueryBuilder {
     
     order(col, opts = {}) { this.orderObj = { col, ascending: opts.ascending !== false }; return this; }
     limit(n)      { this.limitNum = n; return this; }
+    range(from, to) { this.rangeArr = [from, to]; return this; }
     single()      { this.isSingle = true; return this; }
+    maybeSingle() { this.isSingle = true; return this; }
     
     then(onFulfilled, onRejected) {
         return this.execute().then(onFulfilled, onRejected);
@@ -57,7 +61,8 @@ class MasterDBQueryBuilder {
             isSingle: this.isSingle,
             payloadData: this.payloadData,
             headFlag: this.headFlag,
-            countType: this.countType
+            countType: this.countType,
+            rangeArr: this.rangeArr
         };
         
         try {

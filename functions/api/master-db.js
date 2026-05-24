@@ -11,7 +11,7 @@ export async function onRequestPost(context) {
 
     try {
         const req = await context.request.json();
-        const { table, action, selectCols, filters, orderObj, limitNum, isSingle, payloadData, headFlag, countType } = req;
+        const { table, action, selectCols, filters, orderObj, limitNum, isSingle, payloadData, headFlag, countType, rangeArr } = req;
 
         if (!table || !action) {
             return new Response(JSON.stringify({ error: 'Missing table or action' }), { status: 400 });
@@ -35,7 +35,7 @@ export async function onRequestPost(context) {
 // SUPABASE HANDLER
 // ────────────────────────────────────────────────────────────
 async function handleSupabase(config, req) {
-    const { table, action, selectCols, filters, orderObj, limitNum, isSingle, payloadData, headFlag, countType } = req;
+    const { table, action, selectCols, filters, orderObj, limitNum, isSingle, payloadData, headFlag, countType, rangeArr } = req;
     
     let url = `${config.SUPABASE_URL}/rest/v1/${table}`;
     const params = new URLSearchParams();
@@ -105,6 +105,11 @@ async function handleSupabase(config, req) {
     if (prefer.length > 0) {
         headers['Prefer'] = prefer.join(',');
     }
+    
+    if (rangeArr) {
+        headers['Range-Unit'] = 'items';
+        headers['Range'] = `${rangeArr[0]}-${rangeArr[1]}`;
+    }
 
     const response = await fetch(url, { method, headers, body });
     
@@ -135,7 +140,7 @@ async function handleSupabase(config, req) {
 // APPWRITE HANDLER
 // ────────────────────────────────────────────────────────────
 async function handleAppwrite(config, req) {
-    const { table, action, selectCols, filters, orderObj, limitNum, isSingle, payloadData, headFlag, countType } = req;
+    const { table, action, selectCols, filters, orderObj, limitNum, isSingle, payloadData, headFlag, countType, rangeArr } = req;
     
     const dbId = config.APPWRITE_DATABASE_ID;
     const collEnvKey = `APPWRITE_COLLECTION_${table.toUpperCase()}`;
@@ -163,6 +168,7 @@ async function handleAppwrite(config, req) {
                     // Serialize string value correctly
                     if (typeof val === 'string') val = `"${val}"`;
                     if (f.method === 'eq') params.append('queries[]', `equal("${col}", [${val}])`);
+                    if (f.method === 'neq') params.append('queries[]', `notEqual("${col}", [${val}])`);
                     if (f.method === 'lt') params.append('queries[]', `lessThan("${col}", [${val}])`);
                     if (f.method === 'gt') params.append('queries[]', `greaterThan("${col}", [${val}])`);
                 });
@@ -172,6 +178,10 @@ async function handleAppwrite(config, req) {
                 params.append('queries[]', `${orderMethod}("${orderObj.col}")`);
             }
             if (limitNum) params.append('queries[]', `limit(${limitNum})`);
+            if (rangeArr) {
+                params.append('queries[]', `limit(${rangeArr[1] - rangeArr[0] + 1})`);
+                params.append('queries[]', `offset(${rangeArr[0]})`);
+            }
             if (selectCols && selectCols !== '*' && selectCols !== 'id') {
                 const cols = selectCols.split(',').map(c => `"${c.trim()}"`).join(',');
                 params.append('queries[]', `select([${cols}])`);

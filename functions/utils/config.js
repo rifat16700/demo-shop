@@ -11,8 +11,12 @@ export function getConfig(env) {
         DB_PROVIDER: (env.DB_PROVIDER || 'supabase').toLowerCase(),
 
         // ── Supabase ───────────────────────────────────────────
-        SUPABASE_URL:      env.SUPABASE_URL      || '',
-        SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY || '',
+        SUPABASE_URL:               env.SUPABASE_URL               || '',
+        SUPABASE_ANON_KEY:          env.SUPABASE_ANON_KEY          || '',
+        SUPABASE_SERVICE_ROLE_KEY:  env.SUPABASE_SERVICE_ROLE_KEY  || '', // bypasses RLS for admin ops
+
+        // ── Admin Auth Secret (same as admin-auth.js) ──────────
+        ADMIN_SECRET: env.ADMIN_SECRET || '',
 
         // ── Appwrite Core ──────────────────────────────────────
         APPWRITE_ENDPOINT:    env.APPWRITE_ENDPOINT    || 'https://cloud.appwrite.io/v1',

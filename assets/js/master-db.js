@@ -74,6 +74,8 @@ class MasterDBQueryBuilder {
             headFlag:    this.headFlag,
             countType:   this.countType,
             rangeArr:    this.rangeArr,
+            // ── Attach admin token if logged in ──────────────────
+            adminToken:  localStorage.getItem('fbr_admin_token') || '',
         };
 
         try {

@@ -45,12 +45,33 @@ function deserializeJsonFields(row) {
 // ─────────────────────────────────────────────────────────────
 // MAIN ENTRY POINT
 // ─────────────────────────────────────────────────────────────
+// ── Verify HMAC admin token (same logic as admin-auth.js) ───
+async function isAdminToken(token, secret) {
+    if (!token || !secret) return false;
+    try {
+        const [b64, sig] = token.split('.');
+        if (!b64 || !sig) return false;
+        const payload = atob(b64);
+        const data    = JSON.parse(payload);
+        if (Date.now() > data.exp) return false;
+        // Recompute HMAC
+        const enc = new TextEncoder();
+        const key = await crypto.subtle.importKey(
+            'raw', enc.encode(secret),
+            { name: 'HMAC', hash: 'SHA-256' },
+            false, ['sign']
+        );
+        const raw      = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+        const expected = btoa(String.fromCharCode(...new Uint8Array(raw)));
+        return sig === expected;
+    } catch { return false; }
+}
+
 export async function onRequestPost(context) {
     const config = getConfig(context.env);
 
-    // CORS headers
     const corsHeaders = {
-        'Content-Type': 'application/json',
+        'Content-Type':                'application/json',
         'Access-Control-Allow-Origin': '*',
     };
 
@@ -65,10 +86,23 @@ export async function onRequestPost(context) {
             );
         }
 
+        // ── Check if request comes from a verified admin ──────────
+        const adminToken = req.adminToken || '';
+        const isAdmin    = await isAdminToken(adminToken, config.ADMIN_SECRET);
+
+        // Non-admin write attempts → reject
+        const WRITE_ACTIONS = ['insert', 'update', 'upsert', 'delete'];
+        if (WRITE_ACTIONS.includes(action) && !isAdmin) {
+            return new Response(
+                JSON.stringify({ error: 'Unauthorized. Admin login required.' }),
+                { status: 401, headers: corsHeaders }
+            );
+        }
+
         if (config.DB_PROVIDER === 'appwrite') {
-            return await handleAppwrite(config, req, corsHeaders);
+            return await handleAppwrite(config, req, corsHeaders, isAdmin);
         } else {
-            return await handleSupabase(config, req, corsHeaders);
+            return await handleSupabase(config, req, corsHeaders, isAdmin);
         }
 
     } catch (error) {
@@ -82,12 +116,18 @@ export async function onRequestPost(context) {
 // ─────────────────────────────────────────────────────────────
 // SUPABASE HANDLER
 // ─────────────────────────────────────────────────────────────
-async function handleSupabase(config, req, corsHeaders) {
+async function handleSupabase(config, req, corsHeaders, isAdmin = false) {
     const {
         table, action,
         selectCols, filters, orderObj, limitNum,
         isSingle, payloadData, headFlag, countType, rangeArr,
     } = req;
+
+    // Admin uses SERVICE_ROLE key (bypasses RLS)
+    // Public uses ANON key (respects RLS — read-only)
+    const authKey = (isAdmin && config.SUPABASE_SERVICE_ROLE_KEY)
+        ? config.SUPABASE_SERVICE_ROLE_KEY
+        : config.SUPABASE_ANON_KEY;
 
     let url = `${config.SUPABASE_URL}/rest/v1/${table}`;
     const params = new URLSearchParams();
@@ -126,8 +166,8 @@ async function handleSupabase(config, req, corsHeaders) {
     if (qs) url += `?${qs}`;
 
     const headers = {
-        'apikey':        config.SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${config.SUPABASE_ANON_KEY}`,
+        'apikey':        authKey,
+        'Authorization': `Bearer ${authKey}`,
         'Content-Type':  'application/json',
     };
 

@@ -1674,10 +1674,7 @@ function sendDraftNotification() {
 
 // ── Helpers ───────────────────────────────────────────────────
 function genOrderId() {
-    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    var id = '';
-    for (var i = 0; i < 8; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
-    return id;
+    return 'ORD-' + Math.floor(100000 + Math.random() * 900000);
 }
 
 function getCart() { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY)||'[]'); } catch(e){ return []; } }

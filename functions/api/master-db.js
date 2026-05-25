@@ -273,11 +273,11 @@ const Q = {
 // Appwrite rejects fields not in the collection schema.
 // This function removes offending fields one by one and retries.
 // ─────────────────────────────────────────────────────────────
-async function stripAndRetryInsert(baseUrl, headers, data) {
+async function stripAndRetryInsert(baseUrl, headers, data, documentId = null) {
     let payload = { ...data };
     let attempts = 0;
     while (attempts < 20) {
-        const body = JSON.stringify({ documentId: crypto.randomUUID(), data: payload });
+        const body = JSON.stringify({ documentId: documentId || crypto.randomUUID(), data: payload });
         const res  = await fetch(baseUrl, { method: 'POST', headers, body });
         if (res.ok) return mapDoc(await res.json());
         const err = await res.json();
@@ -384,16 +384,20 @@ async function handleAppwrite(config, req, corsHeaders) {
 
             for (const row of rows) {
                 const serialized = serializeJsonFields(row);
+                // If a valid string ID is provided, use it (e.g. for custom Order IDs)
+                const customId = row.id && typeof row.id === 'string' && /^[a-zA-Z0-9._-]+$/.test(row.id) ? row.id : crypto.randomUUID();
+                
                 // Remove id/$id from data — Appwrite manages $id separately
                 delete serialized.id;
                 delete serialized['$id'];
-                const body = JSON.stringify({ documentId: crypto.randomUUID(), data: serialized });
+                
+                const body = JSON.stringify({ documentId: customId, data: serialized });
                 const res  = await fetch(baseUrl, { method: 'POST', headers, body });
                 if (!res.ok) {
                     const errJson = await res.json();
                     // If unknown attribute error, strip offending field and retry
                     if (res.status === 422 || (errJson.message && errJson.message.includes('Unknown attribute'))) {
-                        const clean = await stripAndRetryInsert(baseUrl, headers, serialized);
+                        const clean = await stripAndRetryInsert(baseUrl, headers, serialized, customId);
                         results.push(clean);
                     } else {
                         throw errJson;
@@ -471,12 +475,13 @@ async function handleAppwrite(config, req, corsHeaders) {
 
                 // Fall back to INSERT (new document)
                 if (!patched) {
-                    const body = JSON.stringify({ documentId: crypto.randomUUID(), data: serialized });
+                    const customId = docIdRaw && typeof docIdRaw === 'string' && /^[a-zA-Z0-9._-]+$/.test(docIdRaw) ? docIdRaw : crypto.randomUUID();
+                    const body = JSON.stringify({ documentId: customId, data: serialized });
                     const res  = await fetch(baseUrl, { method: 'POST', headers, body });
                     if (!res.ok) {
                         const errJson = await res.json();
                         if (res.status === 422 || (errJson.message && errJson.message.includes('Unknown attribute'))) {
-                            const clean = await stripAndRetryInsert(baseUrl, headers, serialized);
+                            const clean = await stripAndRetryInsert(baseUrl, headers, serialized, customId);
                             results.push(clean);
                         } else {
                             throw errJson;

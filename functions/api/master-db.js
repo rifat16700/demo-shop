@@ -42,39 +42,25 @@ function deserializeJsonFields(row) {
     return out;
 }
 
-// ─────────────────────────────────────────────────────────────
-// MAIN ENTRY POINT
-// ─────────────────────────────────────────────────────────────
-
-// ── Supabase: verify JWT via official /auth/v1/user endpoint ──
-async function verifySupabaseToken(config, token) {
-    if (!token) return false;
+// ── HMAC token verify (mirrors admin-auth.js logic) ─────────
+async function verifyAdminToken(token, signingKey) {
+    if (!token || !signingKey) return false;
     try {
-        const res = await fetch(`${config.SUPABASE_URL}/auth/v1/user`, {
-            headers: {
-                'apikey':        config.SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-        return res.ok;
-    } catch { return false; }
-}
+        const [b64, sig] = token.split('.');
+        if (!b64 || !sig) return false;
+        const payload  = atob(b64);
+        const data     = JSON.parse(payload);
+        if (Date.now() > data.exp) return false;
 
-// ── Appwrite: verify session via official /account/sessions endpoint ──
-async function verifyAppwriteSession(config, token, sessionId) {
-    if (!token) return false;
-    try {
-        const url = sessionId
-            ? `${config.APPWRITE_ENDPOINT}/account/sessions/${sessionId}`
-            : `${config.APPWRITE_ENDPOINT}/account/sessions/current`;
-
-        const res = await fetch(url, {
-            headers: {
-                'X-Appwrite-Project': config.APPWRITE_PROJECT,
-                'X-Appwrite-Session': token,
-            },
-        });
-        return res.ok;
+        const enc      = new TextEncoder();
+        const key      = await crypto.subtle.importKey(
+            'raw', enc.encode(signingKey),
+            { name: 'HMAC', hash: 'SHA-256' },
+            false, ['sign']
+        );
+        const raw      = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+        const expected = btoa(String.fromCharCode(...new Uint8Array(raw)));
+        return sig === expected;
     } catch { return false; }
 }
 
@@ -97,18 +83,12 @@ export async function onRequestPost(context) {
             );
         }
 
-        // ── Verify admin token using the OFFICIAL platform auth API ──
+        // ── Verify HMAC admin token ──────────────────────────
         const adminToken = req.adminToken || '';
-        const sessionId  = req.sessionId  || '';
-        let   isAdmin    = false;
-
-        if (adminToken) {
-            if (config.DB_PROVIDER === 'appwrite') {
-                isAdmin = await verifyAppwriteSession(config, adminToken, sessionId);
-            } else {
-                isAdmin = await verifySupabaseToken(config, adminToken);
-            }
-        }
+        const SIGNING_KEY = config.DB_PROVIDER === 'appwrite'
+            ? config.APPWRITE_API_KEY
+            : config.SUPABASE_ANON_KEY;
+        const isAdmin = adminToken ? await verifyAdminToken(adminToken, SIGNING_KEY) : false;
 
         // Non-admin write attempts → block
         const WRITE_ACTIONS = ['insert', 'update', 'upsert', 'delete'];

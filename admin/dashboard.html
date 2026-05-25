@@ -182,28 +182,39 @@
 
 
     function loadDashboard() {
-        // Load all stats in parallel
+        // Safety timeout — if anything hangs, force-show UI after 8s
+        var loaderTimeout = setTimeout(function() {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            showToast('⚠️ Some data failed to load. Check DB connection.', 'warning');
+        }, 8000);
+
+        function showUI() {
+            clearTimeout(loaderTimeout);
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+        }
+
         var today = new Date();
         today.setHours(0,0,0,0);
-        var todayISO = today.toISOString();
 
         // Total orders
         MasterDB.from('orders').select('id, grand_total, status, created_at', { count: 'exact' })
           .order('created_at', { ascending: false })
           .then(function(r) {
-            if (r.error) return;
+            if (r.error) {
+                console.error('Orders load error:', r.error);
+                showToast('❌ Orders error: ' + (r.error.message || r.error), 'error');
+                showUI();
+                return;
+            }
             var orders = r.data || [];
             var total  = r.count || orders.length;
 
-            // Today's orders
             var todayOrders = orders.filter(function(o) {
                 return new Date(o.created_at) >= today;
             });
-
-            // Pending
             var pending = orders.filter(function(o) { return o.status === 'Pending'; }).length;
-
-            // Revenue (confirmed/delivered)
             var revenue = orders.filter(function(o) {
                 return o.status !== 'Cancelled' && o.status !== 'Pending';
             }).reduce(function(sum, o) { return sum + (o.grand_total || 0); }, 0);
@@ -213,18 +224,15 @@
             document.getElementById('statPending').textContent = pending;
             document.getElementById('statRevenue').textContent = formatMoney(revenue);
 
-            // Render recent 10
             renderRecentOrders(orders.slice(0, 10));
-
-            // Chart data: last 7 days
             buildRevenueChart(orders);
-
-            // Best sellers
             buildBestSellers(orders);
 
-            // Hide loader, show main
-            document.getElementById('pageLoader').style.display  = 'none';
-            document.getElementById('adminMain').style.display   = 'flex';
+            showUI();
+        }).catch(function(err) {
+            console.error('Orders fetch failed:', err);
+            showToast('❌ Failed to load orders: ' + err.message, 'error');
+            showUI();
         });
 
         // Products count

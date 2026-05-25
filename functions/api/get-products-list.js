@@ -33,6 +33,12 @@ function mapDoc(doc) {
     return parseJsonFields(mapped);
 }
 
+// JSON query builder for Appwrite v1.9.5+
+const Q = {
+    limit:  (n)    => JSON.stringify({ method: 'limit',  values: [n] }),
+    offset: (n)    => JSON.stringify({ method: 'offset', values: [n] }),
+};
+
 // Appwrite max per request is 100 — paginate to get all documents
 async function fetchAllAppwriteDocs(url, headers) {
     let all    = [];
@@ -41,8 +47,8 @@ async function fetchAllAppwriteDocs(url, headers) {
 
     while (true) {
         const params = new URLSearchParams();
-        params.append('queries[]', `limit(${limit})`);
-        params.append('queries[]', `offset(${offset})`);
+        params.append('queries[]', Q.limit(limit));
+        params.append('queries[]', Q.offset(offset));
 
         const res = await fetch(`${url}?${params}`, { headers });
         if (!res.ok) {

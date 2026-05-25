@@ -38,7 +38,8 @@ export async function onRequest(context) {
 
     // Test: can we list products?
     try {
-        const url = `${config.APPWRITE_ENDPOINT}/databases/${config.APPWRITE_DATABASE_ID}/collections/${config.APPWRITE_COLLECTION_PRODUCTS}/documents?queries[]=${encodeURIComponent('limit(1)')}`;
+        const qLimit = encodeURIComponent(JSON.stringify({ method: 'limit', values: [1] }));
+        const url = `${config.APPWRITE_ENDPOINT}/databases/${config.APPWRITE_DATABASE_ID}/collections/${config.APPWRITE_COLLECTION_PRODUCTS}/documents?queries[]=${qLimit}`;
         const res = await fetch(url, {
             headers: {
                 'X-Appwrite-Project': config.APPWRITE_PROJECT,
@@ -60,7 +61,8 @@ export async function onRequest(context) {
 
     // Test: can we read settings?
     try {
-        const url = `${config.APPWRITE_ENDPOINT}/databases/${config.APPWRITE_DATABASE_ID}/collections/${config.APPWRITE_COLLECTION_SETTINGS}/documents`;
+        const qLimit = encodeURIComponent(JSON.stringify({ method: 'limit', values: [5] }));
+        const url = `${config.APPWRITE_ENDPOINT}/databases/${config.APPWRITE_DATABASE_ID}/collections/${config.APPWRITE_COLLECTION_SETTINGS}/documents?queries[]=${qLimit}`;
         const res = await fetch(url, {
             headers: {
                 'X-Appwrite-Project': config.APPWRITE_PROJECT,

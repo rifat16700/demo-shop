@@ -190,6 +190,22 @@ async function handleSupabase(config, req, corsHeaders) {
     });
 }
 
+// ── Appwrite query builder (JSON format for v1.9.5+) ────────
+const Q = {
+    equal:              (attr, val)  => JSON.stringify({ method: 'equal',              attribute: attr, values: Array.isArray(val) ? val : [val] }),
+    notEqual:           (attr, val)  => JSON.stringify({ method: 'notEqual',           attribute: attr, values: Array.isArray(val) ? val : [val] }),
+    lessThan:           (attr, val)  => JSON.stringify({ method: 'lessThan',           attribute: attr, values: [val] }),
+    lessThanEqual:      (attr, val)  => JSON.stringify({ method: 'lessThanEqual',      attribute: attr, values: [val] }),
+    greaterThan:        (attr, val)  => JSON.stringify({ method: 'greaterThan',        attribute: attr, values: [val] }),
+    greaterThanEqual:   (attr, val)  => JSON.stringify({ method: 'greaterThanEqual',   attribute: attr, values: [val] }),
+    search:             (attr, val)  => JSON.stringify({ method: 'search',             attribute: attr, values: [val] }),
+    orderAsc:           (attr)       => JSON.stringify({ method: 'orderAsc',           attribute: attr }),
+    orderDesc:          (attr)       => JSON.stringify({ method: 'orderDesc',          attribute: attr }),
+    limit:              (n)          => JSON.stringify({ method: 'limit',              values: [n] }),
+    offset:             (n)          => JSON.stringify({ method: 'offset',             values: [n] }),
+    select:             (cols)       => JSON.stringify({ method: 'select',             values: cols }),
+};
+
 // ─────────────────────────────────────────────────────────────
 // APPWRITE HANDLER
 // ─────────────────────────────────────────────────────────────
@@ -225,49 +241,39 @@ async function handleAppwrite(config, req, corsHeaders) {
             if (filters && filters.length > 0) {
                 filters.forEach(f => {
                     const col = f.args[0] === 'id' ? '$id' : f.args[0];
-                    let   val = f.args[1];
-                    const isStr = typeof val === 'string';
-                    const quoted = isStr ? `"${val}"` : val;
+                    const val = f.args[1];
 
                     switch (f.method) {
-                        case 'eq':   params.append('queries[]', `equal("${col}", [${quoted}])`);        break;
-                        case 'neq':  params.append('queries[]', `notEqual("${col}", [${quoted}])`);     break;
-                        case 'lt':   params.append('queries[]', `lessThan("${col}", [${quoted}])`);     break;
-                        case 'lte':  params.append('queries[]', `lessThanEqual("${col}", [${quoted}])`);break;
-                        case 'gt':   params.append('queries[]', `greaterThan("${col}", [${quoted}])`);  break;
-                        case 'gte':  params.append('queries[]', `greaterThanEqual("${col}", [${quoted}])`); break;
-                        case 'like': params.append('queries[]', `search("${col}", "${val}")`);          break;
-                        case 'in': {
-                            const list = (Array.isArray(val) ? val : [val])
-                                .map(v => typeof v === 'string' ? `"${v}"` : v)
-                                .join(', ');
-                            params.append('queries[]', `equal("${col}", [${list}])`);
-                            break;
-                        }
+                        case 'eq':   params.append('queries[]', Q.equal(col, val));            break;
+                        case 'neq':  params.append('queries[]', Q.notEqual(col, val));         break;
+                        case 'lt':   params.append('queries[]', Q.lessThan(col, val));         break;
+                        case 'lte':  params.append('queries[]', Q.lessThanEqual(col, val));    break;
+                        case 'gt':   params.append('queries[]', Q.greaterThan(col, val));      break;
+                        case 'gte':  params.append('queries[]', Q.greaterThanEqual(col, val)); break;
+                        case 'like': params.append('queries[]', Q.search(col, val));           break;
+                        case 'in':   params.append('queries[]', Q.equal(col, Array.isArray(val) ? val : [val])); break;
                     }
                 });
             }
 
             // Order
             if (orderObj) {
-                const dir = orderObj.ascending ? 'orderAsc' : 'orderDesc';
-                params.append('queries[]', `${dir}("${orderObj.col}")`);
+                const q = orderObj.ascending ? Q.orderAsc(orderObj.col) : Q.orderDesc(orderObj.col);
+                params.append('queries[]', q);
             }
 
             // Limit / Range
             if (rangeArr) {
-                const limit  = rangeArr[1] - rangeArr[0] + 1;
-                const offset = rangeArr[0];
-                params.append('queries[]', `limit(${limit})`);
-                params.append('queries[]', `offset(${offset})`);
+                params.append('queries[]', Q.limit(rangeArr[1] - rangeArr[0] + 1));
+                params.append('queries[]', Q.offset(rangeArr[0]));
             } else if (limitNum) {
-                params.append('queries[]', `limit(${limitNum})`);
+                params.append('queries[]', Q.limit(limitNum));
             }
 
             // Select specific columns
             if (selectCols && selectCols !== '*') {
-                const cols = selectCols.split(',').map(c => `"${c.trim()}"`).join(', ');
-                params.append('queries[]', `select([${cols}])`);
+                const cols = selectCols.split(',').map(c => c.trim()).filter(Boolean);
+                params.append('queries[]', Q.select(cols));
             }
 
             const fetchUrl = params.toString() ? `${baseUrl}?${params}` : baseUrl;
@@ -371,11 +377,7 @@ async function handleAppwrite(config, req, corsHeaders) {
     });
 }
 
-// ─────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────
-
-// Map Appwrite document fields → Supabase-compatible field names
+// Map Appwrite document fields → frontend-compatible field names
 function mapDoc(doc) {
     if (!doc) return doc;
     const out = { ...doc };
@@ -392,24 +394,23 @@ function mapDoc(doc) {
 }
 
 // Resolve matching document IDs for UPDATE / DELETE
-async function resolveDocIds(baseUrl, headers, filters, config) {
+async function resolveDocIds(baseUrl, headers, filters) {
     const eqIdFilter = filters
         ? filters.find(f => f.method === 'eq' && (f.args[0] === 'id' || f.args[0] === '$id'))
         : null;
 
     if (eqIdFilter) return [eqIdFilter.args[1]];
 
-    // Build query and fetch matching docs
+    // Build query and fetch matching docs using JSON format
     const params = new URLSearchParams();
     if (filters) {
         filters.forEach(f => {
-            const col    = f.args[0] === 'id' ? '$id' : f.args[0];
-            const val    = f.args[1];
-            const quoted = typeof val === 'string' ? `"${val}"` : val;
-            if (f.method === 'eq') params.append('queries[]', `equal("${col}", [${quoted}])`);
+            const col = f.args[0] === 'id' ? '$id' : f.args[0];
+            const val = f.args[1];
+            if (f.method === 'eq') params.append('queries[]', Q.equal(col, val));
         });
     }
-    params.append('queries[]', 'limit(100)');
+    params.append('queries[]', Q.limit(100));
 
     const url = `${baseUrl}?${params}`;
     const res = await fetch(url, { method: 'GET', headers });

@@ -268,6 +268,34 @@ const Q = {
 // ─────────────────────────────────────────────────────────────
 // APPWRITE HANDLER
 // ─────────────────────────────────────────────────────────────
+// Helper: strip unknown attributes and retry insert
+// Appwrite rejects fields not in the collection schema.
+// This function removes offending fields one by one and retries.
+// ─────────────────────────────────────────────────────────────
+async function stripAndRetryInsert(baseUrl, headers, data) {
+    let payload = { ...data };
+    let attempts = 0;
+    while (attempts < 20) {
+        const body = JSON.stringify({ documentId: 'unique()', data: payload });
+        const res  = await fetch(baseUrl, { method: 'POST', headers, body });
+        if (res.ok) return mapDoc(await res.json());
+        const err = await res.json();
+        const msg = err.message || '';
+        // Extract the unknown attribute name from error message
+        const match = msg.match(/Unknown attribute[:\s"]+([a-zA-Z0-9_$]+)/i);
+        if (match && match[1]) {
+            delete payload[match[1]]; // remove the offending field
+            attempts++;
+        } else {
+            throw err; // different error — rethrow
+        }
+    }
+    throw new Error('Too many unknown attributes — check Appwrite collection schema');
+}
+
+// ─────────────────────────────────────────────────────────────
+// APPWRITE HANDLER
+// ─────────────────────────────────────────────────────────────
 async function handleAppwrite(config, req, corsHeaders) {
     const {
         table, action,
@@ -348,17 +376,30 @@ async function handleAppwrite(config, req, corsHeaders) {
             if (isSingle) data = data.length > 0 ? data[0] : null;
 
 
-        // ── INSERT ──────────────────────────────────────────────
+        // ── INSERT ──────────────────────────────────────
         } else if (action === 'insert') {
             const rows    = Array.isArray(payloadData) ? payloadData : [payloadData];
             const results = [];
 
             for (const row of rows) {
                 const serialized = serializeJsonFields(row);
+                // Remove id/$id from data — Appwrite manages $id separately
+                delete serialized.id;
+                delete serialized['$id'];
                 const body = JSON.stringify({ documentId: 'unique()', data: serialized });
                 const res  = await fetch(baseUrl, { method: 'POST', headers, body });
-                if (!res.ok) throw await res.json();
-                results.push(mapDoc(await res.json()));
+                if (!res.ok) {
+                    const errJson = await res.json();
+                    // If unknown attribute error, strip offending field and retry
+                    if (res.status === 422 || (errJson.message && errJson.message.includes('Unknown attribute'))) {
+                        const clean = await stripAndRetryInsert(baseUrl, headers, serialized);
+                        results.push(clean);
+                    } else {
+                        throw errJson;
+                    }
+                } else {
+                    results.push(mapDoc(await res.json()));
+                }
             }
 
             data = Array.isArray(payloadData) ? results : results[0];
@@ -402,13 +443,33 @@ async function handleAppwrite(config, req, corsHeaders) {
             if (!docIds.length) throw new Error('UPDATE: no matching documents found');
 
             const serialized = serializeJsonFields(payloadData);
+            // Remove id/$id — Appwrite rejects these as writeable fields
+            delete serialized.id;
+            delete serialized['$id'];
             const results = [];
 
             for (const docId of docIds) {
-                const body = JSON.stringify({ data: serialized });
-                const res  = await fetch(`${baseUrl}/${docId}`, { method: 'PATCH', headers, body });
-                if (!res.ok) throw await res.json();
-                results.push(mapDoc(await res.json()));
+                let payload = { ...serialized };
+                let patched = false;
+                let attempts = 0;
+                while (!patched && attempts < 20) {
+                    const body = JSON.stringify({ data: payload });
+                    const res  = await fetch(`${baseUrl}/${docId}`, { method: 'PATCH', headers, body });
+                    if (res.ok) {
+                        results.push(mapDoc(await res.json()));
+                        patched = true;
+                    } else {
+                        const err = await res.json();
+                        const msg = err.message || '';
+                        const match = msg.match(/Unknown attribute[:\s"]+([a-zA-Z0-9_$]+)/i);
+                        if (match && match[1]) {
+                            delete payload[match[1]];
+                            attempts++;
+                        } else {
+                            throw err;
+                        }
+                    }
+                }
             }
 
             data = results;

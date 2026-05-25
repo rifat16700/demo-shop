@@ -276,7 +276,7 @@ async function stripAndRetryInsert(baseUrl, headers, data) {
     let payload = { ...data };
     let attempts = 0;
     while (attempts < 20) {
-        const body = JSON.stringify({ documentId: 'unique()', data: payload });
+        const body = JSON.stringify({ documentId: crypto.randomUUID(), data: payload });
         const res  = await fetch(baseUrl, { method: 'POST', headers, body });
         if (res.ok) return mapDoc(await res.json());
         const err = await res.json();
@@ -386,7 +386,7 @@ async function handleAppwrite(config, req, corsHeaders) {
                 // Remove id/$id from data — Appwrite manages $id separately
                 delete serialized.id;
                 delete serialized['$id'];
-                const body = JSON.stringify({ documentId: 'unique()', data: serialized });
+                const body = JSON.stringify({ documentId: crypto.randomUUID(), data: serialized });
                 const res  = await fetch(baseUrl, { method: 'POST', headers, body });
                 if (!res.ok) {
                     const errJson = await res.json();
@@ -413,24 +413,77 @@ async function handleAppwrite(config, req, corsHeaders) {
 
             for (const row of rows) {
                 const serialized = serializeJsonFields(row);
-                // If row has a known id field, try PATCH first
-                const docId = row.id || row.$id || null;
-                if (docId) {
-                    const patchRes = await fetch(`${baseUrl}/${docId}`, {
+                // Remove id/$id from the data payload (Appwrite rejects numeric IDs as field values)
+                const docIdRaw = row.id || row['$id'] || null;
+                delete serialized.id;
+                delete serialized['$id'];
+
+                let patched = false;
+
+                // If we have an id, try PATCH by $id first
+                if (docIdRaw) {
+                    const patchRes = await fetch(`${baseUrl}/${docIdRaw}`, {
                         method: 'PATCH',
                         headers,
                         body: JSON.stringify({ data: serialized }),
                     });
                     if (patchRes.ok) {
                         results.push(mapDoc(await patchRes.json()));
-                        continue;
+                        patched = true;
                     }
                 }
-                // Fall back to INSERT
-                const body = JSON.stringify({ documentId: docId || 'unique()', data: serialized });
-                const res  = await fetch(baseUrl, { method: 'POST', headers, body });
-                if (!res.ok) throw await res.json();
-                results.push(mapDoc(await res.json()));
+
+                // If PATCH by id failed, try finding the first document in the collection
+                if (!patched) {
+                    const listRes = await fetch(`${baseUrl}?${new URLSearchParams({ 'queries[]': JSON.stringify({ method: 'limit', values: [1] }) })}`, { method: 'GET', headers });
+                    if (listRes.ok) {
+                        const listJson = await listRes.json();
+                        if (listJson.documents && listJson.documents.length > 0) {
+                            const existingId = listJson.documents[0]['$id'];
+                            // Try patch with stripped attributes logic
+                            let payload = { ...serialized };
+                            let patchAttempts = 0;
+                            while (!patched && patchAttempts < 20) {
+                                const patchRes2 = await fetch(`${baseUrl}/${existingId}`, {
+                                    method: 'PATCH',
+                                    headers,
+                                    body: JSON.stringify({ data: payload }),
+                                });
+                                if (patchRes2.ok) {
+                                    results.push(mapDoc(await patchRes2.json()));
+                                    patched = true;
+                                } else {
+                                    const err = await patchRes2.json();
+                                    const msg = err.message || '';
+                                    const match = msg.match(/Unknown attribute[:\s"]+([a-zA-Z0-9_$]+)/i);
+                                    if (match && match[1]) {
+                                        delete payload[match[1]];
+                                        patchAttempts++;
+                                    } else {
+                                        break; // throw or continue to insert fallback
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Fall back to INSERT (new document)
+                if (!patched) {
+                    const body = JSON.stringify({ documentId: crypto.randomUUID(), data: serialized });
+                    const res  = await fetch(baseUrl, { method: 'POST', headers, body });
+                    if (!res.ok) {
+                        const errJson = await res.json();
+                        if (res.status === 422 || (errJson.message && errJson.message.includes('Unknown attribute'))) {
+                            const clean = await stripAndRetryInsert(baseUrl, headers, serialized);
+                            results.push(clean);
+                        } else {
+                            throw errJson;
+                        }
+                    } else {
+                        results.push(mapDoc(await res.json()));
+                    }
+                }
             }
 
             data = Array.isArray(payloadData) ? results : results[0];

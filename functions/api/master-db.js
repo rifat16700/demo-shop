@@ -16,10 +16,36 @@ const JSON_FIELDS = [
     'crypto_coins'
 ];
 
+// ─────────────────────────────────────────────────────────────
+// Appwrite Strict Type Casting Arrays
+const NUMERIC_FIELDS = [
+    'base_price', 'flash_sale_price', 'sort_order', 'max_products', 'advance_amount', 
+    'usd_to_bdt_rate', 'discount', 'usage_limit', 'disc_val', 'max_cap', 'min_spend', 
+    'rep_value', 'rep_cap', 'rep_expiry_days', 'rep_min_spend', 'price', 'charge', 
+    'rating', 'subtotal', 'addon_total', 'delivery_charge', 'promo_discount', 
+    'grand_total', 'advance_payable', 'amount'
+];
+const BOOLEAN_FIELDS = [
+    'allow_cod', 'enable_fun_checkbox', 'allow_whatsapp_order', 'allow_msg_order', 
+    'allow_pickup', 'is_active', 'is_featured', 'is_add_once', 'is_repeated_config', 
+    'is_approved'
+];
+
 // ── Serialize JS object → JSON string for Appwrite inserts ───
 function serializeJsonFields(payload) {
     if (!payload || typeof payload !== 'object') return payload;
     const out = { ...payload };
+    
+    // Cast strict types required by Appwrite REST API
+    for (const [key, value] of Object.entries(out)) {
+        if (NUMERIC_FIELDS.includes(key)) {
+            if (value === '' || value === null) out[key] = 0;
+            else out[key] = Number(value);
+        } else if (BOOLEAN_FIELDS.includes(key)) {
+            out[key] = (value === 'true' || value === true || value === 1 || value === '1');
+        }
+    }
+
     for (const key of JSON_FIELDS) {
         if (key in out && typeof out[key] !== 'string') {
             out[key] = JSON.stringify(out[key]);

@@ -199,7 +199,7 @@
         today.setHours(0,0,0,0);
 
         // Total orders
-        MasterDB.from('orders').select('id, grand_total, status, created_at', { count: 'exact' })
+        MasterDB.from('orders').select('*', { count: 'exact' })
           .order('created_at', { ascending: false })
           .then(function(r) {
             if (r.error) {
@@ -236,7 +236,7 @@
         });
 
         // Products count
-        MasterDB.from('products').select('id', { count: 'exact', head: true })
+        MasterDB.from('products').select('*', { count: 'exact', head: true })
           .eq('is_active', true)
           .then(function(r) {
             document.getElementById('statProducts').textContent = r.count || 0;

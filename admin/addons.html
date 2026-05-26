@@ -5,7 +5,9 @@
     <title>Add-ons — Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
-    <script src="../assets/js/config.js"></script><script src="../assets/js/master-db.js"></script>
+    <script src="../assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
@@ -78,12 +80,16 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadAddons() {
-    MasterDB.from('addons').select('*').order('created_at').then(function(r) {
-        document.getElementById('pageLoader').style.display = 'none';
-        document.getElementById('adminMain').style.display  = 'flex';
-        allAddons = r.data || [];
-        renderAddons();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.from('addons').select('*').order('created_at').then(function(r) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            allAddons = r.data || [];
+            renderAddons();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Query addons table ordered by created_at]
+    }
 }
 
 function renderAddons() {
@@ -132,19 +138,27 @@ function saveAddon() {
     var price = parseInt(document.getElementById('aPrice').value) || 0;
     if (!name || !price) { showToast('Name and price required', 'error'); return; }
     var payload = { name: name, icon: document.getElementById('aIcon').value.trim() || '<i data-lucide="gift" class="lucide-icon icon-bounce"></i>', price: price, is_active: aActive };
-    var req = editingId ? MasterDB.from('addons').update(payload).eq('id', editingId) : MasterDB.from('addons').insert([payload]);
-    req.then(function(r) {
-        if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
-        showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadAddons();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        var req = editingId ? supabaseClient.from('addons').update(payload).eq('id', editingId) : supabaseClient.from('addons').insert([payload]);
+        req.then(function(r) {
+            if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadAddons();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Update or insert addon record]
+    }
 }
 
 function deleteAddon(id) {
     if (!adminConfirm('Delete this add-on?')) return;
-    MasterDB.from('addons').delete().eq('id', id).then(function(r) {
-        if (r.error || !true) { showToast('Delete failed', 'error'); return; }
-        showToast('Deleted!', 'success'); loadAddons();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.from('addons').delete().eq('id', id).then(function(r) {
+            if (r.error || !true) { showToast('Delete failed', 'error'); return; }
+            showToast('Deleted!', 'success'); loadAddons();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Delete addon record]
+    }
 }
 function closeModal() { document.getElementById('addonModal').classList.remove('show'); }
 </script>

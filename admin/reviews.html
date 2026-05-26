@@ -5,7 +5,9 @@
     <title>Reviews — Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
-    <script src="../assets/js/config.js"></script><script src="../assets/js/master-db.js"></script>
+    <script src="../assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <style>
         .review-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px; }
@@ -55,14 +57,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 function loadReviews() {
-    MasterDB.from('reviews').select('*, products(name)').order('created_at', { ascending: false }).then(function(r) {
-        document.getElementById('pageLoader').style.display = 'none';
-        document.getElementById('adminMain').style.display  = 'flex';
-        allReviews = r.data || [];
-        var pending = allReviews.filter(function(rv) { return !rv.is_approved; }).length;
-        document.getElementById('reviewSub').textContent = allReviews.length + ' total | ' + pending + ' pending';
-        filterReviews();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.from('reviews').select('*, products(name)').order('created_at', { ascending: false }).then(function(r) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            allReviews = r.data || [];
+            var pending = allReviews.filter(function(rv) { return !rv.is_approved; }).length;
+            document.getElementById('reviewSub').textContent = allReviews.length + ' total | ' + pending + ' pending';
+            filterReviews();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Query reviews table]
+    }
 }
 
 function filterReviews() {
@@ -115,24 +121,32 @@ function renderReviews(reviews) {
 }
 
 function approveReview(id) {
-    MasterDB.from('reviews').update({ is_approved: true }).eq('id', id).then(function(r) {
-        if (r.error) { showToast('Error', 'error'); return; }
-        showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Review approved!', 'success');
-        var idx = allReviews.findIndex(function(rv) { return rv.id === id; });
-        if (idx > -1) allReviews[idx].is_approved = true;
-        filterReviews();
-        adminLoadBadges();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.from('reviews').update({ is_approved: true }).eq('id', id).then(function(r) {
+            if (r.error) { showToast('Error', 'error'); return; }
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Review approved!', 'success');
+            var idx = allReviews.findIndex(function(rv) { return rv.id === id; });
+            if (idx > -1) allReviews[idx].is_approved = true;
+            filterReviews();
+            adminLoadBadges();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Update review approval]
+    }
 }
 
 function deleteReview(id) {
     if (!adminConfirm('Delete this review permanently?')) return;
-    MasterDB.from('reviews').delete().eq('id', id).then(function(r) {
-        if (r.error) { showToast('Error', 'error'); return; }
-        showToast('Deleted!', 'success');
-        allReviews = allReviews.filter(function(rv) { return rv.id !== id; });
-        filterReviews();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.from('reviews').delete().eq('id', id).then(function(r) {
+            if (r.error) { showToast('Error', 'error'); return; }
+            showToast('Deleted!', 'success');
+            allReviews = allReviews.filter(function(rv) { return rv.id !== id; });
+            filterReviews();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Delete review]
+    }
 }
 </script>
 

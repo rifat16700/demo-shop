@@ -5,7 +5,9 @@
     <title>Delivery Zones — Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
-    <script src="../assets/js/config.js"></script><script src="../assets/js/master-db.js"></script>
+    <script src="../assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
@@ -86,12 +88,16 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadZones() {
-    MasterDB.from('delivery_zones').select('*').order('created_at').then(function(r) {
-        document.getElementById('pageLoader').style.display = 'none';
-        document.getElementById('adminMain').style.display  = 'flex';
-        allZones = r.data || [];
-        renderZones();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.from('delivery_zones').select('*').order('created_at').then(function(r) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            allZones = r.data || [];
+            renderZones();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Query delivery_zones table]
+    }
 }
 
 function renderZones() {
@@ -175,19 +181,27 @@ function saveZone() {
     var charge = parseInt(document.getElementById('zCharge').value) || 0;
     if (!name) { showToast('Zone name required', 'error'); return; }
     var payload = { zone_name: name, charge: charge, districts: districtTags };
-    var req = editingId ? MasterDB.from('delivery_zones').update(payload).eq('id', editingId) : MasterDB.from('delivery_zones').insert([payload]);
-    req.then(function(r) {
-        if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
-        showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadZones();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        var req = editingId ? supabaseClient.from('delivery_zones').update(payload).eq('id', editingId) : supabaseClient.from('delivery_zones').insert([payload]);
+        req.then(function(r) {
+            if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadZones();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Update/Insert delivery zone]
+    }
 }
 
 function deleteZone(id) {
     if (!adminConfirm('Delete this zone?')) return;
-    MasterDB.from('delivery_zones').delete().eq('id', id).then(function(r) {
-        if (r.error) { showToast('Delete failed', 'error'); return; }
-        showToast('Deleted!', 'success'); loadZones();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.from('delivery_zones').delete().eq('id', id).then(function(r) {
+            if (r.error) { showToast('Delete failed', 'error'); return; }
+            showToast('Deleted!', 'success'); loadZones();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Delete delivery zone]
+    }
 }
 function closeModal() { document.getElementById('zoneModal').classList.remove('show'); }
 </script>

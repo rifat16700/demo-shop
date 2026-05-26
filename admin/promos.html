@@ -6,7 +6,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/master-db.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
     <style>
@@ -426,20 +427,24 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadData() {
-    Promise.all([
-        MasterDB.from('categories').select('*').eq('is_active', true).order('sort_order'),
-        MasterDB.from('products').select('*').eq('is_active', true).order('created_at'),
-        MasterDB.from('promos').select('*').order('created_at', { ascending: false })
-    ]).then(function(results) {
-        document.getElementById('pageLoader').style.display = 'none';
-        document.getElementById('adminMain').style.display  = 'flex';
-        allCategories = results[0].data || [];
-        allProducts   = results[1].data || [];
-        allPromos     = results[2].data || [];
-        populateMultiSelects();
-        renderPromos();
-        checkRepeatCustPromo();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        Promise.all([
+            supabaseClient.from('categories').select('*').eq('is_active', true).order('sort_order'),
+            supabaseClient.from('products').select('*').eq('is_active', true).order('created_at'),
+            supabaseClient.from('promos').select('*').order('created_at', { ascending: false })
+        ]).then(function(results) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            allCategories = results[0].data || [];
+            allProducts   = results[1].data || [];
+            allPromos     = results[2].data || [];
+            populateMultiSelects();
+            renderPromos();
+            checkRepeatCustPromo();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Query categories, products and promos tables]
+    }
 }
 
 // ── Checkbox Multi-Select System ──────────────────────────────
@@ -848,19 +853,27 @@ function savePromo() {
         applicable_payments:   getChipValues('pPayments')
     };
 
-    var req = editingId ? MasterDB.from('promos').update(payload).eq('id', editingId) : MasterDB.from('promos').insert([payload]);
-    req.then(function(r) {
-        if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
-        showToast('✅ Coupon saved!', 'success'); closeModal(); loadData();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        var req = editingId ? supabaseClient.from('promos').update(payload).eq('id', editingId) : supabaseClient.from('promos').insert([payload]);
+        req.then(function(r) {
+            if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+            showToast('✅ Coupon saved!', 'success'); closeModal(); loadData();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Update or insert promo record]
+    }
 }
 
 function deletePromo(id) {
     if (!adminConfirm('Delete this promo code?')) return;
-    MasterDB.from('promos').delete().eq('id', id).then(function(r) {
-        if (r.error) { showToast('Delete failed', 'error'); return; }
-        showToast('Deleted!', 'success'); loadData();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.from('promos').delete().eq('id', id).then(function(r) {
+            if (r.error) { showToast('Delete failed', 'error'); return; }
+            showToast('Deleted!', 'success'); loadData();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Delete promo record]
+    }
 }
 
 function openRepeatSettings() {
@@ -899,12 +912,16 @@ function saveRepeatCustConfig() {
         rep_min_spend:   parseInt(document.getElementById('repMinSpend').value) || null,
         rep_del_reward:  document.getElementById('repDelReward').value
     };
-    var req = repRow ? MasterDB.from('promos').update(payload).eq('id', repRow.id) : MasterDB.from('promos').insert([payload]);
-    req.then(function(r) {
-        if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
-        showToast('✅ Repeat customer config saved!', 'success');
-        closeRepeatModal(); loadData();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        var req = repRow ? supabaseClient.from('promos').update(payload).eq('id', repRow.id) : supabaseClient.from('promos').insert([payload]);
+        req.then(function(r) {
+            if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+            showToast('✅ Repeat customer config saved!', 'success');
+            closeRepeatModal(); loadData();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Update/Insert repeat config]
+    }
 }
 
 function closeModal()       { document.getElementById('promoModal').classList.remove('show'); }

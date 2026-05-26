@@ -8,7 +8,8 @@
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/master-db.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <style>
         .chart-wrap { position: relative; height: 260px; }
@@ -199,9 +200,10 @@
         today.setHours(0,0,0,0);
 
         // Total orders
-        MasterDB.from('orders').select('*', { count: 'exact' })
-          .order('created_at', { ascending: false })
-          .then(function(r) {
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            supabaseClient.from('orders').select('*', { count: 'exact' })
+              .order('created_at', { ascending: false })
+              .then(function(r) {
             if (r.error) {
                 console.error('Orders load error:', r.error);
                 showToast('❌ Orders error: ' + (r.error.message || r.error), 'error');
@@ -229,18 +231,25 @@
             buildBestSellers(orders);
 
             showUI();
-        }).catch(function(err) {
-            console.error('Orders fetch failed:', err);
-            showToast('❌ Failed to load orders: ' + err.message, 'error');
-            showUI();
-        });
+            }).catch(function(err) {
+                console.error('Orders fetch failed:', err);
+                showToast('❌ Failed to load orders: ' + err.message, 'error');
+                showUI();
+            });
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            // [APPWRITE ALTERNATIVE: Query orders]
+        }
 
         // Products count
-        MasterDB.from('products').select('*', { count: 'exact', head: true })
-          .eq('is_active', true)
-          .then(function(r) {
-            document.getElementById('statProducts').textContent = r.count || 0;
-        });
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            supabaseClient.from('products').select('*', { count: 'exact', head: true })
+              .eq('is_active', true)
+              .then(function(r) {
+                document.getElementById('statProducts').textContent = r.count || 0;
+            });
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            // [APPWRITE ALTERNATIVE: Query products count]
+        }
     }
 
     function renderRecentOrders(orders) {

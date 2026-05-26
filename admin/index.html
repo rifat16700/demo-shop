@@ -8,7 +8,8 @@
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/master-db.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-init.js"></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -597,14 +598,18 @@
 
         // ── Check session automatically ─────────────────────────
         function checkSession() {
-            MasterDB.auth.getSession().then(function(res) {
-                var session = res.data && res.data.session;
-                if (session) {
-                    document.getElementById('loginForm').style.display = 'none';
-                    document.getElementById('redirectMsg').classList.add('show');
-                    window.location.href = 'dashboard.html';
-                }
-            });
+            if (CONFIG.DB_PROVIDER === 'supabase') {
+                supabaseClient.auth.getSession().then(function(res) {
+                    var session = res.data && res.data.session;
+                    if (session) {
+                        document.getElementById('loginForm').style.display = 'none';
+                        document.getElementById('redirectMsg').classList.add('show');
+                        window.location.href = 'dashboard.html';
+                    }
+                });
+            } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+                // [APPWRITE ALTERNATIVE: Check session]
+            }
         }
         
         // Wait for DOM
@@ -629,16 +634,22 @@
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div><span>Signing in...</span>';
             // Try sign-in first; if user not found, sign-up
-            var res = await MasterDB.auth.signInWithPassword({ email, password: pass });
-            if (res.error && (res.error.message.includes('Invalid login') || res.error.message.includes('user not found') || res.error.message.includes('Email not confirmed'))) {
-                // Try signup
-                var res2 = await MasterDB.auth.signUp({ email, password: pass });
-                if (res2.error) {
-                    showToast('❌ ' + res2.error.message, 'error');
+            var res, res2;
+            if (CONFIG.DB_PROVIDER === 'supabase') {
+                res = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+                if (res.error && (res.error.message.includes('Invalid login') || res.error.message.includes('user not found') || res.error.message.includes('Email not confirmed'))) {
+                    // Try signup
+                    res2 = await supabaseClient.auth.signUp({ email, password: pass });
+                    if (res2.error) {
+                        showToast('❌ ' + res2.error.message, 'error');
+                        btn.disabled = false; btn.innerHTML = orig; return;
+                    }
+                    showToast('📧 Check your email to confirm your account!', 'success');
                     btn.disabled = false; btn.innerHTML = orig; return;
                 }
-                showToast('📧 Check your email to confirm your account!', 'success');
-                btn.disabled = false; btn.innerHTML = orig; return;
+            } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+                // [APPWRITE ALTERNATIVE: Email login/signup]
+                res = { error: { message: "Not implemented" } };
             }
             if (res.error) { showToast('❌ ' + res.error.message, 'error'); btn.disabled = false; btn.innerHTML = orig; return; }
             document.getElementById('loginForm').style.display = 'none';
@@ -655,12 +666,19 @@
 
             var redirectUrl = window.location.href.split('?')[0].replace(/index\.html$/, '') + 'dashboard.html';
 
-            const { data, error } = await MasterDB.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: redirectUrl
-                }
-            });
+            let error;
+            if (CONFIG.DB_PROVIDER === 'supabase') {
+                const res = await supabaseClient.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: redirectUrl
+                    }
+                });
+                error = res.error;
+            } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+                // [APPWRITE ALTERNATIVE: Google OAuth]
+                error = { message: "Not implemented" };
+            }
 
             if (error) {
                 showToast('Login Error: ' + error.message, 'error');
@@ -722,22 +740,29 @@
                 btn.innerHTML = '<div class="spinner" style="border-top-color:#FF9900;border-color:rgba(255,153,0,0.2);"></div><span>Signing message...</span>';
 
                 // Use Supabase native signInWithWeb3 — creates real JWT session
-                const { data, error } = await MasterDB.auth.signInWithWeb3({
-                    chain: 'ethereum',
-                    statement: 'Sign in to Freelancing By Rifat Admin Panel.',
-                    getMessageToSign: async ({ message, nonce }) => {
-                        // EIP-191 personal_sign
-                        return message;
-                    },
-                    signMessage: async ({ message }) => {
-                        const signature = await window.ethereum.request({
-                            method: 'personal_sign',
-                            params: [message, address],
-                        });
-                        return { signature };
-                    },
-                    address: address,
-                });
+                let error;
+                if (CONFIG.DB_PROVIDER === 'supabase') {
+                    const res = await supabaseClient.auth.signInWithWeb3({
+                        chain: 'ethereum',
+                        statement: 'Sign in to Freelancing By Rifat Admin Panel.',
+                        getMessageToSign: async ({ message, nonce }) => {
+                            // EIP-191 personal_sign
+                            return message;
+                        },
+                        signMessage: async ({ message }) => {
+                            const signature = await window.ethereum.request({
+                                method: 'personal_sign',
+                                params: [message, address],
+                            });
+                            return { signature };
+                        },
+                        address: address,
+                    });
+                    error = res.error;
+                } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+                    // [APPWRITE ALTERNATIVE: Web3 Ethereum]
+                    error = { message: "Not implemented" };
+                }
 
                 if (error) throw error;
 
@@ -783,17 +808,24 @@
                 btn.innerHTML = '<div class="spinner" style="border-top-color:#AB9FF2;border-color:rgba(171,159,242,0.2);"></div><span>Signing message...</span>';
 
                 // Use Supabase native signInWithWeb3 for Solana
-                const { data, error } = await MasterDB.auth.signInWithWeb3({
-                    chain: 'solana',
-                    statement: 'Sign in to Freelancing By Rifat Admin Panel.',
-                    signMessage: async ({ message }) => {
-                        // message is a Uint8Array
-                        const encoded = new TextEncoder().encode(message);
-                        const { signature } = await solProvider.signMessage(encoded, 'utf8');
-                        return { signature: Array.from(signature) };
-                    },
-                    address: address,
-                });
+                let error;
+                if (CONFIG.DB_PROVIDER === 'supabase') {
+                    const res = await supabaseClient.auth.signInWithWeb3({
+                        chain: 'solana',
+                        statement: 'Sign in to Freelancing By Rifat Admin Panel.',
+                        signMessage: async ({ message }) => {
+                            // message is a Uint8Array
+                            const encoded = new TextEncoder().encode(message);
+                            const { signature } = await solProvider.signMessage(encoded, 'utf8');
+                            return { signature: Array.from(signature) };
+                        },
+                        address: address,
+                    });
+                    error = res.error;
+                } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+                    // [APPWRITE ALTERNATIVE: Web3 Solana]
+                    error = { message: "Not implemented" };
+                }
 
                 if (error) throw error;
 

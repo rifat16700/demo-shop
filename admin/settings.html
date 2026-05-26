@@ -7,7 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
     <script src="../assets/js/config.js"></script>
-    <script src="../assets/js/master-db.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <script src="../assets/js/imgbb-uploader.js"></script>
     <style>
@@ -533,9 +534,10 @@
     });
 
     function loadSettings() {
-        MasterDB.from('settings').select('*').eq('id', 1).single().then(function(r) {
-            document.getElementById('pageLoader').style.display  = 'none';
-            document.getElementById('adminMain').style.display   = 'flex';
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            supabaseClient.from('settings').select('*').eq('id', 1).single().then(function(r) {
+                document.getElementById('pageLoader').style.display  = 'none';
+                document.getElementById('adminMain').style.display   = 'flex';
 
             // ── প্রথমবার: DB তে row নেই, Config থেকে defaults দেখাও ──
             var s = (r.data) ? r.data : {};
@@ -609,7 +611,10 @@
 
             // Review ImgBB Key (from Supabase)
             setVal('reviewImgbbKey', s.review_imgbb_key || '');
-        });
+            });
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            // [APPWRITE ALTERNATIVE: Query settings table where id=1]
+        }
     }
 
     function setVal(id, val) {
@@ -721,15 +726,19 @@
             id: 1
         };
 
-        MasterDB.from('settings').upsert([payload]).then(function(r) {
-            if (r.error) {
+        if (CONFIG.DB_PROVIDER === 'supabase') {
+            supabaseClient.from('settings').upsert([payload]).then(function(r) {
+                if (r.error) {
                 showToast('<i data-lucide="x-circle" class="lucide-icon icon-danger"></i> Save failed: ' + r.error.message, 'error');
                 return;
             }
             // ImgBB key আলাদাভাবে localStorage এ সেভ করো
             saveImgbbKey();
             showToast('✅ Settings saved!', 'success');
-        });
+            });
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            // [APPWRITE ALTERNATIVE: Upsert settings]
+        }
     }
 
     // ── Messaging Apps Renderer ──────────────────────────────

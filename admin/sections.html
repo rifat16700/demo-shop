@@ -5,7 +5,9 @@
     <title>Homepage Sections — Admin Panel</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/admin.css">
-    <script src="../assets/js/config.js"></script><script src="../assets/js/master-db.js"></script>
+    <script src="../assets/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../assets/js/supabase-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
     <style>
@@ -342,8 +344,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function loadAll() {
     // Load sections + categories + products in parallel
-    var p1 = MasterDB.from('home_sections').select('*, categories(name)').order('sort_order');
-    var p2 = MasterDB.from('categories').select('id, name').eq('is_active', true).order('sort_order');
+    var p1, p2;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        p1 = supabaseClient.from('home_sections').select('*, categories(name)').order('sort_order');
+        p2 = supabaseClient.from('categories').select('id, name').eq('is_active', true).order('sort_order');
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Query home_sections and categories]
+    }
     var p3 = fetch('/api/get-products-list').then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });
 
     Promise.all([p1, p2, p3]).then(function(results) {
@@ -571,35 +578,47 @@ function saveSection() {
         is_active: sActive
     };
 
-    var req = editingId
-        ? MasterDB.from('home_sections').update(payload).eq('id', editingId)
-        : MasterDB.from('home_sections').insert([payload]);
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        var req = editingId
+            ? supabaseClient.from('home_sections').update(payload).eq('id', editingId)
+            : supabaseClient.from('home_sections').insert([payload]);
 
-    req.then(function(r) {
-        if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
-        showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success');
-        closeModal();
-        loadAll();
-    });
+        req.then(function(r) {
+            if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success');
+            closeModal();
+            loadAll();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Update/Insert section]
+    }
 }
 
 // ── Toggle Active ─────────────────────────────────────────────
 function toggleActive(id, newState) {
-    MasterDB.from('home_sections').update({ is_active: newState }).eq('id', id).then(function(r) {
-        if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
-        showToast(newState ? '✅ Section এখন Active' : '🙈 Section Hidden হয়েছে', 'success');
-        loadAll();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.from('home_sections').update({ is_active: newState }).eq('id', id).then(function(r) {
+            if (r.error) { showToast('Error: ' + r.error.message, 'error'); return; }
+            showToast(newState ? '✅ Section এখন Active' : '🙈 Section Hidden হয়েছে', 'success');
+            loadAll();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Update section active state]
+    }
 }
 
 // ── Delete ────────────────────────────────────────────────────
 function deleteSection(id) {
     if (!adminConfirm('এই section টা delete করবেন?')) return;
-    MasterDB.from('home_sections').delete().eq('id', id).then(function(r) {
-        if (r.error) { showToast('Delete failed', 'error'); return; }
-        showToast('🗑️ Section deleted!', 'success');
-        loadAll();
-    });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.from('home_sections').delete().eq('id', id).then(function(r) {
+            if (r.error) { showToast('Delete failed', 'error'); return; }
+            showToast('🗑️ Section deleted!', 'success');
+            loadAll();
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        // [APPWRITE ALTERNATIVE: Delete section]
+    }
 }
 
 // ── Helpers ───────────────────────────────────────────────────

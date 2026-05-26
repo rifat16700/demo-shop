@@ -1,31 +1,27 @@
 // ============================================================
-// supabase-init.js — Supabase Client Initialization
-// Include AFTER config.js on every page
+// assets/js/supabase-init.js
+// Initialize Supabase Client (For Admin Panel)
 // ============================================================
 
-// Initialize Supabase client — global window.sb
-var sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
-
-// Quick sanity check
-if (!CONFIG.SUPABASE_URL || CONFIG.SUPABASE_URL.includes('YOUR_PROJECT')) {
-    console.warn('⚠️  Supabase credentials not set in config.js!');
-}
-
-// Global Dynamic Favicon loader
-document.addEventListener('DOMContentLoaded', function() {
-    MasterDB.from('settings').select('logo_url, favicon_url').eq('id', 1).single().then(function(r) {
-        if (r.data) {
-            var url = r.data.logo_url || r.data.favicon_url || 'assets/images/favicon.ico';
-            var link = document.querySelector("link[rel~='icon']");
-            if (!link) {
-                link = document.createElement('link');
-                link.rel = 'icon';
-                document.head.appendChild(link);
+// Initialize window.supabase
+if (typeof supabase !== 'undefined') {
+    window.supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    
+    // Inject custom headers (for auth) into global fetch
+    // Supabase JS v2 uses global fetch. We intercept it to inject the admin token.
+    var _originalFetch = window.fetch;
+    window.fetch = async function() {
+        var args = Array.prototype.slice.call(arguments);
+        var url = args[0];
+        if (typeof url === 'string' && url.startsWith(CONFIG.SUPABASE_URL)) {
+            var opts = args[1] || {};
+            opts.headers = opts.headers || {};
+            var token = localStorage.getItem('fbr_admin_token');
+            if (token) {
+                opts.headers['Authorization'] = 'Bearer ' + token;
             }
-            if (url === 'assets/images/favicon.ico' && window.location.pathname.includes('/admin/')) {
-                url = '../assets/images/favicon.ico';
-            }
-            link.href = url;
+            args[1] = opts;
         }
-    }).catch(function(e){});
-});
+        return _originalFetch.apply(this, args);
+    };
+}

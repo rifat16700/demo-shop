@@ -26,13 +26,13 @@ var CONFIG = {
     // পরে Appwrite বা অন্য DB ব্যবহার করতে চাইলে:
     
     // ── ⚡ DB PROVIDER — এই একটি line পরিবর্তন করলেই পুরো সাইট বদলায় ──
-    DB_PROVIDER: 'supabase',   // 'supabase' | 'appwrite'
+    DB_PROVIDER: 'appwrite',   // 'supabase' | 'appwrite'
 
 
     // ── 🟡 APPWRITE ──────────────────────────────────────────
     // Appwrite Console → Project Settings → Project ID
-    APPWRITE_ENDPOINT:    'https://cloud.appwrite.io/v1',
-    APPWRITE_PROJECT:     'YOUR_PROJECT_ID',       // ← এখানে তোমার Project ID বসাও
+    APPWRITE_ENDPOINT:    'https://sgp.cloud.appwrite.io/v1',
+    APPWRITE_PROJECT:     '69de4fa50032182e9b91',       // ← এখানে তোমার Project ID বসাও
     APPWRITE_DATABASE_ID: 'main_db',               // ← Database বানানোর সময় এই ID দাও
     // ────────────────────────────────────────────────────────
 

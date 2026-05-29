@@ -486,8 +486,8 @@
                 </button>
             </div>
 
-            <!-- Extra Login Options (Hidden for Appwrite) -->
-            <div id="extraLoginOptions">
+            <!-- Google Login Option -->
+            <div id="googleLoginSection">
                 <!-- Divider -->
                 <div class="or-divider" style="margin:18px 0;">or</div>
 
@@ -501,12 +501,15 @@
                 </svg>
                 <span style="font-size:15px;font-weight:600;">Sign in with Google</span>
             </button>
+            </div> <!-- End of googleLoginSection -->
 
-            <!-- Divider -->
-            <div class="or-divider" style="margin:18px 0;">or connect wallet</div>
+            <!-- Web3 Login Options (Hidden for Appwrite) -->
+            <div id="web3LoginSection">
+                <!-- Divider -->
+                <div class="or-divider" style="margin:18px 0;">or connect wallet</div>
 
-            <!-- Web3 Wallet Buttons -->
-            <div class="web3-group">
+                <!-- Web3 Wallet Buttons -->
+                <div class="web3-group">
                 <button type="button" class="web3-btn" id="web3EthBtn" onclick="loginWithEthereum()">
                     <svg class="metamask-icon" viewBox="0 0 318.6 318.6" xmlns="http://www.w3.org/2000/svg">
                         <polygon fill="#E2761B" stroke="#E2761B" points="274.1,35.5 174.6,109.4 193,65.8"/>
@@ -537,7 +540,7 @@
                         <span id="walletAddrText">0x0000...0000</span>
                     </div>
                 </div>
-            </div> <!-- End of extraLoginOptions -->
+            </div> <!-- End of web3LoginSection -->
 
             <p style="margin-top:16px;font-size:12px;color:var(--text-light);text-align:center;">🔒 Secure Admin Authentication</p>
         </div>
@@ -630,8 +633,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log("DOM Loaded - Auth UI ready");
             if (CONFIG.DB_PROVIDER === 'appwrite') {
-                var extraOpts = document.getElementById('extraLoginOptions');
-                if (extraOpts) extraOpts.style.display = 'none';
+                var web3Opts = document.getElementById('web3LoginSection');
+                if (web3Opts) web3Opts.style.display = 'none';
             }
             checkSession();
         });

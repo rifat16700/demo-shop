@@ -486,8 +486,10 @@
                 </button>
             </div>
 
-            <!-- Divider -->
-            <div class="or-divider" style="margin:18px 0;">or</div>
+            <!-- Extra Login Options (Hidden for Appwrite) -->
+            <div id="extraLoginOptions">
+                <!-- Divider -->
+                <div class="or-divider" style="margin:18px 0;">or</div>
 
             <!-- Google Login Button -->
             <button type="button" class="login-btn" id="googleBtn" onclick="loginWithGoogle()" style="background:#fff;color:#333;border:1px solid #e0e0e0;box-shadow:0 4px 12px rgba(0,0,0,0.05);padding:12px 20px;margin-top:0;">
@@ -529,12 +531,13 @@
                 </button>
             </div>
 
-            <div id="walletPill" style="display:none;justify-content:center;margin-top:10px;">
-                <div class="wallet-pill">
-                    <div class="wallet-dot"></div>
-                    <span id="walletAddrText">0x0000...0000</span>
+                <div id="walletPill" style="display:none;justify-content:center;margin-top:10px;">
+                    <div class="wallet-pill">
+                        <div class="wallet-dot"></div>
+                        <span id="walletAddrText">0x0000...0000</span>
+                    </div>
                 </div>
-            </div>
+            </div> <!-- End of extraLoginOptions -->
 
             <p style="margin-top:16px;font-size:12px;color:var(--text-light);text-align:center;">🔒 Secure Admin Authentication</p>
         </div>
@@ -626,6 +629,10 @@
         // Wait for DOM
         document.addEventListener('DOMContentLoaded', function() {
             console.log("DOM Loaded - Auth UI ready");
+            if (CONFIG.DB_PROVIDER === 'appwrite') {
+                var extraOpts = document.getElementById('extraLoginOptions');
+                if (extraOpts) extraOpts.style.display = 'none';
+            }
             checkSession();
         });
 

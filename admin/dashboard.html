@@ -10,6 +10,8 @@
     <script src="../assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="../assets/js/appwrite-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <style>
         .chart-wrap { position: relative; height: 260px; }
@@ -237,7 +239,40 @@
                 showUI();
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            // [APPWRITE ALTERNATIVE: Query orders]
+            appwriteDatabases.listDocuments(APP_DB, 'orders', [AppwriteQuery.orderDesc('created_at'), AppwriteQuery.limit(5000)])
+                .then(function(res) {
+                    var orders = res.documents.map(function(doc) {
+                        doc.id = doc.$id;
+                        if (typeof doc.items === 'string') {
+                            try { doc.items = JSON.parse(doc.items); } catch(e) { doc.items = []; }
+                        }
+                        return doc;
+                    });
+                    var total = res.total || orders.length;
+
+                    var todayOrders = orders.filter(function(o) {
+                        return new Date(o.created_at) >= today;
+                    });
+                    var pending = orders.filter(function(o) { return o.status === 'Pending'; }).length;
+                    var revenue = orders.filter(function(o) {
+                        return o.status !== 'Cancelled' && o.status !== 'Pending';
+                    }).reduce(function(sum, o) { return sum + (o.grand_total || 0); }, 0);
+
+                    document.getElementById('statTotal').textContent   = total;
+                    document.getElementById('statToday').textContent   = todayOrders.length;
+                    document.getElementById('statPending').textContent = pending;
+                    document.getElementById('statRevenue').textContent = formatMoney(revenue);
+
+                    renderRecentOrders(orders.slice(0, 10));
+                    buildRevenueChart(orders);
+                    buildBestSellers(orders);
+
+                    showUI();
+                })
+                .catch(function(err) {
+                    showToast('Error: ' + err.message, 'error');
+                    showUI();
+                });
         }
 
         // Products count
@@ -248,7 +283,11 @@
                 document.getElementById('statProducts').textContent = r.count || 0;
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            // [APPWRITE ALTERNATIVE: Query products count]
+            appwriteDatabases.listDocuments(APP_DB, 'products', [AppwriteQuery.equal('is_active', true), AppwriteQuery.limit(1)])
+                .then(function(res) {
+                    document.getElementById('statProducts').textContent = res.total || 0;
+                })
+                .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
         }
     }
 

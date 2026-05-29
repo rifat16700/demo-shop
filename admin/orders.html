@@ -9,6 +9,8 @@
     <script src="../assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="../assets/js/appwrite-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <style>
         .order-detail-row { padding: 20px; background: var(--bg-card); border-radius: var(--radius-md); }
@@ -236,7 +238,30 @@
                     autoCleanupOrders();
                 });
             } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-                // [APPWRITE ALTERNATIVE: Query orders]
+                appwriteDatabases.listDocuments(APP_DB, 'orders', [
+                    AppwriteQuery.orderDesc('created_at'),
+                    AppwriteQuery.limit(5000)
+                ]).then(function(res) {
+                    allOrders = res.documents.map(function(doc) {
+                        doc.id = doc.$id;
+                        // items is stored as JSON string in Appwrite
+                        if (typeof doc.items === 'string') {
+                            try { doc.items = JSON.parse(doc.items); } catch(e) { doc.items = []; }
+                        }
+                        return doc;
+                    });
+                    document.getElementById('orderCountSub').textContent = allOrders.length + ' total orders';
+                    filterOrders();
+
+                    if (urlId) {
+                        var found = allOrders.find(function(o) { return o.id === urlId; });
+                        if (found) openOrderModal(found);
+                    }
+
+                    autoCleanupOrders();
+                }).catch(function(err) {
+                    showToast('Failed to load orders: ' + err.message, 'error');
+                });
             }
         });
     });
@@ -256,7 +281,17 @@
                   }
               });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            // [APPWRITE ALTERNATIVE: Delete old delivered/cancelled orders]
+            // Appwrite: filter and delete old delivered/cancelled orders
+            var thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            var oldOrders = allOrders.filter(function(o) {
+                return (o.status === 'Delivered' || o.status === 'Cancelled') &&
+                       o.created_at && new Date(o.created_at) < thirtyDaysAgo;
+            });
+            oldOrders.forEach(function(o) {
+                appwriteDatabases.deleteDocument(APP_DB, 'orders', o.$id || o.id)
+                .catch(function(err) { console.error('Auto cleanup error:', err.message); });
+            });
         }
     }
 
@@ -270,7 +305,14 @@
                 filterOrders();
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            // [APPWRITE ALTERNATIVE: Delete order]
+            appwriteDatabases.deleteDocument(APP_DB, 'orders', id)
+            .then(function() {
+                showToast('Order deleted successfully!', 'success');
+                allOrders = allOrders.filter(function(o) { return o.id !== id; });
+                filterOrders();
+            }).catch(function(err) {
+                showToast('Failed to delete: ' + err.message, 'error');
+            });
         }
     }
 
@@ -495,7 +537,65 @@
                 filterOrders();
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            // [APPWRITE ALTERNATIVE: Update order and handle promos]
+            appwriteDatabases.updateDocument(APP_DB, 'orders', orderId, payload)
+            .then(function() {
+                // Trigger repeated customer personal coupon if status = Delivered
+                if (payload.status === 'Delivered' && currentOrder && currentOrder.customer_phone) {
+                    var phone = currentOrder.customer_phone.trim();
+                    appwriteDatabases.listDocuments(APP_DB, 'promos', [AppwriteQuery.limit(500)])
+                    .then(function(promosRes) {
+                        var promosList = promosRes.documents;
+                        var repConfig = promosList.find(function(p) { return p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG'); });
+                        var existingCoupon = promosList.find(function(p) { return p.code && p.code.split('|v1|')[0] === phone; });
+
+                        if (repConfig && repConfig.is_active && !existingCoupon) {
+                            try {
+                                var meta = JSON.parse(repConfig.code.split('|v1|')[1]);
+                                var expiry = null;
+                                if (meta.repExpiryDays) {
+                                    var d = new Date(); d.setDate(d.getDate() + parseInt(meta.repExpiryDays));
+                                    expiry = d.toISOString();
+                                }
+                                var newPromoMeta = {
+                                    type: 'private',
+                                    disc_type: meta.repType || 'flat',
+                                    disc_val: parseFloat(meta.repValue) || 0,
+                                    max_cap: parseFloat(meta.repCap) || null,
+                                    min_spend: parseFloat(meta.repMinSpend) || null,
+                                    del_reward: meta.repDelReward || 'none',
+                                    is_repeated_cust: true
+                                };
+                                var fullCode = phone + '|v1|' + JSON.stringify(newPromoMeta);
+                                var newPromoPayload = {
+                                    code: fullCode,
+                                    discount: meta.repType === 'flat' ? parseFloat(meta.repValue) || 0 : 0,
+                                    is_active: true,
+                                    expires_at: expiry,
+                                    type: 'private',
+                                    disc_type: meta.repType || 'flat',
+                                    disc_val: parseFloat(meta.repValue) || 0,
+                                    max_cap: parseInt(meta.repCap) || null,
+                                    min_spend: parseInt(meta.repMinSpend) || null,
+                                    del_reward: meta.repDelReward || 'none',
+                                    created_at: new Date().toISOString()
+                                };
+                                appwriteDatabases.createDocument(APP_DB, 'promos', AppwriteID.unique(), newPromoPayload)
+                                .then(function() {
+                                    showToast('🎉 Personal coupon created for: ' + phone, 'success');
+                                }).catch(function(e) { console.error('Coupon gen error:', e.message); });
+                            } catch (e) { console.error('Repeat config parse error:', e); }
+                        }
+                    }).catch(function(e) { console.error('Promos load error:', e.message); });
+                }
+
+                showToast('Order updated!', 'success');
+                closeModal('orderModal');
+                var idx = allOrders.findIndex(function(o) { return o.id === orderId; });
+                if (idx > -1) Object.assign(allOrders[idx], payload);
+                filterOrders();
+            }).catch(function(err) {
+                showToast('Update failed: ' + err.message, 'error');
+            });
         }
     }
 

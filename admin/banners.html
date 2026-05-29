@@ -8,6 +8,8 @@
     <script src="../assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="../assets/js/appwrite-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <script src="../assets/js/imgbb-uploader.js"></script>
     <style>
@@ -119,7 +121,16 @@ function loadBanners() {
             renderBanners();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Query banners]
+        appwriteDatabases.listDocuments(APP_DB, 'banners', [
+            AppwriteQuery.orderAsc('sort_order')
+        ]).then(function(res) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            allBanners = res.documents.map(function(doc) { doc.id = doc.$id; return doc; });
+            renderBanners();
+        }).catch(function(err) {
+            showToast('Load failed: ' + err.message, 'error');
+        });
     }
 }
 
@@ -332,7 +343,25 @@ function saveBanner() {
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadBanners();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Save banner]
+        if (editingId) {
+            appwriteDatabases.updateDocument(APP_DB, 'banners', editingId, payload)
+            .then(function() {
+                showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success');
+                closeModal();
+                loadBanners();
+            }).catch(function(err) {
+                showToast('Error: ' + err.message, 'error');
+            });
+        } else {
+            appwriteDatabases.createDocument(APP_DB, 'banners', AppwriteID.unique(), payload)
+            .then(function() {
+                showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success');
+                closeModal();
+                loadBanners();
+            }).catch(function(err) {
+                showToast('Error: ' + err.message, 'error');
+            });
+        }
     }
 }
 
@@ -344,7 +373,13 @@ function deleteBanner(id) {
             showToast('Deleted!', 'success'); loadBanners();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Delete banner]
+        appwriteDatabases.deleteDocument(APP_DB, 'banners', id)
+        .then(function() {
+            showToast('Deleted!', 'success');
+            loadBanners();
+        }).catch(function(err) {
+            showToast('Delete failed: ' + err.message, 'error');
+        });
     }
 }
 function closeModal() { document.getElementById('bannerModal').classList.remove('show'); }

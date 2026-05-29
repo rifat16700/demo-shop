@@ -8,6 +8,8 @@
     <script src="../assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="../assets/js/appwrite-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
     <style>
@@ -349,7 +351,14 @@ function loadAll() {
         p1 = supabaseClient.from('home_sections').select('*, categories(name)').order('sort_order');
         p2 = supabaseClient.from('categories').select('id, name').eq('is_active', true).order('sort_order');
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Query home_sections and categories]
+        p1 = appwriteDatabases.listDocuments(APP_DB, 'home_sections', [AppwriteQuery.orderAsc('sort_order')])
+            .then(function(res) {
+                return { data: res.documents.map(function(doc) { doc.id = doc.$id; return doc; }) };
+            });
+        p2 = appwriteDatabases.listDocuments(APP_DB, 'categories', [AppwriteQuery.equal('is_active', true), AppwriteQuery.orderAsc('sort_order')])
+            .then(function(res) {
+                return { data: res.documents.map(function(doc) { doc.id = doc.$id; return doc; }) };
+            });
     }
     var p3 = fetch('/api/get-products-list').then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });
 
@@ -590,7 +599,18 @@ function saveSection() {
             loadAll();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Update/Insert section]
+        var req;
+        if (editingId) {
+            req = appwriteDatabases.updateDocument(APP_DB, 'home_sections', editingId, payload);
+        } else {
+            payload.created_at = new Date().toISOString();
+            req = appwriteDatabases.createDocument(APP_DB, 'home_sections', AppwriteID.unique(), payload);
+        }
+        req.then(function() {
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success');
+            closeModal();
+            loadAll();
+        }).catch(function(err) { showToast('Error: ' + err.message, 'error'); });
     }
 }
 
@@ -603,7 +623,12 @@ function toggleActive(id, newState) {
             loadAll();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Update section active state]
+        appwriteDatabases.updateDocument(APP_DB, 'home_sections', id, { is_active: newState })
+            .then(function() {
+                showToast(newState ? '✅ Section এখন Active' : '🙈 Section Hidden হয়েছে', 'success');
+                loadAll();
+            })
+            .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
     }
 }
 
@@ -617,7 +642,12 @@ function deleteSection(id) {
             loadAll();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Delete section]
+        appwriteDatabases.deleteDocument(APP_DB, 'home_sections', id)
+            .then(function() {
+                showToast('🗑️ Section deleted!', 'success');
+                loadAll();
+            })
+            .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
     }
 }
 

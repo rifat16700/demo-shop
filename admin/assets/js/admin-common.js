@@ -95,128 +95,172 @@ function adminInit(activePage, onReady) {
     document.body.insertAdjacentHTML('afterbegin', SIDEBAR_HTML);
     document.body.insertAdjacentHTML('beforeend', TOAST_HTML);
 
-    // ── Web3 session check (MetaMask login) ──
+    // ── Web3 / Appwrite localStorage session check ──
+    var awWallet = localStorage.getItem('aw_admin_wallet');
+    var awTs     = parseInt(localStorage.getItem('aw_admin_ts') || '0');
+    var awValid  = awWallet && (Date.now() - awTs) < 86400000; // 24 hour
+
+    // Legacy Web3 via sessionStorage (Supabase mode)
     var web3Verified = sessionStorage.getItem('web3_admin_verified') === 'true';
     var web3Wallet   = sessionStorage.getItem('web3_admin_wallet') || '';
 
     if (web3Verified && web3Wallet) {
-        // Web3 admin is logged in — set sidebar info
         var shortAddr = web3Wallet.substring(0, 6) + '...' + web3Wallet.substring(web3Wallet.length - 4);
         var emailEl = document.getElementById('adminUserEmail');
         var avatarEl = document.getElementById('userAvatar');
         if (emailEl) emailEl.textContent = '🦊 ' + shortAddr;
         if (avatarEl) avatarEl.textContent = '⬡';
 
-        // Set active nav item
         if (activePage) {
             var items = document.querySelectorAll('.nav-item[data-page="' + activePage + '"]');
-            for (var i = 0; i < items.length; i++) {
-                items[i].classList.add('active');
-            }
+            for (var i = 0; i < items.length; i++) { items[i].classList.add('active'); }
         }
-
-        // Load store name for sidebar
-        MasterDB.from('settings').select('store_name').eq('id', 1).single().then(function(r) {
-            if (r.data && r.data.store_name) {
-                var el = document.getElementById('sidebarStoreName');
-                if (el) el.textContent = r.data.store_name;
-            }
-        });
-
+        loadSidebarStoreName();
         adminLoadBadges();
-
-        if (typeof onReady === 'function') {
-            onReady();
-        }
-        return; // skip Supabase session check
+        if (typeof onReady === 'function') onReady();
+        return;
     }
 
-    // ── MasterDB session check (works with Supabase + Appwrite) ──
-    MasterDB.auth.getSession().then(function(res) {
-        var session = res.data && res.data.session;
+    if (CONFIG.DB_PROVIDER === 'appwrite' && awValid) {
+        // Appwrite wallet-auth: localStorage token valid
+        var shortAddr2 = awWallet.substring(0, 6) + '...' + awWallet.substring(awWallet.length - 4);
+        var emailEl2 = document.getElementById('adminUserEmail');
+        var avatarEl2 = document.getElementById('userAvatar');
+        if (emailEl2) emailEl2.textContent = '🦊 ' + shortAddr2;
+        if (avatarEl2) avatarEl2.textContent = '⬡';
 
+        if (activePage) {
+            var items2 = document.querySelectorAll('.nav-item[data-page="' + activePage + '"]');
+            for (var j = 0; j < items2.length; j++) { items2[j].classList.add('active'); }
+        }
+        loadSidebarStoreName();
+        adminLoadBadges();
+        if (typeof onReady === 'function') onReady();
+        return;
+    }
+
+    // ── Email/Google session check ────────────────────────────
+    var sessionPromise;
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        sessionPromise = supabaseClient.auth.getSession().then(function(res) {
+            return res.data && res.data.session ? res.data.session : null;
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        sessionPromise = appwriteAccount.getSession('current')
+        .then(function(s) { return s; })
+        .catch(function() { return null; });
+    } else {
+        sessionPromise = Promise.resolve(null);
+    }
+
+    sessionPromise.then(function(session) {
         if (!session) {
             window.location.href = 'index.html';
             return;
         }
 
-        // Get email from localStorage (stored at login time)
         var email   = localStorage.getItem('fbr_admin_email') || '';
         var initial = email.charAt(0).toUpperCase() || 'A';
-
         var emailEl  = document.getElementById('adminUserEmail');
         var avatarEl = document.getElementById('userAvatar');
         if (emailEl)  emailEl.textContent  = email || 'Admin';
         if (avatarEl) avatarEl.textContent = initial;
 
-        // Set active nav item
         if (activePage) {
             var items = document.querySelectorAll('.nav-item[data-page="' + activePage + '"]');
-            for (var i = 0; i < items.length; i++) {
-                items[i].classList.add('active');
-            }
+            for (var i = 0; i < items.length; i++) { items[i].classList.add('active'); }
         }
 
-        // Load store name for sidebar
-        MasterDB.from('settings').select('store_name').eq('id', 1).single().then(function(r) {
+        loadSidebarStoreName();
+        adminLoadBadges();
+        if (typeof onReady === 'function') onReady();
+    });
+}
+
+
+// ── Load sidebar store name ───────────────────────────────────
+function loadSidebarStoreName() {
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.from('settings').select('store_name').eq('id', 1).single()
+        .then(function(r) {
             if (r.data && r.data.store_name) {
                 var el = document.getElementById('sidebarStoreName');
                 if (el) el.textContent = r.data.store_name;
             }
         });
-
-        // Load pending counts for badges
-        adminLoadBadges();
-
-        // ── Page-specific callback after auth success ──
-        if (typeof onReady === 'function') {
-            onReady();
-        }
-    });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings')
+        .then(function(doc) {
+            if (doc.store_name) {
+                var el = document.getElementById('sidebarStoreName');
+                if (el) el.textContent = doc.store_name;
+            }
+        }).catch(function() {});
+    }
 }
 
-
-// ── Load sidebar badge counts ────────────────────────────────
+// ── Load sidebar badge counts ─────────────────────────────────
 function adminLoadBadges() {
     // Pending orders
-    MasterDB.from('orders').select('id', { count: 'exact', head: true })
-      .eq('status', 'Pending')
-      .then(function(r) {
-          var count = r.count || 0;
-          var el = document.getElementById('pendingBadge');
-          if (el && count > 0) {
-              el.textContent = count;
-              el.style.display = 'inline-flex';
-          }
-      });
-
-    // Pending reviews (not approved)
-    MasterDB.from('reviews').select('id', { count: 'exact', head: true })
-      .eq('is_approved', false)
-      .then(function(r) {
-          var count = r.count || 0;
-          var el = document.getElementById('reviewBadge');
-          if (el && count > 0) {
-              el.textContent = count;
-              el.style.display = 'inline-flex';
-          }
-      });
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'Pending')
+        .then(function(r) {
+            var count = r.count || 0;
+            var el = document.getElementById('pendingBadge');
+            if (el && count > 0) { el.textContent = count; el.style.display = 'inline-flex'; }
+        });
+        supabaseClient.from('reviews').select('id', { count: 'exact', head: true }).eq('is_approved', false)
+        .then(function(r) {
+            var count = r.count || 0;
+            var el = document.getElementById('reviewBadge');
+            if (el && count > 0) { el.textContent = count; el.style.display = 'inline-flex'; }
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        appwriteDatabases.listDocuments(APP_DB, 'orders', [
+            AppwriteQuery.equal('status', 'Pending'),
+            AppwriteQuery.limit(1)
+        ]).then(function(res) {
+            var count = res.total || 0;
+            var el = document.getElementById('pendingBadge');
+            if (el && count > 0) { el.textContent = count; el.style.display = 'inline-flex'; }
+        }).catch(function() {});
+        appwriteDatabases.listDocuments(APP_DB, 'reviews', [
+            AppwriteQuery.equal('is_approved', false),
+            AppwriteQuery.limit(1)
+        ]).then(function(res) {
+            var count = res.total || 0;
+            var el = document.getElementById('reviewBadge');
+            if (el && count > 0) { el.textContent = count; el.style.display = 'inline-flex'; }
+        }).catch(function() {});
+    }
 }
 
 // ── Logout ───────────────────────────────────────────────────
 function adminLogout() {
     if (!confirm('লগআউট করবেন?')) return;
 
-    // Clear Web3 session (MetaMask login)
     sessionStorage.removeItem('web3_admin_verified');
     sessionStorage.removeItem('web3_admin_wallet');
+    localStorage.removeItem('aw_admin_wallet');
+    localStorage.removeItem('aw_admin_sig');
+    localStorage.removeItem('aw_admin_ts');
 
-    // Clear Supabase session (Google login)
-    MasterDB.auth.signOut().then(function() {
+    if (CONFIG.DB_PROVIDER === 'supabase') {
+        supabaseClient.auth.signOut().then(function() {
+            window.location.href = 'index.html';
+        }).catch(function() {
+            window.location.href = 'index.html';
+        });
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        appwriteAccount.deleteSession('current')
+        .then(function() {
+            window.location.href = 'index.html';
+        }).catch(function() {
+            window.location.href = 'index.html';
+        });
+    } else {
         window.location.href = 'index.html';
-    }).catch(function(){
-        window.location.href = 'index.html';
-    });
+    }
 }
 
 // ── Sidebar Toggle (mobile) ──────────────────────────────────

@@ -7,6 +7,8 @@
     <script src="assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="assets/js/appwrite-init.js"></script>
     <style>
         .cart-layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; padding: 20px 0; }
         .order-summary { background: #fff; border-radius: var(--radius-lg); padding: 20px; border: 1px solid var(--border); position: sticky; top: 80px; height: fit-content; }
@@ -161,7 +163,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (CONFIG.DB_PROVIDER === 'supabase') {
         settingsPromise = supabaseClient.from('settings').select('*').eq('id', 1).single();
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        settingsPromise = Promise.resolve({ data: {} }); // [APPWRITE ALTERNATIVE]
+        settingsPromise = appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings')
+            .then(function(doc) {
+                if (typeof doc.messaging_apps === 'string') {
+                    try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e) { doc.messaging_apps = []; }
+                }
+                return { data: doc };
+            }).catch(function() { return { data: {} }; });
     } else {
         settingsPromise = Promise.reject(new Error('Unknown DB_PROVIDER'));
     }

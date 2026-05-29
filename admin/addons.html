@@ -8,6 +8,8 @@
     <script src="../assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="../assets/js/appwrite-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
@@ -88,7 +90,19 @@ function loadAddons() {
             renderAddons();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Query addons table ordered by created_at]
+        appwriteDatabases.listDocuments(APP_DB, 'addons', [
+            AppwriteQuery.orderAsc('created_at')
+        ]).then(function(res) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            allAddons = res.documents.map(function(doc) {
+                doc.id = doc.$id;
+                return doc;
+            });
+            renderAddons();
+        }).catch(function(err) {
+            showToast('Load failed: ' + err.message, 'error');
+        });
     }
 }
 
@@ -145,7 +159,26 @@ function saveAddon() {
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadAddons();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Update or insert addon record]
+        var awPayload = { name: payload.name, icon: payload.icon, price: payload.price, is_active: payload.is_active, created_at: new Date().toISOString() };
+        if (editingId) {
+            appwriteDatabases.updateDocument(APP_DB, 'addons', editingId, { name: payload.name, icon: payload.icon, price: payload.price, is_active: payload.is_active })
+            .then(function() {
+                showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success');
+                closeModal();
+                loadAddons();
+            }).catch(function(err) {
+                showToast('Error: ' + err.message, 'error');
+            });
+        } else {
+            appwriteDatabases.createDocument(APP_DB, 'addons', AppwriteID.unique(), awPayload)
+            .then(function() {
+                showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success');
+                closeModal();
+                loadAddons();
+            }).catch(function(err) {
+                showToast('Error: ' + err.message, 'error');
+            });
+        }
     }
 }
 
@@ -157,7 +190,13 @@ function deleteAddon(id) {
             showToast('Deleted!', 'success'); loadAddons();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Delete addon record]
+        appwriteDatabases.deleteDocument(APP_DB, 'addons', id)
+        .then(function() {
+            showToast('Deleted!', 'success');
+            loadAddons();
+        }).catch(function(err) {
+            showToast('Delete failed: ' + err.message, 'error');
+        });
     }
 }
 function closeModal() { document.getElementById('addonModal').classList.remove('show'); }

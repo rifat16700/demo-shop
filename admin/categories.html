@@ -8,6 +8,8 @@
     <script src="../assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="../assets/js/appwrite-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
@@ -75,7 +77,16 @@ function loadCats() {
             renderCats();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Query categories]
+        appwriteDatabases.listDocuments(APP_DB, 'categories', [
+            AppwriteQuery.orderAsc('sort_order')
+        ]).then(function(res) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            allCats = res.documents.map(function(doc) { doc.id = doc.$id; return doc; });
+            renderCats();
+        }).catch(function(err) {
+            showToast('Load failed: ' + err.message, 'error');
+        });
     }
 }
 
@@ -144,7 +155,25 @@ function saveCat() {
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadCats();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Save category]
+        if (editingId) {
+            appwriteDatabases.updateDocument(APP_DB, 'categories', editingId, payload)
+            .then(function() {
+                showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success');
+                closeModal();
+                loadCats();
+            }).catch(function(err) {
+                showToast('Error: ' + err.message, 'error');
+            });
+        } else {
+            appwriteDatabases.createDocument(APP_DB, 'categories', AppwriteID.unique(), payload)
+            .then(function() {
+                showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success');
+                closeModal();
+                loadCats();
+            }).catch(function(err) {
+                showToast('Error: ' + err.message, 'error');
+            });
+        }
     }
 }
 
@@ -156,7 +185,13 @@ function deleteCat(id) {
             showToast('Deleted!', 'success'); loadCats();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Delete category]
+        appwriteDatabases.deleteDocument(APP_DB, 'categories', id)
+        .then(function() {
+            showToast('Deleted!', 'success');
+            loadCats();
+        }).catch(function(err) {
+            showToast('Delete failed: ' + err.message, 'error');
+        });
     }
 }
 

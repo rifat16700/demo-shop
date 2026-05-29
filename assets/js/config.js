@@ -8,12 +8,11 @@
 //    বাকি সব settings → Admin Panel → settings table থেকে আসে।
 //
 // ── বর্তমান DB ──────────────────────────────────────────────
-//   🔵 SUPABASE — সরাসরি Supabase এ connect করে
+//   DB_PROVIDER = 'supabase'  → Supabase ব্যবহার হবে
+//   DB_PROVIDER = 'appwrite'  → Appwrite ব্যবহার হবে
 //
-// ── ভবিষ্যতে অন্য DB যোগ করতে চাইলে ───────────────────────
-//   👉 [MULTI-DB PLACEHOLDER] দেখো master-db.js এ
-//   👉 নিচে যেই DB ব্যবহার করবে সেটার credentials দাও
-//      এবং DB_PROVIDER set করো
+//   ⚡ শুধু DB_PROVIDER একটি line পরিবর্তন করলেই
+//      পুরো সাইট সেই DB ব্যবহার করবে।
 // ============================================================
 
 var CONFIG = {
@@ -26,11 +25,19 @@ var CONFIG = {
     // ── 🟡 [MULTI-DB PLACEHOLDER] ────────────────────────────
     // পরে Appwrite বা অন্য DB ব্যবহার করতে চাইলে:
     
+    // ── ⚡ DB PROVIDER — এই একটি line পরিবর্তন করলেই পুরো সাইট বদলায় ──
     DB_PROVIDER: 'supabase',   // 'supabase' | 'appwrite'
-    
-    // APPWRITE_ENDPOINT:    'https://sgp.cloud.appwrite.io/v1',
-    // APPWRITE_PROJECT:     '',
-    // APPWRITE_DATABASE_ID: '',
+
+    // ── 🔵 SUPABASE ─────────────────────────────────────────
+    // Supabase Dashboard → Project Settings → API
+    SUPABASE_URL:      'https://qdkppbwjgkkxzgzgsykv.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFka3BwYndqZ2treHpnemdzeWt2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMzY2NjgsImV4cCI6MjA5MDgxMjY2OH0.i1x16UGnM_4C2hVGZS9JreM2FJDxsIYeiHkA4BMOfrk',
+
+    // ── 🟡 APPWRITE ──────────────────────────────────────────
+    // Appwrite Console → Project Settings → Project ID
+    APPWRITE_ENDPOINT:    'https://cloud.appwrite.io/v1',
+    APPWRITE_PROJECT:     'YOUR_PROJECT_ID',       // ← এখানে তোমার Project ID বসাও
+    APPWRITE_DATABASE_ID: 'main_db',               // ← Database বানানোর সময় এই ID দাও
     // ────────────────────────────────────────────────────────
 
     // ── 🟢 Frontend Constants (DB ছাড়াই কাজ করে) ───────────

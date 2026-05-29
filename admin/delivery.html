@@ -8,6 +8,8 @@
     <script src="../assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="../assets/js/appwrite-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
 </head>
@@ -96,7 +98,14 @@ function loadZones() {
             renderZones();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Query delivery_zones table]
+        appwriteDatabases.listDocuments(APP_DB, 'delivery_zones', [AppwriteQuery.orderAsc('zone_name')])
+            .then(function(res) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                allZones = res.documents.map(function(doc) { doc.id = doc.$id; return doc; });
+                renderZones();
+            })
+            .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
     }
 }
 
@@ -188,7 +197,18 @@ function saveZone() {
             showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success'); closeModal(); loadZones();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Update/Insert delivery zone]
+        var req;
+        if (editingId) {
+            req = appwriteDatabases.updateDocument(APP_DB, 'delivery_zones', editingId, payload);
+        } else {
+            payload.created_at = new Date().toISOString();
+            req = appwriteDatabases.createDocument(APP_DB, 'delivery_zones', AppwriteID.unique(), payload);
+        }
+        req.then(function() {
+            showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Saved!', 'success');
+            closeModal();
+            loadZones();
+        }).catch(function(err) { showToast('Error: ' + err.message, 'error'); });
     }
 }
 
@@ -200,7 +220,12 @@ function deleteZone(id) {
             showToast('Deleted!', 'success'); loadZones();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Delete delivery zone]
+        appwriteDatabases.deleteDocument(APP_DB, 'delivery_zones', id)
+            .then(function() {
+                showToast('Deleted!', 'success');
+                loadZones();
+            })
+            .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
     }
 }
 function closeModal() { document.getElementById('zoneModal').classList.remove('show'); }

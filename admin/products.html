@@ -9,6 +9,8 @@
     <script src="../assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="../assets/js/appwrite-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <script src="../assets/js/imgbb-uploader.js"></script>
     <style>
@@ -304,7 +306,27 @@
                 });
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            // [APPWRITE ALTERNATIVE: Query active categories]
+            appwriteDatabases.listDocuments(APP_DB, 'categories', [
+                AppwriteQuery.equal('is_active', true),
+                AppwriteQuery.orderAsc('sort_order')
+            ]).then(function(res) {
+                allCategories = res.documents.map(function(d) { d.id = d.$id; return d; });
+                var catFilter  = document.getElementById('catFilter');
+                var catFilterM = document.getElementById('catFilterM');
+                var pCatList   = document.getElementById('pCatList');
+                allCategories.forEach(function(c) {
+                    var opt = '<option value="' + c.id + '">' + c.name + '</option>';
+                    catFilter.innerHTML  += opt;
+                    if (catFilterM) catFilterM.innerHTML += opt;
+                    pCatList.innerHTML +=
+                        '<label class="category-checkbox-item">' +
+                            '<input type="checkbox" name="pCat" value="' + c.id + '">' +
+                            '<span>' + c.name + '</span>' +
+                        '</label>';
+                });
+            }).catch(function(err) {
+                showToast('Category load error: ' + err.message, 'error');
+            });
         }
     }
 
@@ -366,7 +388,32 @@
                 renderProducts(allProducts);
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            // [APPWRITE ALTERNATIVE: Query products and product_categories]
+            Promise.all([
+                appwriteDatabases.listDocuments(APP_DB, 'products',           [AppwriteQuery.orderDesc('created_at'), AppwriteQuery.limit(500)]),
+                appwriteDatabases.listDocuments(APP_DB, 'product_categories', [AppwriteQuery.limit(5000)])
+            ]).then(function(results) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                var pc = results[1].documents;
+                allProducts = results[0].documents.map(function(doc) {
+                    doc.id = doc.$id;
+                    // variants stored as JSON string
+                    if (typeof doc.variants === 'string') {
+                        try { doc.variants = JSON.parse(doc.variants); } catch(e) { doc.variants = []; }
+                    }
+                    doc.variants = doc.variants || [];
+                    // gallery_images is already an Array in Appwrite
+                    doc.gallery_images = doc.gallery_images || [];
+                    doc.category_ids = pc
+                        .filter(function(x) { return x.product_id === doc.id; })
+                        .map(function(x) { return x.category_id; });
+                    return doc;
+                });
+                document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
+                renderProducts(allProducts);
+            }).catch(function(err) {
+                showToast('Load failed: ' + err.message, 'error');
+            });
         }
     }
 
@@ -484,7 +531,16 @@
                 });
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            // [APPWRITE ALTERNATIVE: Query product_categories by product_id]
+            appwriteDatabases.listDocuments(APP_DB, 'product_categories', [
+                AppwriteQuery.equal('product_id', p.id)
+            ]).then(function(catRes) {
+                var selectedIds = catRes.documents.map(function(c) { return c.category_id; });
+                document.querySelectorAll('input[name="pCat"]').forEach(function(cb) {
+                    cb.checked = selectedIds.includes(cb.value);
+                });
+            }).catch(function(err) {
+                console.error('Category fetch error:', err.message);
+            });
         }
 
         setToggle('pActive',   p.is_active);
@@ -836,7 +892,69 @@
                 }
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            // [APPWRITE ALTERNATIVE: Save product and categories]
+            var awProductPayload = {
+                name:             payload.name,
+                sku:              payload.sku,
+                description:      payload.description,
+                base_price:       payload.base_price,
+                flash_sale_price: payload.flash_sale_price,
+                flash_sale_end:   payload.flash_sale_end,
+                video_url:        payload.video_url,
+                video_type:       payload.video_type,
+                is_active:        payload.is_active,
+                is_featured:      payload.is_featured,
+                is_add_once:      payload.is_add_once,
+                gallery_images:   payload.gallery_images,         // Array of String — Appwrite সরাসরি Array accept করে
+                variants:         JSON.stringify(payload.variants) // Complex object হলে JSON string
+            };
+
+            function finishSaveAW(productId) {
+                setBtnLoading(btn, false, '💾 Save Product');
+                // Delete old category mappings then insert new ones
+                appwriteDatabases.listDocuments(APP_DB, 'product_categories', [
+                    AppwriteQuery.equal('product_id', productId)
+                ]).then(function(oldCats) {
+                    var deletePromises = oldCats.documents.map(function(doc) {
+                        return appwriteDatabases.deleteDocument(APP_DB, 'product_categories', doc.$id);
+                    });
+                    return Promise.all(deletePromises);
+                }).then(function() {
+                    if (!selectedCats.length) return Promise.resolve();
+                    var insertPromises = selectedCats.map(function(cid) {
+                        return appwriteDatabases.createDocument(APP_DB, 'product_categories', AppwriteID.unique(), {
+                            product_id: productId,
+                            category_id: cid
+                        });
+                    });
+                    return Promise.all(insertPromises);
+                }).then(function() {
+                    showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Product saved!', 'success');
+                    closeModal('productModal');
+                    loadProducts();
+                }).catch(function(err) {
+                    showToast('Category sync error: ' + err.message, 'error');
+                    loadProducts();
+                });
+            }
+
+            if (editingProductId) {
+                appwriteDatabases.updateDocument(APP_DB, 'products', editingProductId, awProductPayload)
+                .then(function() {
+                    finishSaveAW(editingProductId);
+                }).catch(function(err) {
+                    setBtnLoading(btn, false, '💾 Save Product');
+                    showToast('Error: ' + err.message, 'error');
+                });
+            } else {
+                awProductPayload.created_at = new Date().toISOString();
+                appwriteDatabases.createDocument(APP_DB, 'products', AppwriteID.unique(), awProductPayload)
+                .then(function(doc) {
+                    finishSaveAW(doc.$id);
+                }).catch(function(err) {
+                    setBtnLoading(btn, false, '💾 Save Product');
+                    showToast('Error: ' + err.message, 'error');
+                });
+            }
         }
     }
 
@@ -851,7 +969,23 @@
                 renderProducts(allProducts);
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            // [APPWRITE ALTERNATIVE: Delete product]
+            // Delete product_categories first, then the product
+            appwriteDatabases.listDocuments(APP_DB, 'product_categories', [
+                AppwriteQuery.equal('product_id', id)
+            ]).then(function(catRes) {
+                var delCatPromises = catRes.documents.map(function(doc) {
+                    return appwriteDatabases.deleteDocument(APP_DB, 'product_categories', doc.$id);
+                });
+                return Promise.all(delCatPromises);
+            }).then(function() {
+                return appwriteDatabases.deleteDocument(APP_DB, 'products', id);
+            }).then(function() {
+                showToast('Deleted!', 'success');
+                allProducts = allProducts.filter(function(p) { return p.id !== id; });
+                renderProducts(allProducts);
+            }).catch(function(err) {
+                showToast('Delete failed: ' + err.message, 'error');
+            });
         }
     }
 
@@ -864,7 +998,14 @@
                 renderProducts(allProducts);
             });
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-            // [APPWRITE ALTERNATIVE: Update product is_active status]
+            appwriteDatabases.updateDocument(APP_DB, 'products', id, { is_active: !current })
+            .then(function() {
+                var idx = allProducts.findIndex(function(p) { return p.id === id; });
+                if (idx > -1) allProducts[idx].is_active = !current;
+                renderProducts(allProducts);
+            }).catch(function(err) {
+                showToast('Update failed: ' + err.message, 'error');
+            });
         }
     }
 

@@ -8,6 +8,8 @@
     <script src="../assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="../assets/js/appwrite-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <link rel="stylesheet" href="../assets/css/premium-icons.css">
     <style>
@@ -443,7 +445,22 @@ function loadData() {
             checkRepeatCustPromo();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Query categories, products and promos tables]
+        Promise.all([
+            appwriteDatabases.listDocuments(APP_DB, 'categories', [AppwriteQuery.equal('is_active', true), AppwriteQuery.orderAsc('sort_order')]),
+            appwriteDatabases.listDocuments(APP_DB, 'products',   [AppwriteQuery.equal('is_active', true), AppwriteQuery.orderDesc('created_at')]),
+            appwriteDatabases.listDocuments(APP_DB, 'promos',     [AppwriteQuery.orderDesc('created_at'), AppwriteQuery.limit(500)])
+        ]).then(function(results) {
+            document.getElementById('pageLoader').style.display = 'none';
+            document.getElementById('adminMain').style.display  = 'flex';
+            allCategories = results[0].documents.map(function(d) { d.id = d.$id; return d; });
+            allProducts   = results[1].documents.map(function(d) { d.id = d.$id; return d; });
+            allPromos     = results[2].documents.map(function(d) { d.id = d.$id; return d; });
+            populateMultiSelects();
+            renderPromos();
+            checkRepeatCustPromo();
+        }).catch(function(err) {
+            showToast('Load failed: ' + err.message, 'error');
+        });
     }
 }
 
@@ -860,7 +877,26 @@ function savePromo() {
             showToast('✅ Coupon saved!', 'success'); closeModal(); loadData();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Update or insert promo record]
+        if (editingId) {
+            appwriteDatabases.updateDocument(APP_DB, 'promos', editingId, payload)
+            .then(function() {
+                showToast('\u2705 Coupon saved!', 'success');
+                closeModal();
+                loadData();
+            }).catch(function(err) {
+                showToast('Error: ' + err.message, 'error');
+            });
+        } else {
+            var awPromoPayload = Object.assign({ created_at: new Date().toISOString() }, payload);
+            appwriteDatabases.createDocument(APP_DB, 'promos', AppwriteID.unique(), awPromoPayload)
+            .then(function() {
+                showToast('\u2705 Coupon saved!', 'success');
+                closeModal();
+                loadData();
+            }).catch(function(err) {
+                showToast('Error: ' + err.message, 'error');
+            });
+        }
     }
 }
 
@@ -872,7 +908,13 @@ function deletePromo(id) {
             showToast('Deleted!', 'success'); loadData();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Delete promo record]
+        appwriteDatabases.deleteDocument(APP_DB, 'promos', id)
+        .then(function() {
+            showToast('Deleted!', 'success');
+            loadData();
+        }).catch(function(err) {
+            showToast('Delete failed: ' + err.message, 'error');
+        });
     }
 }
 
@@ -920,7 +962,27 @@ function saveRepeatCustConfig() {
             closeRepeatModal(); loadData();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Update/Insert repeat config]
+        var repRow2 = allPromos.find(function(p) { return p.is_repeated_config || (p.code && p.code.startsWith('REPEATED_CUSTOMER_CONFIG')); });
+        var awRepPayload = Object.assign({ created_at: new Date().toISOString() }, payload);
+        if (repRow2) {
+            appwriteDatabases.updateDocument(APP_DB, 'promos', repRow2.$id || repRow2.id, payload)
+            .then(function() {
+                showToast('\u2705 Repeat customer config saved!', 'success');
+                closeRepeatModal();
+                loadData();
+            }).catch(function(err) {
+                showToast('Error: ' + err.message, 'error');
+            });
+        } else {
+            appwriteDatabases.createDocument(APP_DB, 'promos', AppwriteID.unique(), awRepPayload)
+            .then(function() {
+                showToast('\u2705 Repeat customer config saved!', 'success');
+                closeRepeatModal();
+                loadData();
+            }).catch(function(err) {
+                showToast('Error: ' + err.message, 'error');
+            });
+        }
     }
 }
 

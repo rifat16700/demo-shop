@@ -8,6 +8,8 @@
     <script src="assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@16"></script>
+    <script src="assets/js/appwrite-init.js"></script>
     <style>
         body { background: linear-gradient(135deg, #f0fff4, #e8f5e9); min-height: 100vh; }
         .success-container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -123,6 +125,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (CONFIG.DB_PROVIDER === 'supabase') {
         p1 = supabaseClient.from('settings').select('*').eq('id',1).single();
         p2 = supabaseClient.from('orders').select('*').eq('id', orderId).single();
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        p1 = appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings').then(function(doc) { return { data: doc }; }).catch(function() { return { data: {} }; });
+        p2 = appwriteDatabases.getDocument(APP_DB, 'orders', orderId).then(function(doc) { doc.id=doc.$id; if (typeof doc.items==='string') { try { doc.items=JSON.parse(doc.items); } catch(e){ doc.items=[]; } } return { data: doc }; }).catch(function() { return { data: null }; });
     } else {
         p1 = Promise.resolve({ data: {} });
         p2 = Promise.resolve({ data: null });

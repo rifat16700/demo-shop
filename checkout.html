@@ -7,6 +7,8 @@
     <script src="assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="assets/js/appwrite-init.js"></script>
     <style>
         .checkout-layout { display: grid; grid-template-columns: 1fr 380px; gap: 24px; padding: 20px 0 40px; }
         .section-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; margin-bottom: 16px; }
@@ -449,12 +451,35 @@ document.addEventListener('DOMContentLoaded', function() {
         p4 = supabaseClient.from('promos').select('*').eq('is_active',true);
         p5 = supabaseClient.from('products').select('id,name,base_price,flash_sale_price,gallery_images,variants').eq('is_add_once',true).eq('is_active',true);
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE]
-        p1 = Promise.resolve({data: {}});
-        p2 = Promise.resolve({data: []});
-        p3 = Promise.resolve({data: []});
-        p4 = Promise.resolve({data: []});
-        p5 = Promise.resolve({data: []});
+        p1 = appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings')
+            .then(function(doc) {
+                if (typeof doc.messaging_apps === 'string') { try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e) { doc.messaging_apps = []; } }
+                if (typeof doc.crypto_coins  === 'string') { try { doc.crypto_coins  = JSON.parse(doc.crypto_coins);  } catch(e) { doc.crypto_coins = []; } }
+                return { data: doc };
+            }).catch(function() { return { data: {} }; });
+        p2 = appwriteDatabases.listDocuments(APP_DB, 'delivery_zones', [])
+            .then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; return d; }) }; })
+            .catch(function() { return { data: [] }; });
+        p3 = appwriteDatabases.listDocuments(APP_DB, 'addons', [
+                AppwriteQuery.equal('is_active', true),
+                AppwriteQuery.orderAsc('created_at')
+            ]).then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; return d; }) }; })
+            .catch(function() { return { data: [] }; });
+        p4 = appwriteDatabases.listDocuments(APP_DB, 'promos', [
+                AppwriteQuery.equal('is_active', true),
+                AppwriteQuery.limit(500)
+            ]).then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; return d; }) }; })
+            .catch(function() { return { data: [] }; });
+        p5 = appwriteDatabases.listDocuments(APP_DB, 'products', [
+                AppwriteQuery.equal('is_add_once', true),
+                AppwriteQuery.equal('is_active', true)
+            ]).then(function(res) {
+                return { data: res.documents.map(function(d) {
+                    d.id = d.$id;
+                    if (typeof d.variants === 'string') { try { d.variants = JSON.parse(d.variants); } catch(e) { d.variants = []; } }
+                    return d;
+                })};
+            }).catch(function() { return { data: [] }; });
     }
 
     Promise.all([p1, p2, p3, p4, p5]).then(function(results) {
@@ -1507,7 +1532,13 @@ function placeOrder() {
     if (CONFIG.DB_PROVIDER === 'supabase') {
         insertPromise = supabaseClient.from('orders').insert([orderData]);
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        insertPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not yet implemented' } });
+        var awOrderData = Object.assign({}, orderData);
+        awOrderData.items  = JSON.stringify(awOrderData.items  || []);
+        awOrderData.addons = JSON.stringify(awOrderData.addons || []);
+        delete awOrderData.id;
+        insertPromise = appwriteDatabases.createDocument(APP_DB, 'orders', AppwriteID.unique(), awOrderData)
+            .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
+            .catch(function(err) { return { data: null, error: err }; });
     }
     insertPromise.then(function(r) {
         if (r.error) { btn.disabled = false; btn.innerHTML = '<i data-lucide="rocket" class="lucide-icon icon-bounce"></i> Place Order'; if (typeof lucide !== 'undefined') lucide.createIcons(); alert('Error: ' + r.error.message); return; }
@@ -1546,7 +1577,13 @@ function initiateGatewayPayment(orderId, total, orderData) {
     if (CONFIG.DB_PROVIDER === 'supabase') {
         insertPromise = supabaseClient.from('orders').insert([Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' })]);
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        insertPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not yet implemented' } });
+        var awOrderData2 = Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' });
+        awOrderData2.items  = JSON.stringify(awOrderData2.items  || []);
+        awOrderData2.addons = JSON.stringify(awOrderData2.addons || []);
+        delete awOrderData2.id;
+        insertPromise = appwriteDatabases.createDocument(APP_DB, 'orders', AppwriteID.unique(), awOrderData2)
+            .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
+            .catch(function(err) { return { data: null, error: err }; });
     }
     insertPromise.then(function(r) {
         if (r.error) { alert('Order save failed: ' + r.error.message); return; }
@@ -1581,7 +1618,13 @@ function verifyGatewayPayment(orderId, trxId) {
     if (CONFIG.DB_PROVIDER === 'supabase') {
         selectPromise = supabaseClient.from('orders').select('*').eq('id', orderId).single();
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        selectPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not yet implemented' } });
+        selectPromise = appwriteDatabases.getDocument(APP_DB, 'orders', orderId)
+            .then(function(doc) {
+                doc.id = doc.$id;
+                if (typeof doc.items  === 'string') { try { doc.items  = JSON.parse(doc.items);  } catch(e) { doc.items = []; } }
+                if (typeof doc.addons === 'string') { try { doc.addons = JSON.parse(doc.addons); } catch(e) { doc.addons = []; } }
+                return { data: doc, error: null };
+            }).catch(function(err) { return { data: null, error: err }; });
     }
     selectPromise.then(function(oRes) {
         if (oRes.error || !oRes.data) {
@@ -1604,6 +1647,14 @@ function verifyGatewayPayment(orderId, trxId) {
             var dupCheck;
             if (CONFIG.DB_PROVIDER === 'supabase') {
                 dupCheck = supabaseClient.from('orders').select('id,payment_trx_id').eq('payment_trx_id', trxId).neq('id', orderId).single();
+            } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+                dupCheck = appwriteDatabases.listDocuments(APP_DB, 'orders', [
+                        AppwriteQuery.equal('payment_trx_id', trxId),
+                        AppwriteQuery.limit(1)
+                    ]).then(function(res) {
+                        var docs = res.documents.filter(function(d) { return d.$id !== orderId; });
+                        return docs.length ? { data: { id: docs[0].$id }, error: null } : { data: null, error: null };
+                    }).catch(function(err) { return { data: null, error: err }; });
             } else {
                 dupCheck = Promise.resolve({ data: null });
             }
@@ -1636,6 +1687,10 @@ function verifyGatewayPayment(orderId, trxId) {
                         };
                         if (CONFIG.DB_PROVIDER === 'supabase') {
                             updatePromise = supabaseClient.from('orders').update(upData).eq('id', orderId);
+                        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+                            updatePromise = appwriteDatabases.updateDocument(APP_DB, 'orders', orderId, upData)
+                                .then(function() { return { error: null }; })
+                                .catch(function(err) { return { error: err }; });
                         } else {
                             updatePromise = Promise.resolve({ data: null });
                         }
@@ -2114,6 +2169,15 @@ function verifyCryptoPayment() {
     var checkPromise;
     if (CONFIG.DB_PROVIDER === 'supabase') {
         checkPromise = supabaseClient.from('verified_payments').select('id').eq('transaction_id', txid).maybeSingle();
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        checkPromise = appwriteDatabases.listDocuments(APP_DB, 'verified_payments', [
+                AppwriteQuery.equal('transaction_id', txid),
+                AppwriteQuery.limit(1)
+            ]).then(function(res) {
+                return res.documents.length
+                    ? { data: { id: res.documents[0].$id }, error: null }
+                    : { data: null, error: null };
+            }).catch(function(err) { return { data: null, error: err }; });
     } else {
         checkPromise = Promise.resolve({ data: null });
     }
@@ -2228,6 +2292,14 @@ function saveTxidAndPlace(txid, usdt, btn, isBackup) {
     };
     if (CONFIG.DB_PROVIDER === 'supabase') {
         insPromise = supabaseClient.from('verified_payments').insert([insData]);
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        var awInsData = Object.assign({}, insData);
+        if (typeof awInsData.raw_response !== 'string') awInsData.raw_response = JSON.stringify(awInsData.raw_response || {});
+        awInsData.created_at = awInsData.created_at || new Date().toISOString();
+        delete awInsData.id;
+        insPromise = appwriteDatabases.createDocument(APP_DB, 'verified_payments', AppwriteID.unique(), awInsData)
+            .then(function() { return { error: null }; })
+            .catch(function(err) { return { error: err }; });
     } else {
         insPromise = Promise.resolve({ data: null, error: { code: 'not_implemented' } });
     }
@@ -2339,6 +2411,14 @@ function placeCryptoOrder(txid, usdt, isBackup) {
     var insertOrderPromise;
     if (CONFIG.DB_PROVIDER === 'supabase') {
         insertOrderPromise = supabaseClient.from('orders').insert([orderData]);
+    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+        var awCryptoOrder = Object.assign({}, orderData);
+        awCryptoOrder.items  = JSON.stringify(awCryptoOrder.items  || []);
+        awCryptoOrder.addons = JSON.stringify(awCryptoOrder.addons || []);
+        delete awCryptoOrder.id;
+        insertOrderPromise = appwriteDatabases.createDocument(APP_DB, 'orders', AppwriteID.unique(), awCryptoOrder)
+            .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
+            .catch(function(err) { return { data: null, error: err }; });
     } else {
         insertOrderPromise = Promise.resolve({ data: null, error: { message: 'Appwrite not implemented' } });
     }
@@ -2352,6 +2432,14 @@ function placeCryptoOrder(txid, usdt, isBackup) {
         // Update verified_payments with real order_id
         if (CONFIG.DB_PROVIDER === 'supabase') {
             supabaseClient.from('verified_payments').update({ order_id: orderId }).eq('transaction_id', txid);
+        } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            appwriteDatabases.listDocuments(APP_DB, 'verified_payments', [
+                AppwriteQuery.equal('transaction_id', txid)
+            ]).then(function(res) {
+                if (res.documents.length) {
+                    return appwriteDatabases.updateDocument(APP_DB, 'verified_payments', res.documents[0].$id, { order_id: orderId });
+                }
+            }).catch(function(err) { console.error('VP update error:', err.message); });
         }
 
         sendOrderNotification(orderData);

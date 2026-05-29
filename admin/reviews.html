@@ -8,6 +8,8 @@
     <script src="../assets/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../assets/js/supabase-init.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14"></script>
+    <script src="../assets/js/appwrite-init.js"></script>
     <script src="assets/js/admin-common.js?v=3"></script>
     <style>
         .review-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px; }
@@ -67,7 +69,16 @@ function loadReviews() {
             filterReviews();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Query reviews table]
+        appwriteDatabases.listDocuments(APP_DB, 'reviews', [AppwriteQuery.orderDesc('created_at')])
+            .then(function(res) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                allReviews = res.documents.map(function(doc) { doc.id = doc.$id; return doc; });
+                var pending = allReviews.filter(function(rv) { return !rv.is_approved; }).length;
+                document.getElementById('reviewSub').textContent = allReviews.length + ' total | ' + pending + ' pending';
+                filterReviews();
+            })
+            .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
     }
 }
 
@@ -131,7 +142,15 @@ function approveReview(id) {
             adminLoadBadges();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Update review approval]
+        appwriteDatabases.updateDocument(APP_DB, 'reviews', id, { is_approved: true })
+            .then(function() {
+                showToast('<i data-lucide="check-circle-2" class="lucide-icon icon-success icon-pulse"></i> Review approved!', 'success');
+                var idx = allReviews.findIndex(function(rv) { return rv.id === id; });
+                if (idx > -1) allReviews[idx].is_approved = true;
+                filterReviews();
+                adminLoadBadges();
+            })
+            .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
     }
 }
 
@@ -145,7 +164,13 @@ function deleteReview(id) {
             filterReviews();
         });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
-        // [APPWRITE ALTERNATIVE: Delete review]
+        appwriteDatabases.deleteDocument(APP_DB, 'reviews', id)
+            .then(function() {
+                showToast('Deleted!', 'success');
+                allReviews = allReviews.filter(function(rv) { return rv.id !== id; });
+                filterReviews();
+            })
+            .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
     }
 }
 </script>

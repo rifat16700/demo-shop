@@ -3,12 +3,16 @@
 // Helper to extract Cloudflare Pages environment variables
 // ============================================================
 
+// ══ ⚡ শুধু এই একটি লাইন পরিবর্তন করুন ══════════════════════
+// assets/js/config.js এর DB_PROVIDER এর সাথে মিলিয়ে রাখুন
+// 'supabase' → Supabase ব্যবহার করবে
+// 'appwrite'  → Appwrite ব্যবহার করবে
+const DB_PROVIDER = 'appwrite';
+// ════════════════════════════════════════════════════════════
+
 export function getConfig(env) {
     return {
-        // ── Database Provider ──────────────────────────────────
-        // Set DB_PROVIDER=supabase  →  uses Supabase
-        // Set DB_PROVIDER=appwrite  →  uses Appwrite
-        DB_PROVIDER: (env.DB_PROVIDER || 'supabase').toLowerCase(),
+        DB_PROVIDER: DB_PROVIDER,
 
         // ── Supabase ───────────────────────────────────────────
         SUPABASE_URL:               env.SUPABASE_URL               || '',

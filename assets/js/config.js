@@ -25,8 +25,10 @@ var CONFIG = {
     // ── 🟡 [MULTI-DB PLACEHOLDER] ────────────────────────────
     // পরে Appwrite বা অন্য DB ব্যবহার করতে চাইলে:
     
-    // ── ⚡ DB PROVIDER — এই একটি line পরিবর্তন করলেই পুরো সাইট বদলায় ──
-    DB_PROVIDER: 'appwrite',   // 'supabase' | 'appwrite'
+    // ── ⚡ DB PROVIDER ─────────────────────────────────────────
+    // এই লাইন বদলালে  functions/utils/config.js এর DB_PROVIDER লাইনটাও একই value দিন
+    // 'supabase' | 'appwrite'
+    DB_PROVIDER: 'appwrite',
 
 
     // ── 🟡 APPWRITE ──────────────────────────────────────────

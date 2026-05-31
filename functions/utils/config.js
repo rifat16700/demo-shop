@@ -26,7 +26,7 @@ export function getConfig(env) {
         APPWRITE_ENDPOINT:    env.APPWRITE_ENDPOINT    || 'https://cloud.appwrite.io/v1',
         APPWRITE_PROJECT:     env.APPWRITE_PROJECT     || '',
         APPWRITE_API_KEY:     env.APPWRITE_API_KEY     || '',
-        APPWRITE_DATABASE_ID: env.APPWRITE_DATABASE_ID || '',
+        APPWRITE_DATABASE_ID: env.APPWRITE_DATABASE_ID || '6a19e07f002427086405',
 
         // ── Appwrite Collections (12 total) ───────────────────
         APPWRITE_COLLECTION_SETTINGS:           env.APPWRITE_COLLECTION_SETTINGS           || 'settings',

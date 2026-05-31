@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var p1, p3, p5, p6;
     var p2 = fetch('/api/get-single-product?id=' + id).then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) && data.length ? data[0] : null }; });
-    var p4 = fetch('/api/get-products-list').then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });
+    var p4 = fetch('/api/get-products-list?t=' + Date.now()).then(function(r){ return r.json(); }).then(function(d){ return { data: Array.isArray(d) ? d : [] }; }).catch(function(){ return { data: [] }; });
 
     if (CONFIG.DB_PROVIDER === 'supabase') {
         p1 = supabaseClient.from('settings').select('*').eq('id',1).single();
@@ -1155,5 +1155,6 @@ document.addEventListener('scroll', function() {
     <script src="assets/js/context-menu.js"></script>
 </body>
 </html>
+
 
 

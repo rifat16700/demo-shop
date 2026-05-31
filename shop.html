@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (urlCat) activeCatId = urlCat;
 
     var p1, p2, p4;
-    var p3 = fetch('/api/get-products-list').then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) ? data : [] }; });
+    var p3 = fetch('/api/get-products-list?t=' + Date.now()).then(function(r) { return r.json(); }).then(function(data) { return { data: Array.isArray(data) ? data : [] }; });
 
     if (CONFIG.DB_PROVIDER === 'supabase') {
         p1 = supabaseClient.from('settings').select('*').eq('id',1).single();
@@ -498,5 +498,6 @@ function resetFilters() {
     <script src="assets/js/context-menu.js"></script>
 </body>
 </html>
+
 
 

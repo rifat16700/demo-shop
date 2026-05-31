@@ -54,9 +54,11 @@ export async function onRequest(context) {
             // Appwrite: fetch by document ID directly
             const headers = {
                 'X-Appwrite-Project': config.APPWRITE_PROJECT,
-                'X-Appwrite-Key':     config.APPWRITE_API_KEY,
                 'Content-Type':       'application/json',
             };
+            if (config.APPWRITE_API_KEY) {
+                headers['X-Appwrite-Key'] = config.APPWRITE_API_KEY;
+            }
 
             const url = `${config.APPWRITE_ENDPOINT}/databases/${config.APPWRITE_DATABASE_ID}/collections/${config.APPWRITE_COLLECTION_PRODUCTS}/documents/${id}`;
             const response = await fetch(url, { headers });

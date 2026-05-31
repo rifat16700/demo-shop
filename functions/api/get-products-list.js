@@ -78,9 +78,11 @@ export async function onRequest(context) {
             const baseUrl = `${config.APPWRITE_ENDPOINT}/databases/${config.APPWRITE_DATABASE_ID}/collections/${config.APPWRITE_COLLECTION_PRODUCTS}/documents`;
             const headers = {
                 'X-Appwrite-Project': config.APPWRITE_PROJECT,
-                'X-Appwrite-Key':     config.APPWRITE_API_KEY,
                 'Content-Type':       'application/json',
             };
+            if (config.APPWRITE_API_KEY) {
+                headers['X-Appwrite-Key'] = config.APPWRITE_API_KEY;
+            }
 
             const docs = await fetchAllAppwriteDocs(baseUrl, headers);
             finalData  = docs.map(mapDoc);

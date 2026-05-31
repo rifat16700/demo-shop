@@ -946,7 +946,7 @@
                     showToast('Error: ' + err.message, 'error');
                 });
             } else {
-                awProductappwriteDatabases.createDocument(APP_DB, 'products', AppwriteID.unique(), awProductPayload)
+                appwriteDatabases.createDocument(APP_DB, 'products', AppwriteID.unique(), awProductPayload)
                 .then(function(doc) {
                     finishSaveAW(doc.$id);
                 }).catch(function(err) {

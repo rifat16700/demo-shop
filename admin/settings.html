@@ -617,6 +617,8 @@
         } else if (CONFIG.DB_PROVIDER === 'appwrite') {
             appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings')
             .then(function(doc) {
+                document.getElementById('pageLoader').style.display  = 'none';
+                document.getElementById('adminMain').style.display   = 'flex';
                 var s = doc;
                 s.telegram_main_chats = Array.isArray(s.telegram_main_chats) ? s.telegram_main_chats : [];
                 s.messaging_apps      = s.messaging_apps ? JSON.parse(s.messaging_apps) : [];
@@ -686,9 +688,16 @@
                 if (err.code === 404) {
                     appwriteDatabases.createDocument(APP_DB, 'settings', 'main_settings', {
                         store_name: CONFIG.STORE_NAME || 'My Store'
-                    }).catch(function() {});
+                    }).then(function() {
+                        document.getElementById('pageLoader').style.display  = 'none';
+                        document.getElementById('adminMain').style.display   = 'flex';
+                    }).catch(function(e) {
+                        showToast('Failed to init settings: ' + e.message, 'error');
+                        document.getElementById('pageLoader').style.display  = 'none';
+                    });
                 } else {
                     showToast('Failed to load settings: ' + err.message, 'error');
+                    document.getElementById('pageLoader').style.display  = 'none';
                 }
             });
         }

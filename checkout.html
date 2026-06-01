@@ -470,16 +470,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 AppwriteQuery.limit(500)
             ]).then(function(res) { return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) }; })
             .catch(function() { return { data: [] }; });
-        p5 = appwriteDatabases.listDocuments(APP_DB, 'products', [
-                AppwriteQuery.equal('is_add_once', true),
-                AppwriteQuery.equal('is_active', true)
-            ]).then(function(res) {
-                return { data: res.documents.map(function(d) {
-                    d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } }
-                    if (typeof d.variants === 'string') { try { d.variants = JSON.parse(d.variants); } catch(e) { d.variants = []; } }
-                    return d;
-                })};
-            }).catch(function() { return { data: [] }; });
+        p5 = fetch('/api/appwrite-get-products?t=' + Date.now()).then(function(r) { return r.json(); }).then(function(data) {
+            return { data: (Array.isArray(data) ? data : []).filter(function(d) { return d.is_add_once === true && d.is_active === true; }) };
+        }).catch(function() { return { data: [] }; });
     }
 
     Promise.all([p1, p2, p3, p4, p5]).then(function(results) {

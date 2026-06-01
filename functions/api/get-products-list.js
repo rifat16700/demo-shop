@@ -107,8 +107,7 @@ export async function onRequest(context) {
             headers: {
                 'Content-Type':                'application/json',
                 'Access-Control-Allow-Origin': '*',
-                // Cache for 60s at Cloudflare edge
-                'Cache-Control': 'public, s-maxage=60',
+                'Cache-Control': 'public, s-maxage=2592000',
             },
         });
 

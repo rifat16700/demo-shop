@@ -105,7 +105,7 @@ var STATUS_ICONS = {
 };
 
 function trackOrder() {
-    var orderId = document.getElementById('trackOrderId').value.trim().toUpperCase();
+    var orderId = document.getElementById('trackOrderId').value.trim().toUpperCase().replace(/-/g, '');
     var phone   = document.getElementById('trackPhone').value.trim();
     var errEl   = document.getElementById('trackError');
     var btn     = document.getElementById('trackBtn');

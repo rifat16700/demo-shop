@@ -330,7 +330,9 @@
         var showFailed = document.getElementById('failedFilter').checked;
 
         var filtered = allOrders.filter(function(o) {
-            var matchQ = !q || (o.id || '').toLowerCase().includes(q) ||
+            var cleanQ = q.replace(/-/g, '');
+            var cleanId = (o.id || '').toLowerCase().replace(/-/g, '');
+            var matchQ = !q || cleanId.includes(cleanQ) ||
                          (o.customer_name  || '').toLowerCase().includes(q) ||
                          (o.customer_phone || '').toLowerCase().includes(q);
             var matchS = !status || o.status === status;

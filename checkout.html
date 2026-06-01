@@ -1529,7 +1529,7 @@ function placeOrder() {
         awOrderData.items  = JSON.stringify(awOrderData.items  || []);
         awOrderData.addons = JSON.stringify(awOrderData.addons || []);
         delete awOrderData.id;
-        insertPromise = appwriteDatabases.createDocument(APP_DB, 'orders', AppwriteID.unique(), awOrderData)
+        insertPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awOrderData)
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
     }
@@ -1574,7 +1574,7 @@ function initiateGatewayPayment(orderId, total, orderData) {
         awOrderData2.items  = JSON.stringify(awOrderData2.items  || []);
         awOrderData2.addons = JSON.stringify(awOrderData2.addons || []);
         delete awOrderData2.id;
-        insertPromise = appwriteDatabases.createDocument(APP_DB, 'orders', AppwriteID.unique(), awOrderData2)
+        insertPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awOrderData2)
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
     }
@@ -1764,7 +1764,36 @@ function sendDraftNotification() {
 
 // ── Helpers ───────────────────────────────────────────────────
 function genOrderId() {
-    return 'ORD-' + Math.floor(100000 + Math.random() * 900000);
+    var mustHave = ['A', 'F', 'R', 'S', 'H', 'N'];
+    var numbers = '0123456789';
+    var lowercases = 'abcdefghijklmnopqrstuvwxyz';
+    var allChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    
+    var remainingList = [].concat(mustHave);
+    
+    // Add one random digit and one random lowercase letter
+    var randNumIdx = Math.floor(Math.random() * numbers.length);
+    remainingList.push(numbers.charAt(randNumIdx));
+    
+    var randLowIdx = Math.floor(Math.random() * lowercases.length);
+    remainingList.push(lowercases.charAt(randLowIdx));
+    
+    // Add 5 more random characters
+    for (var i = 0; i < 5; i++) {
+        var randIdx = Math.floor(Math.random() * allChars.length);
+        remainingList.push(allChars.charAt(randIdx));
+    }
+    
+    // Shuffle the 13 characters randomly
+    for (var i = remainingList.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = remainingList[i];
+        remainingList[i] = remainingList[j];
+        remainingList[j] = temp;
+    }
+    
+    var finalId = 'RNF' + remainingList.join('');
+    return finalId;
 }
 
 function getCart() { try { return JSON.parse(localStorage.getItem(CONFIG.CART_KEY)||'[]'); } catch(e){ return []; } }
@@ -2409,7 +2438,7 @@ function placeCryptoOrder(txid, usdt, isBackup) {
         awCryptoOrder.items  = JSON.stringify(awCryptoOrder.items  || []);
         awCryptoOrder.addons = JSON.stringify(awCryptoOrder.addons || []);
         delete awCryptoOrder.id;
-        insertOrderPromise = appwriteDatabases.createDocument(APP_DB, 'orders', AppwriteID.unique(), awCryptoOrder)
+        insertOrderPromise = appwriteDatabases.createDocument(APP_DB, 'orders', orderId, awCryptoOrder)
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
     } else {

@@ -23,10 +23,10 @@ export function getConfig(env) {
         ADMIN_SECRET: env.ADMIN_SECRET || '',
 
         // ── Appwrite Core ──────────────────────────────────────
-        APPWRITE_ENDPOINT:    env.APPWRITE_ENDPOINT    || 'https://sgp.cloud.appwrite.io/v1',
-        APPWRITE_PROJECT:     env.APPWRITE_PROJECT     || '69de4fa50032182e9b91',
-        APPWRITE_API_KEY:     env.APPWRITE_API_KEY     || '',
-        APPWRITE_DATABASE_ID: env.APPWRITE_DATABASE_ID || '6a19e07f002427086405',
+        APPWRITE_ENDPOINT:    'https://sgp.cloud.appwrite.io/v1',
+        APPWRITE_PROJECT:     '69de4fa50032182e9b91',
+        APPWRITE_API_KEY:     '',
+        APPWRITE_DATABASE_ID: '6a19e07f002427086405',
 
         // ── Appwrite Collections (12 total) ───────────────────
         APPWRITE_COLLECTION_SETTINGS:           env.APPWRITE_COLLECTION_SETTINGS           || 'settings',

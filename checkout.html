@@ -2236,6 +2236,7 @@ function verifyCryptoPayment() {
                 body: JSON.stringify({
                     action: intlPayMode === 'binance_pay' ? 'verify-pay' : 'verify-deposit',
                     tx_id: txid,
+                    amount: targetAmt,
                     expected_amount: targetAmt,
                     coin: intlPayMode === 'binance_pay' ? 'USDT' : intlCoinSymbol,
                     network: intlPayMode === 'binance_pay' ? 'Binance Pay' : intlNetworkName,

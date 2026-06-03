@@ -9,6 +9,7 @@ const fixes = [
     { collection: 'settings', id: 'messaging_apps',      type: 'string', size: 1000000 },
     { collection: 'settings', id: 'telegram_main_chats', type: 'string', size: 1000000 },
     { collection: 'settings', id: 'crypto_coins',        type: 'string', size: 1000000 },
+    { collection: 'settings', id: 'hf_api_url',          type: 'string', size: 500 },
 ];
 
 async function req(method, path, body) {

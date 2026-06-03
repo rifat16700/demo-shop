@@ -9,7 +9,8 @@ ALTER TABLE settings
 
 -- ═══ 2. Review ImgBB Key ═══
 ALTER TABLE settings
-  ADD COLUMN IF NOT EXISTS review_imgbb_key TEXT DEFAULT '';
+  ADD COLUMN IF NOT EXISTS review_imgbb_key TEXT DEFAULT '',
+  ADD COLUMN IF NOT EXISTS hf_api_url TEXT DEFAULT '';
 
 -- ═══ 3. Home Sections Table ═══
 CREATE TABLE IF NOT EXISTS home_sections (

@@ -34,6 +34,7 @@ const schema = {
         { id: 'usd_to_bdt_rate', type: 'float', default: 120 },
         { id: 'verify_mode', type: 'string', size: 50 },
         { id: 'supabase_edge_url', type: 'string', size: 500 },
+        { id: 'hf_api_url', type: 'string', size: 500 },
         { id: 'review_imgbb_key', type: 'string', size: 255 },
         { id: 'telegram_main_chats', type: 'string', size: 1000000 },
         { id: 'messaging_apps', type: 'string', size: 1000000 },

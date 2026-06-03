@@ -1,7 +1,7 @@
 const ENDPOINT   = 'https://sgp.cloud.appwrite.io/v1';
 const PROJECT_ID = '69de4fa50032182e9b91';
-const API_KEY    = 'ENTER_YOUR_API_KEY_HERE';  // ← এখানে API Key দাও
-const DB_ID      = 'ecommerce_db';
+const API_KEY    = 'standard_360879e9675a24ef2d8dbba7ff08c36a3157f50a8707e5fa11ad7ac393b7f6c608dbf5781f2741f4833323f676e5857d52063eacf19371591a48db65d65371bead6cf8ac6e16927a268aedabf2a02bd78cf8eb9f55d1cf9c2b4ed62f26b83e871075868759e97a4ee4e2199d353f5d870960e1d80ad0d65cfc04bd8c889094eb';  // ← এখানে API Key দাও
+const DB_ID      = '6a19e07f002427086405';
 
 // এই field গুলো Appwrite Dashboard থেকে আগে DELETE করো,
 // তারপর এই script রান করো। তাহলে 1,000,000 size দিয়ে নতুন করে তৈরি হবে।

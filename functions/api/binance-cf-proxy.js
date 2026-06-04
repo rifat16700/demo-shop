@@ -110,7 +110,7 @@ export async function onRequest(context) {
     } catch (err) {
         return new Response(
             JSON.stringify({ success: false, error: 'Failed to fetch Binance credentials', detail: String(err) }),
-            { status: 502, headers: corsHeaders(origin) }
+            { status: 500, headers: corsHeaders(origin) }
         );
     }
 
@@ -163,7 +163,7 @@ export async function onRequest(context) {
             if (res.status !== 200 || !json) {
                 return new Response(
                     JSON.stringify({ success: false, error: 'Binance API error', detail: json }),
-                    { status: 502, headers: corsHeaders(origin) }
+                    { status: 500, headers: corsHeaders(origin) }
                 );
             }
 
@@ -242,7 +242,7 @@ export async function onRequest(context) {
             if (res.status !== 200 || !Array.isArray(deposits)) {
                 return new Response(
                     JSON.stringify({ success: false, error: 'Binance API error', detail: deposits }),
-                    { status: 502, headers: corsHeaders(origin) }
+                    { status: 500, headers: corsHeaders(origin) }
                 );
             }
 

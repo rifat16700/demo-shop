@@ -1548,6 +1548,7 @@ function placeOrder() {
 
 // ── Auto Gateway Payment ──────────────────────────────────────
 function initiateGatewayPayment(orderId, total, orderData) {
+    var gatewayVersion = (settings.gateway_version || 'v1');
     var proxyUrl = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;
     var apiKey   = settings.gateway_api_key   || CONFIG.GATEWAY_API_KEY;
     var name     = document.getElementById('custName').value.trim();
@@ -1558,14 +1559,7 @@ function initiateGatewayPayment(orderId, total, orderData) {
     var sUrl = baseUrl + '?status=completed&order_id=' + orderId;
     var cUrl = baseUrl + '?status=cancel&order_id=' + orderId;
 
-    var reqBody = {
-        cus_name:    name,
-        cus_email:   email,
-        amount:      total,
-        success_url: sUrl,
-        cancel_url:  cUrl
-    };
-
+    // ── DB-তে আগে order save করো ──────────────────────────────
     var insertPromise;
     if (CONFIG.DB_PROVIDER === 'supabase') {
         insertPromise = supabaseClient.from('orders').insert([Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' })]);
@@ -1578,8 +1572,50 @@ function initiateGatewayPayment(orderId, total, orderData) {
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
     }
+
     insertPromise.then(function(r) {
         if (r.error) { alert('Order save failed: ' + r.error.message); return; }
+
+        // ── ⚡ v2: New Gateway → proxyv2.php ─────────────────────
+        if (gatewayVersion === 'v2') {
+            var v2Url = 'https://payment.freelancingbyrifat.top/proxyv2.php';
+
+            // HTML form তৈরি করে POST submit করো (browser redirect হবে)
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = v2Url;
+            form.style.display = 'none';
+
+            var fields = {
+                amount:      total,
+                cus_name:    name,
+                cus_email:   email,
+                order_id:    orderId,
+                success_url: sUrl,
+                cancel_url:  cUrl
+            };
+
+            Object.keys(fields).forEach(function(key) {
+                var inp = document.createElement('input');
+                inp.type  = 'hidden';
+                inp.name  = key;
+                inp.value = fields[key];
+                form.appendChild(inp);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+            return;
+        }
+
+        // ── 🔄 v1: Old Gateway (original logic, unchanged) ────────
+        var reqBody = {
+            cus_name:    name,
+            cus_email:   email,
+            amount:      total,
+            success_url: sUrl,
+            cancel_url:  cUrl
+        };
 
         fetch(proxyUrl + '?action=create', {
             method:  'POST',
@@ -1596,6 +1632,7 @@ function initiateGatewayPayment(orderId, total, orderData) {
         });
     });
 }
+
 
 function verifyGatewayPayment(orderId, trxId) {
     var rawProxy = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;

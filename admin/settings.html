@@ -174,15 +174,29 @@
             <!-- Payment — Auto Gateway -->
             <div class="card" style="margin-bottom:20px;">
                 <div class="settings-section-title"><i data-lucide="globe" class="lucide-icon icon-spin"></i> Auto Payment Gateway</div>
+
+                <!-- ⚡ Gateway Version Switcher -->
+                <div style="background:linear-gradient(135deg,rgba(255,77,77,0.06),rgba(98,126,234,0.06));border:1.5px solid rgba(98,126,234,0.25);border-radius:12px;padding:14px;margin-bottom:16px;">
+                    <div style="font-size:12px;font-weight:800;color:#4f46e5;margin-bottom:10px;">⚡ Gateway Version</div>
+                    <select class="form-select" id="gatewayVersion" style="font-weight:700;">
+                        <option value="v1">🔄 v1 — Old Gateway (api_proxy.php)</option>
+                        <option value="v2">🚀 v2 — New Gateway (proxyv2.php) — payment.freelancingbyrifat.top</option>
+                    </select>
+                    <div class="form-hint" style="margin-top:8px;">
+                        <b>v1</b> = পুরনো gateway (api_proxy.php, API Key লাগে) &nbsp;|&nbsp;
+                        <b>v2</b> = নতুন gateway (proxyv2.php, শুধু POST করে redirect হয়)
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label class="form-label" style="color:var(--text-secondary);">Gateway Proxy URL (Fixed)</label>
+                    <label class="form-label" style="color:var(--text-secondary);">Gateway Proxy URL (Fixed — v1 only)</label>
                     <input class="form-input" id="gatewayProxyUrl" value="https://mypay.freelancingbyrifat.top/api_proxy.php" readonly style="opacity:0.6; cursor:not-allowed; background:rgba(255,255,255,0.02); border-color:transparent;">
-                    <div class="form-hint" style="opacity:0.6;">PHP proxy এর URL Fixed করা আছে।</div>
+                    <div class="form-hint" style="opacity:0.6;">v1 gateway এর PHP proxy URL। v2 select করলে এটা use হবে না।</div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Gateway API Key</label>
+                    <label class="form-label">Gateway API Key (v1 only)</label>
                     <input class="form-input" id="gatewayApiKey" type="password" placeholder="Your secret API key">
-                    <div class="form-hint">Proxy PHP ফাইলে যে API_KEY আছে সেটা দাও।</div>
+                    <div class="form-hint">v1 gateway এর API Key। v2 select করলে এটা use হবে না।</div>
                 </div>
             </div>
 
@@ -586,6 +600,7 @@
             setVal('binanceManualUid',s.binance_manual_uid|| '');
             setVal('gatewayProxyUrl', s.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL);
             setVal('gatewayApiKey',   s.gateway_api_key   || '');
+            document.getElementById('gatewayVersion').value = s.gateway_version || 'v1';
             setVal('advanceAmount',  s.advance_amount !== undefined && s.advance_amount !== null ? s.advance_amount : 0);
 
             document.getElementById('advanceMethod').value = s.advance_method || 'manual';
@@ -651,6 +666,7 @@
                 setVal('binanceManualUid',  s.binance_manual_uid  || '');
                 setVal('gatewayProxyUrl',   s.gateway_proxy_url   || '');
                 setVal('gatewayApiKey',     s.gateway_api_key     || '');
+                document.getElementById('gatewayVersion').value = s.gateway_version || 'v1';
 
                 // COD, Fun, WhatsApp, Pickup
                 codEnabled      = s.allow_cod            || false;
@@ -796,6 +812,7 @@
             binance_manual_uid:   document.getElementById('binanceManualUid').value.trim(),
             gateway_proxy_url:    document.getElementById('gatewayProxyUrl').value.trim(),
             gateway_api_key:      document.getElementById('gatewayApiKey').value.trim(),
+            gateway_version:      document.getElementById('gatewayVersion').value,
             allow_cod:            codEnabled,
             enable_fun_checkbox:  funCheckEnabled,
             allow_whatsapp_order: msgOrderEnabled,

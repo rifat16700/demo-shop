@@ -432,16 +432,14 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('backBtn').setAttribute('onclick', 'goStep(1)');
     }
 
-    var hrefStr = window.location.href;
+    var urlParams = new URLSearchParams(window.location.search);
     var getParam = function(key1, key2) {
-        var rx = new RegExp("[?&](?:" + key1 + (key2 ? "|" + key2 : "") + ")=([^&?#]+)", "i");
-        var m = hrefStr.match(rx);
-        return m ? decodeURIComponent(m[1]) : null;
+        return urlParams.get(key1) || (key2 ? urlParams.get(key2) : null);
     };
     
-    var pyStatus  = getParam('status');
-    var pyOrderId = getParam('order_id', 'orderId');
-    var pyTrxId   = getParam('transaction_id', 'transactionId') || getParam('trx_id', 'tran_id');
+    var status = urlParams.get('status');
+    var orderId = urlParams.get('order_id') || urlParams.get('orderId');
+    var trxId = urlParams.get('trx_id') || urlParams.get('transaction_id') || urlParams.get('tran_id') || urlParams.get('transactionId');
 
     var p1, p2, p3, p4, p5;
     if (CONFIG.DB_PROVIDER === 'supabase') {
@@ -490,9 +488,9 @@ document.addEventListener('DOMContentLoaded', function() {
         renderAddOnce();
         loadBdDivisions();
 
-        var checkStatus = (pyStatus || '').toLowerCase();
-        if ((checkStatus === 'completed' || checkStatus === 'success') && pyOrderId) {
-            verifyGatewayPayment(pyOrderId, pyTrxId);
+        var checkStatus = (status || '').toLowerCase();
+        if ((checkStatus === 'completed' || checkStatus === 'success') && orderId) {
+            verifyGatewayPayment(orderId, trxId);
         } else if (checkStatus === 'cancel' || checkStatus === 'failed') {
             alert('Payment was cancelled or failed.');
             window.history.replaceState({}, document.title, window.location.pathname);
@@ -701,8 +699,9 @@ function closeAddOnceSheet() {
 function renderAddons() {
     if (!addons.length) { document.getElementById('addonsSection').style.display = 'none'; return; }
     var html = addons.map(function(a) {
+        var cleanIcon = a.icon ? a.icon.replace(/(?:\*|body|html)\s*\{[^}]+\}/gi, '') : '<i data-lucide="gift" class="lucide-icon icon-bounce"></i>';
         return '<div class="addon-item" onclick="toggleAddon(\'' + a.id + '\',this)" data-id="' + a.id + '" data-price="' + a.price + '">' +
-            '<span style="font-size:22px;">' + (a.icon||'<i data-lucide="gift" class="lucide-icon icon-bounce"></i>') + '</span>' +
+            '<span style="font-size:22px;">' + cleanIcon + '</span>' +
             '<div style="flex:1;"><div style="font-weight:700;font-size:14px;">' + a.name + '</div></div>' +
             '<div style="font-weight:800;color:var(--primary);">+৳' + a.price + '</div>' +
             '<input type="checkbox" style="width:18px;height:18px;accent-color:var(--primary);" data-chk="' + a.id + '">' +
@@ -1552,7 +1551,9 @@ function initiateGatewayPayment(orderId, total, orderData) {
     var proxyUrl = (gatewayVersion === 'v2') 
         ? 'https://payment.freelancingbyrifat.top/proxyv2.php'
         : 'https://mypay.freelancingbyrifat.top/api_proxy.php';
-    var apiKey   = settings.gateway_api_key   || CONFIG.GATEWAY_API_KEY;
+    var apiKey = (gatewayVersion === 'v2') 
+        ? (settings.gateway_api_key_v2 || CONFIG.GATEWAY_API_KEY || '')
+        : (settings.gateway_api_key || CONFIG.GATEWAY_API_KEY || '');
     var name     = document.getElementById('custName').value.trim();
     var phone    = document.getElementById('custPhone').value.trim();
     var email    = document.getElementById('custEmail').value.trim() || (phone + '@linko.com');
@@ -1578,45 +1579,15 @@ function initiateGatewayPayment(orderId, total, orderData) {
     insertPromise.then(function(r) {
         if (r.error) { alert('Order save failed: ' + r.error.message); return; }
 
-        // ── ⚡ v2: New Gateway → proxyv2.php ─────────────────────
-        if (gatewayVersion === 'v2') {
-            var v2Url = proxyUrl; // Use the configured URL instead of hardcoded
-
-            // HTML form তৈরি করে POST submit করো (browser redirect হবে)
-            var form = document.createElement('form');
-            form.method = 'POST';
-            form.action = v2Url;
-            form.style.display = 'none';
-
-            var fields = {
-                amount:      total,
-                cus_name:    name,
-                cus_email:   email,
-                order_id:    orderId,
-                success_url: sUrl,
-                cancel_url:  cUrl
-            };
-
-            Object.keys(fields).forEach(function(key) {
-                var inp = document.createElement('input');
-                inp.type  = 'hidden';
-                inp.name  = key;
-                inp.value = fields[key];
-                form.appendChild(inp);
-            });
-
-            document.body.appendChild(form);
-            form.submit();
-            return;
-        }
-
-        // ── 🔄 v1: Old Gateway (original logic, unchanged) ────────
+        // ── 🔄 Gateway Execution (v1 and v2 now use same JSON logic) ────────
         var reqBody = {
             cus_name:    name,
             cus_email:   email,
             amount:      total,
             success_url: sUrl,
-            cancel_url:  cUrl
+            cancel_url:  cUrl,
+            tran_id:     orderId,
+            api_key:     apiKey
         };
 
         fetch(proxyUrl + '?action=create', {
@@ -1677,11 +1648,11 @@ function verifyGatewayPayment(orderId, trxId) {
             return;
         }
 
-        if (trxId) {
+        if (trxId || orderId) {
             var dupCheck;
-            if (CONFIG.DB_PROVIDER === 'supabase') {
+            if (trxId && CONFIG.DB_PROVIDER === 'supabase') {
                 dupCheck = supabaseClient.from('orders').select('id,payment_trx_id').eq('payment_trx_id', trxId).neq('id', orderId).single();
-            } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+            } else if (trxId && CONFIG.DB_PROVIDER === 'appwrite') {
                 dupCheck = appwriteDatabases.listDocuments(APP_DB, 'orders', [
                         AppwriteQuery.equal('payment_trx_id', trxId),
                         AppwriteQuery.limit(1)
@@ -1702,7 +1673,7 @@ function verifyGatewayPayment(orderId, trxId) {
                 fetch(proxyUrl + '?action=verify', {
                     method:  'POST',
                     headers: { 'Content-Type': 'application/json', 'API-KEY': apiKey },
-                    body: JSON.stringify({ transaction_id: trxId })
+                    body: JSON.stringify({ transaction_id: trxId, order_id: orderId, api_key: apiKey })
                 }).then(function(r) { 
                     if (!r.ok) throw new Error('HTTP ' + r.status);
                     return r.json(); 

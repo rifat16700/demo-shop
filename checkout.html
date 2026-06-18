@@ -1549,7 +1549,9 @@ function placeOrder() {
 // ── Auto Gateway Payment ──────────────────────────────────────
 function initiateGatewayPayment(orderId, total, orderData) {
     var gatewayVersion = (settings.gateway_version || 'v1');
-    var proxyUrl = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;
+    var proxyUrl = (gatewayVersion === 'v2') 
+        ? 'https://payment.freelancingbyrifat.top/proxyv2.php'
+        : 'https://mypay.freelancingbyrifat.top/api_proxy.php';
     var apiKey   = settings.gateway_api_key   || CONFIG.GATEWAY_API_KEY;
     var name     = document.getElementById('custName').value.trim();
     var phone    = document.getElementById('custPhone').value.trim();
@@ -1578,7 +1580,7 @@ function initiateGatewayPayment(orderId, total, orderData) {
 
         // ── ⚡ v2: New Gateway → proxyv2.php ─────────────────────
         if (gatewayVersion === 'v2') {
-            var v2Url = 'https://payment.freelancingbyrifat.top/proxyv2.php';
+            var v2Url = proxyUrl; // Use the configured URL instead of hardcoded
 
             // HTML form তৈরি করে POST submit করো (browser redirect হবে)
             var form = document.createElement('form');
@@ -1635,10 +1637,12 @@ function initiateGatewayPayment(orderId, total, orderData) {
 
 
 function verifyGatewayPayment(orderId, trxId) {
-    var rawProxy = settings.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL;
-    var rawKey   = settings.gateway_api_key || CONFIG.GATEWAY_API_KEY;
+    var gatewayVersion = (settings.gateway_version || 'v1');
+    var proxyUrl = (gatewayVersion === 'v2') 
+        ? 'https://payment.freelancingbyrifat.top/proxyv2.php'
+        : 'https://mypay.freelancingbyrifat.top/api_proxy.php';
     
-    var proxyUrl = (rawProxy || '').trim();
+    var rawKey   = settings.gateway_api_key || CONFIG.GATEWAY_API_KEY;
     var apiKey   = (rawKey || '').trim();
 
     document.getElementById('pageLoader').style.display = 'flex';

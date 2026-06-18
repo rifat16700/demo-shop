@@ -183,20 +183,20 @@
                         <option value="v2">🚀 v2 — New Gateway (proxyv2.php) — payment.freelancingbyrifat.top</option>
                     </select>
                     <div class="form-hint" style="margin-top:8px;">
-                        <b>v1</b> = পুরনো gateway (api_proxy.php, API Key লাগে) &nbsp;|&nbsp;
-                        <b>v2</b> = নতুন gateway (proxyv2.php, শুধু POST করে redirect হয়)
+                        <b>v1</b> = পুরনো gateway (api_proxy.php, JSON Data Response) &nbsp;|&nbsp;
+                        <b>v2</b> = নতুন gateway (proxyv2.php, POST Redirect)
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" style="color:var(--text-secondary);">Gateway Proxy URL (Fixed — v1 only)</label>
-                    <input class="form-input" id="gatewayProxyUrl" value="https://mypay.freelancingbyrifat.top/api_proxy.php" readonly style="opacity:0.6; cursor:not-allowed; background:rgba(255,255,255,0.02); border-color:transparent;">
-                    <div class="form-hint" style="opacity:0.6;">v1 gateway এর PHP proxy URL। v2 select করলে এটা use হবে না।</div>
+                    <label class="form-label" style="color:var(--text-secondary);">Gateway Proxy URL (Fixed based on selection)</label>
+                    <input class="form-input" id="gatewayProxyUrl" readonly style="opacity:0.6; cursor:not-allowed; background:rgba(255,255,255,0.02); border-color:transparent;">
+                    <div class="form-hint" style="opacity:0.6;">Version পরিবর্তন করলে এই URL অটোমেটিক চেঞ্জ হবে।</div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Gateway API Key (v1 only)</label>
+                    <label class="form-label">Gateway API Key</label>
                     <input class="form-input" id="gatewayApiKey" type="password" placeholder="Your secret API key">
-                    <div class="form-hint">v1 gateway এর API Key। v2 select করলে এটা use হবে না।</div>
+                    <div class="form-hint">Proxy ফাইলে সেট করা API Key (যদি লাগে)।</div>
                 </div>
             </div>
 
@@ -601,6 +601,8 @@
             setVal('gatewayProxyUrl', s.gateway_proxy_url || CONFIG.GATEWAY_PROXY_URL);
             setVal('gatewayApiKey',   s.gateway_api_key   || '');
             document.getElementById('gatewayVersion').value = s.gateway_version || 'v1';
+            updateGatewayUrlDisplay();
+
             setVal('advanceAmount',  s.advance_amount !== undefined && s.advance_amount !== null ? s.advance_amount : 0);
 
             document.getElementById('advanceMethod').value = s.advance_method || 'manual';
@@ -667,6 +669,7 @@
                 setVal('gatewayProxyUrl',   s.gateway_proxy_url   || '');
                 setVal('gatewayApiKey',     s.gateway_api_key     || '');
                 document.getElementById('gatewayVersion').value = s.gateway_version || 'v1';
+                updateGatewayUrlDisplay();
 
                 // COD, Fun, WhatsApp, Pickup
                 codEnabled      = s.allow_cod            || false;
@@ -810,7 +813,6 @@
             bkash_number:         document.getElementById('bkashNumber').value.trim(),
             nagad_number:         document.getElementById('nagadNumber').value.trim(),
             binance_manual_uid:   document.getElementById('binanceManualUid').value.trim(),
-            gateway_proxy_url:    document.getElementById('gatewayProxyUrl').value.trim(),
             gateway_api_key:      document.getElementById('gatewayApiKey').value.trim(),
             gateway_version:      document.getElementById('gatewayVersion').value,
             allow_cod:            codEnabled,
@@ -1032,6 +1034,18 @@
         };
         input.click();
     }
+
+    function updateGatewayUrlDisplay() {
+        var version = document.getElementById('gatewayVersion').value;
+        var urlBox = document.getElementById('gatewayProxyUrl');
+        if (version === 'v2') {
+            urlBox.value = 'https://payment.freelancingbyrifat.top/proxyv2.php';
+        } else {
+            urlBox.value = 'https://mypay.freelancingbyrifat.top/api_proxy.php';
+        }
+    }
+
+    document.getElementById('gatewayVersion').addEventListener('change', updateGatewayUrlDisplay);
     </script>
 
     <!-- Premium Icons & Offline Logic (Dynamic Injected) -->

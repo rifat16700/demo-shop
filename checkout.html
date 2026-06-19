@@ -865,7 +865,8 @@ function buildPaymentOptions() {
     var total = subtotal + addonTotal + effectiveDelivery - promoDiscount;
 
     // Advance: only for COD, and only if delivery is not free
-    var advAmt = settings.advance_amount || 0;
+    var advAmt = parseInt(settings.advance_amount);
+    if (isNaN(advAmt)) advAmt = 0;
     if (isFreeDelivery || isPickup) {
         advancePayable = 0; // free delivery = no advance needed
     } else if (advAmt === -1) {

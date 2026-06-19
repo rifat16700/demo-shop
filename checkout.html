@@ -1502,7 +1502,7 @@ function placeOrder() {
         promo_code:     promoCode || null,
         promo_discount: promoDiscount,
         grand_total:    total,
-        advance_payable:advancePayable,
+        advance_payable:(selectedPayMethod === 'cod') ? advancePayable : 0,
         payment_method: payMethod,
         payment_status: senderNum ? 'Advance Paid' : 'Unpaid',
         payment_trx_id: trxId || null,

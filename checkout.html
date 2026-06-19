@@ -1111,7 +1111,8 @@ function selectPayCard(value) {
 
         // COD + advance + manual bKash
         var manualBox = document.getElementById('manualPayBox');
-        if (isCod && advancePayable > 0 && settings.advance_method === 'manual') {
+        var autoAdvCheck = settings.advance_method && settings.advance_method.toString().includes('auto');
+        if (isCod && advancePayable > 0 && !autoAdvCheck) {
             document.getElementById('manualPayNumber').textContent     = settings.bkash_number || '';
             document.getElementById('manualPayMethodName').textContent = 'bKash (Advance — ৳' + advancePayable + ')';
             document.getElementById('manualPayAmt').textContent        = '৳' + advancePayable;
@@ -1460,7 +1461,8 @@ function placeOrder() {
     // ── Manual payment inputs: read from active sub-card ────────────
     var senderNum = '', trxId = '';
     var isManualPay = (selectedPayMethod === 'manual_bkash' || selectedPayMethod === 'manual_nagad' || selectedPayMethod === 'manual_binance');
-    var isCodManualAdvance = (selectedPayMethod === 'cod' && advancePayable > 0 && settings.advance_method === 'manual');
+    var autoAdvCheck = settings.advance_method && settings.advance_method.toString().includes('auto');
+    var isCodManualAdvance = (selectedPayMethod === 'cod' && advancePayable > 0 && !autoAdvCheck);
 
     if (isManualPay) {
         // Find the visible (selected) sub-card's inputs

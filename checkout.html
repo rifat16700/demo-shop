@@ -1511,8 +1511,9 @@ function placeOrder() {
         order_type:     isPickup ? 'pickup' : 'delivery'
     };
 
-    if (selectedPayMethod === 'auto_gateway') {
-        initiateGatewayPayment(orderId, total, orderData);
+    if (selectedPayMethod === 'auto_gateway' || (selectedPayMethod === 'cod' && advancePayable > 0 && settings.advance_method === 'auto')) {
+        var gatewayAmount = (selectedPayMethod === 'cod') ? advancePayable : total;
+        initiateGatewayPayment(orderId, gatewayAmount, orderData);
         return;
     }
 

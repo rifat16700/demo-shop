@@ -701,7 +701,7 @@ function renderAddons() {
     var html = addons.map(function(a) {
         var cleanIcon = a.icon ? a.icon.replace(/(?:\*|body|html)\s*\{[^}]+\}/gi, '') : '<i data-lucide="gift" class="lucide-icon icon-bounce"></i>';
         return '<div class="addon-item" onclick="toggleAddon(\'' + a.id + '\',this)" data-id="' + a.id + '" data-price="' + a.price + '">' +
-            '<span style="font-size:22px;">' + cleanIcon + '</span>' +
+            '<span style="font-size:22px;">' + (a.icon ? a.icon.replace(/<style\\b[^<]*(?:(?!<\\/style>)<[^<]*)*<\\/style>/gi, '') : '<i data-lucide="gift" class="lucide-icon icon-bounce"></i>') + '</span>' +
             '<div style="flex:1;"><div style="font-weight:700;font-size:14px;">' + a.name + '</div></div>' +
             '<div style="font-weight:800;color:var(--primary);">+৳' + a.price + '</div>' +
             '<input type="checkbox" style="width:18px;height:18px;accent-color:var(--primary);" data-chk="' + a.id + '">' +

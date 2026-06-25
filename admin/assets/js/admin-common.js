@@ -145,7 +145,15 @@ function adminInit(activePage, onReady) {
         sessionPromise = supabaseClient.auth.getSession().then(function(res) {
             return res.data && res.data.session ? res.data.session : null;
         });
-    } else if (CONFIG.DB_PROVIDER === 'appwrite') {
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        var token = localStorage.getItem("admin_token");
+        if (token && token.startsWith("cf_d1_admin_token_")) {
+            sessionPromise = Promise.resolve({ user: { id: "admin" } });
+        } else {
+            sessionPromise = Promise.resolve(null);
+        }
+ else if (CONFIG.DB_PROVIDER === 'appwrite') {
         sessionPromise = appwriteAccount.getSession('current')
         .then(function(s) { return s; })
         .catch(function() { return null; });
@@ -188,6 +196,24 @@ function loadSidebarStoreName() {
                 if (el) el.textContent = r.data.store_name;
             }
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch(`https://api.cloudflare.com/client/v4/accounts/${CONFIG.CF_ACCOUNT_ID}/d1/database/${CONFIG.CF_DATABASE_ID}/query`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${CONFIG.CF_API_TOKEN}`
+            },
+            body: JSON.stringify({ sql: "SELECT store_name FROM settings WHERE id = 1" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (resData.success && resData.result && resData.result[0].results.length > 0) {
+                var doc = resData.result[0].results[0];
+                if (doc.store_name) {
+                    var el = document.getElementById('sidebarStoreName');
+                    if (el) el.textContent = doc.store_name;
+                }
+            }
+        }).catch(function(err) { console.error(err); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.getDocument(APP_DB, 'settings', 'main_settings')
         .then(function(doc) {
@@ -215,6 +241,37 @@ function adminLoadBadges() {
             var el = document.getElementById('reviewBadge');
             if (el && count > 0) { el.textContent = count; el.style.display = 'inline-flex'; }
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch(`https://api.cloudflare.com/client/v4/accounts/${CONFIG.CF_ACCOUNT_ID}/d1/database/${CONFIG.CF_DATABASE_ID}/query`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${CONFIG.CF_API_TOKEN}`
+            },
+            body: JSON.stringify({ sql: "SELECT COUNT(*) as c FROM orders WHERE status = 'Pending'" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (resData.success && resData.result && resData.result[0].results.length > 0) {
+                var count = resData.result[0].results[0].c || 0;
+                var el = document.getElementById('pendingBadge');
+                if (el && count > 0) { el.textContent = count; el.style.display = 'inline-flex'; }
+            }
+        }).catch(function(err) { console.error(err); });
+
+        fetch(`https://api.cloudflare.com/client/v4/accounts/${CONFIG.CF_ACCOUNT_ID}/d1/database/${CONFIG.CF_DATABASE_ID}/query`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${CONFIG.CF_API_TOKEN}`
+            },
+            body: JSON.stringify({ sql: "SELECT COUNT(*) as c FROM reviews WHERE is_approved = 0 OR is_approved = 'false'" })
+        }).then(res=>res.json()).then(function(resData) {
+            if (resData.success && resData.result && resData.result[0].results.length > 0) {
+                var count = resData.result[0].results[0].c || 0;
+                var el = document.getElementById('reviewBadge');
+                if (el && count > 0) { el.textContent = count; el.style.display = 'inline-flex'; }
+            }
+        }).catch(function(err) { console.error(err); });
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteDatabases.listDocuments(APP_DB, 'orders', [
             AppwriteQuery.equal('status', 'Pending'),
@@ -251,6 +308,10 @@ function adminLogout() {
         }).catch(function() {
             window.location.href = 'index.html';
         });
+    }
+                else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        localStorage.removeItem("admin_token");
+        window.location.href="index.html";
     } else if (CONFIG.DB_PROVIDER === 'appwrite') {
         appwriteAccount.deleteSession('current')
         .then(function() {

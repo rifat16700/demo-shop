@@ -678,11 +678,11 @@
                 }
                 else if (CONFIG.DB_PROVIDER === 'cf_db') {
                     try {
-                        const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${CONFIG.CF_ACCOUNT_ID}/d1/database/${CONFIG.CF_DATABASE_ID}/query`, {
+                        const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${CONFIG.CF_ACCOUNT_ID}/d1/database/${CONFIG.CF_DB_ID}/query`, {
                             method: "POST",
                             headers: {
                                 "Content-Type": "application/json",
-                                "Authorization": `Bearer ${CONFIG.CF_API_TOKEN}`
+                                "Authorization": `Bearer ${CONFIG.CF_D1_TOKEN}`
                             },
                             body: JSON.stringify({
                                 sql: "SELECT * FROM admins WHERE email = ? AND password_hash = ?",

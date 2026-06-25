@@ -198,11 +198,11 @@ function loadSidebarStoreName() {
         });
     }
                 else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        fetch(`https://api.cloudflare.com/client/v4/accounts/${CONFIG.CF_ACCOUNT_ID}/d1/database/${CONFIG.CF_DATABASE_ID}/query`, {
+        fetch(`https://api.cloudflare.com/client/v4/accounts/${CONFIG.CF_ACCOUNT_ID}/d1/database/${CONFIG.CF_DB_ID}/query`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${CONFIG.CF_API_TOKEN}`
+                "Authorization": `Bearer ${CONFIG.CF_D1_TOKEN}`
             },
             body: JSON.stringify({ sql: "SELECT store_name FROM settings WHERE id = 1" })
         }).then(res=>res.json()).then(function(resData) {
@@ -243,11 +243,11 @@ function adminLoadBadges() {
         });
     }
                 else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        fetch(`https://api.cloudflare.com/client/v4/accounts/${CONFIG.CF_ACCOUNT_ID}/d1/database/${CONFIG.CF_DATABASE_ID}/query`, {
+        fetch(`https://api.cloudflare.com/client/v4/accounts/${CONFIG.CF_ACCOUNT_ID}/d1/database/${CONFIG.CF_DB_ID}/query`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${CONFIG.CF_API_TOKEN}`
+                "Authorization": `Bearer ${CONFIG.CF_D1_TOKEN}`
             },
             body: JSON.stringify({ sql: "SELECT COUNT(*) as c FROM orders WHERE status = 'Pending'" })
         }).then(res=>res.json()).then(function(resData) {
@@ -258,11 +258,11 @@ function adminLoadBadges() {
             }
         }).catch(function(err) { console.error(err); });
 
-        fetch(`https://api.cloudflare.com/client/v4/accounts/${CONFIG.CF_ACCOUNT_ID}/d1/database/${CONFIG.CF_DATABASE_ID}/query`, {
+        fetch(`https://api.cloudflare.com/client/v4/accounts/${CONFIG.CF_ACCOUNT_ID}/d1/database/${CONFIG.CF_DB_ID}/query`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${CONFIG.CF_API_TOKEN}`
+                "Authorization": `Bearer ${CONFIG.CF_D1_TOKEN}`
             },
             body: JSON.stringify({ sql: "SELECT COUNT(*) as c FROM reviews WHERE is_approved = 0 OR is_approved = 'false'" })
         }).then(res=>res.json()).then(function(resData) {

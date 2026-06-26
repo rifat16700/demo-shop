@@ -769,8 +769,6 @@
     };
     function getDB() {
         if (CONFIG.DB_PROVIDER === 'supabase') return supabaseClient;
-        else if (CONFIG.DB_PROVIDER === 'appwrite') return appwriteDatabases;
-        else if (CONFIG.DB_PROVIDER === 'cf_db') return { is_cfdb: true };
         return mockDB;
     }
 

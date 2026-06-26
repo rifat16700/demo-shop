@@ -15,6 +15,9 @@ var CONFIG = {
     APPWRITE_PROJECT:     '',
     APPWRITE_DATABASE_ID: '',
 
+    // ── Cloudflare D1 (Read Only) ────────────────────────────
+    CF_D1_READ_TOKEN: 'YOUR_CLOUDFLARE_API_TOKEN_HERE',
+
     // ── Frontend Constants ───────────────────────────────────
     CART_KEY:         'fbr_cart',
     DIRECT_ORDER_KEY: 'fbr_direct_order',

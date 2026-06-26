@@ -102,11 +102,16 @@ export async function onRequest(context) {
             finalData = await response.json();
         }
 
+        // Filter out inactive/hidden products before sending to frontend
+        finalData = finalData.filter(product => product.is_active === true || product.is_active === 'true' || product.is_active === 1);
+
+
         return new Response(JSON.stringify(finalData), {
             status:  200,
             headers: {
                 'Content-Type':                'application/json',
                 'Access-Control-Allow-Origin': '*',
+                'Cache-Control':               'no-cache, no-store, must-revalidate'
             },
         });
 

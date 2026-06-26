@@ -60,10 +60,17 @@ export async function onRequestPost(context) {
     // ── 4. Build URLs to purge ─────────────────────────────────
     const CF_PURGE_URL = `https://api.cloudflare.com/client/v4/zones/${config.CF_ZONE_ID}/purge_cache`;
     
-    // Always purge the products list (new/updated/deleted item)
-    // Note: Adjust the domain if your production domain is different
-    const origin = new URL(context.request.url).origin;
+    // To purge specific files successfully, the domain MUST match your custom domain.
+    // If your webhook points to .pages.dev, but your cache is on your custom domain, it will fail.
+    // You should add STORE_URL (e.g. https://www.yourdomain.com) in Cloudflare Pages variables.
+    const origin = config.STORE_URL || new URL(context.request.url).origin;
     const listUrl = `${origin}/api/get-products-list`;
+
+    const filesToPurge = [listUrl];
+
+    if (productId) {
+        filesToPurge.push(`${origin}/api/get-single-product?id=${productId}`);
+    }
 
     const purgeRequests = [
         fetch(CF_PURGE_URL, {
@@ -72,23 +79,9 @@ export async function onRequestPost(context) {
                 'Authorization': `Bearer ${config.CF_API_TOKEN}`,
                 'Content-Type':  'application/json',
             },
-            body: JSON.stringify({ files: [listUrl] }),
-        }),
+            body: JSON.stringify({ files: filesToPurge }),
+        })
     ];
-
-    if (productId) {
-        const urlToPurge = `${origin}/api/get-single-product?id=${productId}`;
-        purgeRequests.push(
-            fetch(CF_PURGE_URL, {
-                method:  'POST',
-                headers: {
-                    'Authorization': `Bearer ${config.CF_API_TOKEN}`,
-                    'Content-Type':  'application/json',
-                },
-                body: JSON.stringify({ files: [urlToPurge] }),
-            })
-        );
-    }
 
     // ── 5. Fire all purge requests in parallel ─────────────────
     try {

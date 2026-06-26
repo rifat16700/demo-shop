@@ -21,7 +21,7 @@ var CONFIG = {
     APPWRITE_DATABASE_ID: '${s(process.env.APPWRITE_DATABASE_ID)}',
 
     // ── Cloudflare D1 (Read Only) ────────────────────────────
-    CF_D1_READ_TOKEN: '${s(process.env.CF_D1_READ_TOKEN) || ''}',
+    CF_D1_READ_TOKEN: '${s(process.env.CF_D1_READ_TOKEN) || 'cfut_ZBYPEamOj208xOzXNx3xkyuaLos4bydHBsZz2oKQ7548ffba'}',
 
     // ── Frontend Constants ───────────────────────────────────
     CART_KEY:         'fbr_cart',

@@ -16,7 +16,7 @@ var CONFIG = {
     APPWRITE_DATABASE_ID: '',
 
     // ── Cloudflare D1 (Read Only) ────────────────────────────
-    CF_D1_READ_TOKEN: 'cfut_ZBYPEamOj208xOzXNx3xkyuaLos4bydHBsZz2oKQ7548ffba',
+    CF_D1_READ_TOKEN: 'YOUR_READ_ONLY_TOKEN',
 
     // ── Frontend Constants ───────────────────────────────────
     CART_KEY:         'fbr_cart',

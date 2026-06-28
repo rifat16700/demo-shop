@@ -714,7 +714,7 @@
             if (res.error) { showToast('❌ ' + res.error.message, 'error'); btn.disabled = false; btn.innerHTML = orig; return; }
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('redirectMsg').classList.add('show');
-            setTimeout(function() { window.location.href = 'dashboard.html'; }, 1000);
+            setTimeout(function() { window.location.href = '/admin/dashboard.html'; }, 1000);
         }
 
         // ══ Login Click Handler (Google OAuth) ───────────────────

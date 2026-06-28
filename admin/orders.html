@@ -266,6 +266,30 @@
                     document.getElementById('adminMain').style.display  = 'flex';
                     showToast('Failed to load orders: ' + err.message, 'error');
                 });
+            } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+                fetch("/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM orders ORDER BY created_at DESC" }) })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    document.getElementById('pageLoader').style.display = 'none';
+                    document.getElementById('adminMain').style.display  = 'flex';
+                    allOrders = (d.success && d.result && d.result[0].results) ? d.result[0].results : [];
+                    allOrders = allOrders.map(function(o) {
+                        if (typeof o.items === 'string') { try { o.items = JSON.parse(o.items); } catch(e){} }
+                        return o;
+                    });
+                    document.getElementById('orderCountSub').textContent = allOrders.length + ' total orders';
+                    filterOrders();
+
+                    if (urlId) {
+                        var found = allOrders.find(function(o) { return o.id === urlId; });
+                        if (found) openOrderModal(found);
+                    }
+                    autoCleanupOrders();
+                }).catch(function(err) {
+                    document.getElementById('pageLoader').style.display = 'none';
+                    document.getElementById('adminMain').style.display  = 'flex';
+                    showToast('Failed to load orders: ' + err.message, 'error');
+                });
             }
         });
     });
@@ -296,6 +320,16 @@
                 appwriteDatabases.deleteDocument(APP_DB, 'orders', o.$id || o.id)
                 .catch(function(err) { console.error('Auto cleanup error:', err.message); });
             });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            var thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            var dateStr = thirtyDaysAgo.toISOString();
+            
+            fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '')+'/api/delete-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
+                body: JSON.stringify({ cleanupOld: true, dateBefore: dateStr })
+            }).catch(function(err) { console.error('Auto cleanup error:', err.message); });
         }
     }
 

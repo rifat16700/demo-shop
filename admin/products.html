@@ -327,6 +327,27 @@
             }).catch(function(err) {
                 showToast('Category load error: ' + err.message, 'error');
             });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            fetch("/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC" }) })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                allCategories = (d.success && d.result && d.result[0].results) ? d.result[0].results : [];
+                var catFilter  = document.getElementById('catFilter');
+                var catFilterM = document.getElementById('catFilterM');
+                var pCatList   = document.getElementById('pCategoryList');
+                allCategories.forEach(function(c) {
+                    var opt = '<option value="' + c.id + '">' + c.name + '</option>';
+                    catFilter.innerHTML  += opt;
+                    if (catFilterM) catFilterM.innerHTML += opt;
+                    pCatList.innerHTML +=
+                        '<label class="category-checkbox-item">' +
+                            '<input type="checkbox" name="pCat" value="' + c.id + '">' +
+                            '<span>' + c.name + '</span>' +
+                        '</label>';
+                });
+            }).catch(function(err) {
+                showToast('Category load error: ' + err.message, 'error');
+            });
         }
     }
 
@@ -409,6 +430,31 @@
                         .map(function(x) { return x.category_id; });
                     return doc;
                 });
+                document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
+                renderProducts(allProducts);
+            }).catch(function(err) {
+                showToast('Load failed: ' + err.message, 'error');
+            });
+        } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+            Promise.all([
+                fetch("/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM products ORDER BY created_at DESC" }) }).then(function(r) { return r.json(); }),
+                fetch("/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM product_categories" }) }).then(function(r) { return r.json(); })
+            ]).then(function(results) {
+                document.getElementById('pageLoader').style.display = 'none';
+                document.getElementById('adminMain').style.display  = 'flex';
+                
+                allProducts = (results[0].success && results[0].result && results[0].result[0].results) ? results[0].result[0].results : [];
+                var pc = (results[1].success && results[1].result && results[1].result[0].results) ? results[1].result[0].results : [];
+                
+                allProducts = allProducts.map(function(doc) {
+                    if (typeof doc.variants === 'string') { try { doc.variants = JSON.parse(doc.variants); } catch(e) { doc.variants = []; } }
+                    doc.variants = doc.variants || [];
+                    if (typeof doc.gallery_images === 'string') { try { doc.gallery_images = JSON.parse(doc.gallery_images); } catch(e) { doc.gallery_images = []; } }
+                    else { doc.gallery_images = doc.gallery_images || []; }
+                    doc.category_ids = pc.filter(function(x) { return x.product_id === doc.id; }).map(function(x) { return x.category_id; });
+                    return doc;
+                });
+                
                 document.getElementById('prodCountSub').textContent = allProducts.length + ' products';
                 renderProducts(allProducts);
             }).catch(function(err) {

@@ -17,8 +17,20 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { id } = req.body;
-        if (!id) throw new Error("No id provided");
+        const { id, cleanupOld, dateBefore } = req.body;
+        
+        let sql = "";
+        let params = [];
+        
+        if (cleanupOld && dateBefore) {
+            sql = "DELETE FROM orders WHERE (status = 'Delivered' OR status = 'Cancelled') AND created_at < ?";
+            params = [dateBefore];
+        } else if (id) {
+            sql = "DELETE FROM orders WHERE id = ?";
+            params = [id];
+        } else {
+            throw new Error("No id or cleanup condition provided");
+        }
 
         const d1Res = await fetch(
             `https://api.cloudflare.com/client/v4/accounts/${process.env.CF_ACCOUNT_ID}/d1/database/${process.env.CF_DB_ID}/query`,
@@ -28,7 +40,7 @@ export default async function handler(req, res) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${process.env.CF_WRITE_TOKEN}`
                 },
-                body: JSON.stringify({ sql: "DELETE FROM orders WHERE id = ?", params: [id] })
+                body: JSON.stringify({ sql, params })
             }
         );
 

@@ -892,7 +892,7 @@
                 }
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            var reqUrl = (CONFIG.VERCEL_API_BASE||'') + (editingProductId ? '/api/update-product' : '/api/add-product');
+            var reqUrl = (CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '') + (editingProductId ? '/api/update-product' : '/api/add-product');
             if (editingProductId) payload.id = editingProductId;
             payload.category_ids = selectedCats;
             
@@ -987,7 +987,7 @@
                 renderProducts(allProducts);
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.VERCEL_API_BASE||'')+'/api/delete-product', {
+            fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '')+'/api/delete-product', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ id: id })
@@ -1029,7 +1029,7 @@
                 renderProducts(allProducts);
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.VERCEL_API_BASE||'')+'/api/update-product', {
+            fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '')+'/api/update-product', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ id: id, is_active: !current })

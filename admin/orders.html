@@ -309,7 +309,7 @@
                 filterOrders();
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.VERCEL_API_BASE||'')+'/api/delete-order', {
+            fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '')+'/api/delete-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ id: id })
@@ -619,7 +619,7 @@
                 showToast('Update failed: ' + err.message, 'error');
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.VERCEL_API_BASE||'')+'/api/update-order', {
+            fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '')+'/api/update-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ id: orderId, upData: payload })

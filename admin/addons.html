@@ -104,7 +104,7 @@ function loadAddons() {
             showToast('Load failed: ' + err.message, 'error');
         });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM addons ORDER BY created_at" }) })
+        fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM addons ORDER BY created_at" }) })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 document.getElementById('pageLoader').style.display = 'none';

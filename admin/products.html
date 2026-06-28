@@ -328,7 +328,7 @@
                 showToast('Category load error: ' + err.message, 'error');
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC" }) })
+            fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC" }) })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 allCategories = (d.success && d.result && d.result[0].results) ? d.result[0].results : [];
@@ -437,8 +437,8 @@
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
             Promise.all([
-                fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM products ORDER BY created_at DESC" }) }).then(function(r) { return r.json(); }),
-                fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM product_categories" }) }).then(function(r) { return r.json(); })
+                fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM products ORDER BY created_at DESC" }) }).then(function(r) { return r.json(); }),
+                fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM product_categories" }) }).then(function(r) { return r.json(); })
             ]).then(function(results) {
                 document.getElementById('pageLoader').style.display = 'none';
                 document.getElementById('adminMain').style.display  = 'flex';
@@ -938,7 +938,7 @@
                 }
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            var reqUrl = (CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '') + (editingProductId ? '/api/update-product' : '/api/add-product');
+            var reqUrl = (CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '') + (editingProductId ? '/api/update-product' : '/api/add-product');
             if (editingProductId) payload.id = editingProductId;
             payload.category_ids = selectedCats;
             
@@ -1033,7 +1033,7 @@
                 renderProducts(allProducts);
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '')+'/api/delete-product', {
+            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '')+'/api/delete-product', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ id: id })
@@ -1075,7 +1075,7 @@
                 renderProducts(allProducts);
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '')+'/api/update-product', {
+            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '')+'/api/update-product', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ id: id, is_active: !current })

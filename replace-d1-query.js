@@ -8,8 +8,8 @@ function walk(dir) {
             if (file !== 'node_modules' && file !== '.git' && file !== 'api') walk(fullPath);
         } else if (fullPath.endsWith('.html') || fullPath.endsWith('.js')) {
             let content = fs.readFileSync(fullPath, 'utf8');
-            if (content.includes('fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query"')) {
-                content = content.replace(/fetch\("\/api\/d1-query"/g, 'fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query"');
+            if (content.includes('fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query"')) {
+                content = content.replace(/fetch\("\/api\/d1-query"/g, 'fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query"');
                 fs.writeFileSync(fullPath, content);
                 console.log('Updated', fullPath);
             }

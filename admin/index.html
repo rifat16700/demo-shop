@@ -668,7 +668,7 @@
             var res, res2;
             if (CONFIG.DB_PROVIDER === 'cf_db') {
                 try {
-                    const response = await fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '') + '/api/admin-login', {
+                    const response = await fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '') + '/api/admin-login', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ username: email, password: pass })

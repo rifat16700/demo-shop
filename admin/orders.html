@@ -267,7 +267,7 @@
                     showToast('Failed to load orders: ' + err.message, 'error');
                 });
             } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-                fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM orders ORDER BY created_at DESC" }) })
+                fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM orders ORDER BY created_at DESC" }) })
                 .then(function(r) { return r.json(); })
                 .then(function(d) {
                     document.getElementById('pageLoader').style.display = 'none';
@@ -325,7 +325,7 @@
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
             var dateStr = thirtyDaysAgo.toISOString();
             
-            fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '')+'/api/delete-order', {
+            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '')+'/api/delete-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ cleanupOld: true, dateBefore: dateStr })
@@ -343,7 +343,7 @@
                 filterOrders();
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '')+'/api/delete-order', {
+            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '')+'/api/delete-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ id: id })
@@ -653,7 +653,7 @@
                 showToast('Update failed: ' + err.message, 'error');
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '')+'/api/update-order', {
+            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '')+'/api/update-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ id: orderId, upData: payload })
@@ -662,7 +662,7 @@
                 
                 if (payload.status === 'Delivered' && currentOrder && currentOrder.customer_phone) {
                     var phone = currentOrder.customer_phone.trim();
-                    fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM promos" }) })
+                    fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM promos" }) })
                     .then(r => r.json()).then(d => {
                         if (d.success && d.result && d.result[0].results) {
                             var promosList = d.result[0].results;
@@ -690,7 +690,7 @@
                                     var fullCode = phone + '|v1|' + JSON.stringify(newPromoMeta);
                                     
                                     var insertQ = "INSERT INTO promos (code, discount, is_active, expires_at) VALUES (?, ?, ?, ?)";
-                                    fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: insertQ, params: [fullCode, meta.repType === 'flat' ? parseFloat(meta.repValue) : 0, 1, expiry] }) }).then(function() { showToast('ðŸŽ‰ Personal coupon created for customer: ' + phone, 'success'); });
+                                    fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: insertQ, params: [fullCode, meta.repType === 'flat' ? parseFloat(meta.repValue) : 0, 1, expiry] }) }).then(function() { showToast('ðŸŽ‰ Personal coupon created for customer: ' + phone, 'success'); });
                                 } catch (e) { console.error('Error generating repeated customer coupon:', e); }
                             }
                         }

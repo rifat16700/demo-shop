@@ -199,7 +199,7 @@ function loadSidebarStoreName() {
             }
         }).catch(function() {});
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT store_name FROM settings WHERE id = 1" }) })
+        fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT store_name FROM settings WHERE id = 1" }) })
         .then(function(r) { return r.json(); })
         .then(function(d) {
             if (d.success && d.result && d.result[0].results && d.result[0].results[0]) {
@@ -212,7 +212,7 @@ function loadSidebarStoreName() {
 
 // ── D1 Admin Query Helper (For cf_db write operations) ──────────
 function d1AdminQuery(sql, params) {
-    return fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '') + '/api/admin-query', {
+    return fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '') + '/api/admin-query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
         body: JSON.stringify({ sql: sql, params: params || [] })

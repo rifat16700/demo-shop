@@ -214,7 +214,7 @@ function loadSiteData() {
                 return { data: res.documents.map(function(d) { d.id = d.$id; d.created_at = d.$createdAt; if (typeof d.gallery_images === 'string') { try { d.gallery_images = JSON.parse(d.gallery_images); } catch(e) { d.gallery_images = []; } } return d; }) };
             }).catch(function() { return { data: [] }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        const d1Fetch = (sql) => fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr }; }).catch(e => ({ data: [], error: e }));
+        const d1Fetch = (sql) => fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql }) }).then(r => r.json()).then(d => { let arr = (d.success && d.result && d.result[0].results) ? d.result[0].results : []; return { data: arr }; }).catch(e => ({ data: [], error: e }));
         p1 = d1Fetch(`SELECT * FROM settings WHERE id = 1`).then(r => ({ data: r.data.length ? r.data[0] : null }));
         p2 = d1Fetch(`SELECT * FROM banners WHERE is_active = 1 ORDER BY sort_order`);
         p3 = d1Fetch(`SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order`);

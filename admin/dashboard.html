@@ -274,7 +274,7 @@
                     showUI();
                 });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM orders ORDER BY created_at DESC" }) })
+            fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM orders ORDER BY created_at DESC" }) })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 var orders = (d.success && d.result && d.result[0].results) ? d.result[0].results : [];
@@ -317,7 +317,7 @@
                 })
                 .catch(function(err) { showToast('Error: ' + err.message, 'error'); });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT COUNT(*) as cnt FROM products WHERE is_active = 1" }) })
+            fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT COUNT(*) as cnt FROM products WHERE is_active = 1" }) })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 var count = (d.success && d.result && d.result[0].results) ? d.result[0].results[0].cnt : 0;

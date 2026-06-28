@@ -735,9 +735,9 @@
                 }
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '') + '/api/d1-query', {
+            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '') + '/api/d1-query', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (typeof CONFIG !== 'undefined' ? CONFIG.CF_D1_READ_TOKEN : '') },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sql: "SELECT * FROM settings WHERE id = 1" })
             }).then(function(r){ return r.json(); }).then(function(d) {
                 document.getElementById('pageLoader').style.display  = 'none';
@@ -961,7 +961,7 @@
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
             var cfPayload = Object.assign({}, payload);
-            fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '') + '/api/update-settings', {
+            fetch((CONFIG.HF_API_BASE ? CONFIG.HF_API_BASE.replace(/\/+$/, '') : '') + '/api/update-settings', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

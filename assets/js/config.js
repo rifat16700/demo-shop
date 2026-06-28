@@ -5,7 +5,7 @@
 var CONFIG = {
     // ── DB Provider ──────────────────────────────────────────
     DB_PROVIDER: 'cf_db',
-    VERCEL_API_BASE: 'https://freelancingbyrifat.vercel.app',
+    HF_API_BASE: 'https://your-huggingface-space-url.hf.space', // <-- PUT YOUR HF URL HERE
 
     // ── Supabase ─────────────────────────────────────────────
     SUPABASE_URL:      '',
@@ -16,8 +16,7 @@ var CONFIG = {
     APPWRITE_PROJECT:     '',
     APPWRITE_DATABASE_ID: '',
 
-    // ── Cloudflare D1 (Read Only) ────────────────────────────
-    CF_D1_READ_TOKEN: 'YOUR_READ_ONLY_TOKEN',
+    // (Tokens are now securely hidden in the Hugging Face backend!)
 
     // ── Frontend Constants ───────────────────────────────────
     CART_KEY:         'fbr_cart',

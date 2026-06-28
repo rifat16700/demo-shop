@@ -477,20 +477,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 return { data: (Array.isArray(data) ? data : []).filter(function(d) { return d.is_add_once === true && d.is_active === true; }) };
             }).catch(function() { return { data: [] }; });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            var h = { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN };
-            p1 = fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM settings WHERE id=1" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results.length) ? r.result[0].results[0] : {} })).then(function(res) {
+            var h = { "Content-Type": "application/json" };
+            p1 = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM settings WHERE id=1" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results.length) ? r.result[0].results[0] : {} })).then(function(res) {
                 var doc = res.data;
                 if (typeof doc.messaging_apps === 'string') try { doc.messaging_apps = JSON.parse(doc.messaging_apps); } catch(e){}
                 if (typeof doc.crypto_coins === 'string') try { doc.crypto_coins = JSON.parse(doc.crypto_coins); } catch(e){}
                 return { data: doc };
             });
-            p2 = fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM delivery_zones" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
+            p2 = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM delivery_zones" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
                 return { data: res.data.map(function(d) { if(typeof d.gallery_images==='string') try{ d.gallery_images=JSON.parse(d.gallery_images); }catch(e){} return d; }) };
             });
-            p3 = fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM addons WHERE is_active=1 ORDER BY created_at" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
+            p3 = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM addons WHERE is_active=1 ORDER BY created_at" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
                 return { data: res.data.map(function(d) { d.is_active = d.is_active === 1; if(typeof d.gallery_images==='string') try{ d.gallery_images=JSON.parse(d.gallery_images); }catch(e){} return d; }) };
             });
-            p4 = fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM promos WHERE is_active=1 LIMIT 500" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
+            p4 = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT * FROM promos WHERE is_active=1 LIMIT 500" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
                 return { data: res.data.map(function(d) {
                     d.is_active = d.is_active === 1;
                     d.is_repeated_config = d.is_repeated_config === 1;
@@ -500,7 +500,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return d;
                 })};
             });
-            p5 = fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT id,name,base_price,flash_sale_price,gallery_images,variants FROM products WHERE is_add_once=1 AND is_active=1" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
+            p5 = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: h, body: JSON.stringify({ sql: "SELECT id,name,base_price,flash_sale_price,gallery_images,variants FROM products WHERE is_add_once=1 AND is_active=1" }) }).then(r=>r.json()).then(r => ({ data: (r.success && r.result[0].results) ? r.result[0].results : [] })).then(function(res) {
                 return { data: res.data.map(function(d) { if(typeof d.gallery_images==='string') try{ d.gallery_images=JSON.parse(d.gallery_images); }catch(e){} if(typeof d.variants==='string') try{ d.variants=JSON.parse(d.variants); }catch(e){} return d; }) };
             });
         } else {
@@ -1584,7 +1584,7 @@ function placeOrder() {
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        insertPromise = fetch((CONFIG.VERCEL_API_BASE||'')+'/api/save-order', {
+        insertPromise = fetch((CONFIG.HF_API_BASE||'')+'/api/save-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderData: orderData })
@@ -1636,7 +1636,7 @@ function initiateGatewayPayment(orderId, total, orderData) {
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        insertPromise = fetch((CONFIG.VERCEL_API_BASE||'')+'/api/save-order', {
+        insertPromise = fetch((CONFIG.HF_API_BASE||'')+'/api/save-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderData: Object.assign({}, orderData, { payment_status: 'Unpaid', status: 'Pending' }) })
@@ -1701,7 +1701,7 @@ function verifyGatewayPayment(orderId, trxId) {
                 return { data: doc, error: null };
             }).catch(function(err) { return { data: null, error: err }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        selectPromise = fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM orders WHERE id = ?", params: [orderId] }) }).then(r => r.json()).then(d => { let obj = (d.success && d.result && d.result[0].results && d.result[0].results.length) ? d.result[0].results[0] : null; if(obj && typeof obj.items === 'string'){ try{obj.items=JSON.parse(obj.items)}catch(e){} } if(obj && typeof obj.addons === 'string'){ try{obj.addons=JSON.parse(obj.addons)}catch(e){} } return { data: obj, error: null }; }).catch(e => ({ data: null, error: e }));
+        selectPromise = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT * FROM orders WHERE id = ?", params: [orderId] }) }).then(r => r.json()).then(d => { let obj = (d.success && d.result && d.result[0].results && d.result[0].results.length) ? d.result[0].results[0] : null; if(obj && typeof obj.items === 'string'){ try{obj.items=JSON.parse(obj.items)}catch(e){} } if(obj && typeof obj.addons === 'string'){ try{obj.addons=JSON.parse(obj.addons)}catch(e){} } return { data: obj, error: null }; }).catch(e => ({ data: null, error: e }));
     }
     selectPromise.then(function(oRes) {
         if (oRes.error || !oRes.data) {
@@ -1733,7 +1733,7 @@ function verifyGatewayPayment(orderId, trxId) {
                         return docs.length ? { data: { id: docs[0].$id }, error: null } : { data: null, error: null };
                     }).catch(function(err) { return { data: null, error: err }; });
             } else if (trxId && CONFIG.DB_PROVIDER === 'cf_db') {
-                dupCheck = fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT id,payment_trx_id FROM orders WHERE payment_trx_id = ? AND id != ? LIMIT 1", params: [trxId, orderId] }) }).then(r => r.json()).then(d => { let obj = (d.success && d.result && d.result[0].results && d.result[0].results.length) ? d.result[0].results[0] : null; return { data: obj, error: null }; }).catch(e => ({ data: null, error: e }));
+                dupCheck = fetch((CONFIG.HF_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sql: "SELECT id,payment_trx_id FROM orders WHERE payment_trx_id = ? AND id != ? LIMIT 1", params: [trxId, orderId] }) }).then(r => r.json()).then(d => { let obj = (d.success && d.result && d.result[0].results && d.result[0].results.length) ? d.result[0].results[0] : null; return { data: obj, error: null }; }).catch(e => ({ data: null, error: e }));
             } else {
                 dupCheck = Promise.resolve({ data: null });
             }
@@ -1771,7 +1771,7 @@ function verifyGatewayPayment(orderId, trxId) {
                                 .then(function() { return { error: null }; })
                                 .catch(function(err) { return { error: err }; });
                         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-                            updatePromise = fetch((CONFIG.VERCEL_API_BASE||'')+'/api/update-payment-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orderId, upData: upData }) }).then(r => r.json()).then(r => r.success ? { error: null } : { error: new Error(r.error) }).catch(e => ({ error: e }));
+                            updatePromise = fetch((CONFIG.HF_API_BASE||'')+'/api/update-payment-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orderId, upData: upData }) }).then(r => r.json()).then(r => r.success ? { error: null } : { error: new Error(r.error) }).catch(e => ({ error: e }));
                         } else {
                             updatePromise = Promise.resolve({ data: null });
                         }
@@ -2572,7 +2572,7 @@ function placeCryptoOrder(txid, usdt, isBackup) {
             .then(function(doc) { return { data: [{ id: doc.$id }], error: null }; })
             .catch(function(err) { return { data: null, error: err }; });
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-        insertOrderPromise = fetch((CONFIG.VERCEL_API_BASE||'')+'/api/save-order', {
+        insertOrderPromise = fetch((CONFIG.HF_API_BASE||'')+'/api/save-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ orderData: orderData })

@@ -4,7 +4,7 @@
 
 var CONFIG = {
     // ── DB Provider ──────────────────────────────────────────
-    DB_PROVIDER: 'supabase',
+    DB_PROVIDER: 'cf_db',
 
     // ── Supabase ─────────────────────────────────────────────
     SUPABASE_URL:      '',

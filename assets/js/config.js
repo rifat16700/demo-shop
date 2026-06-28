@@ -5,7 +5,7 @@
 var CONFIG = {
     // ── DB Provider ──────────────────────────────────────────
     DB_PROVIDER: 'cf_db',
-    HF_API_BASE: 'https://your-huggingface-space-url.hf.space', // <-- PUT YOUR HF URL HERE
+    HF_API_BASE: '', // Empty string to use relative /api/ endpoints on the same domain
 
     // ── Supabase ─────────────────────────────────────────────
     SUPABASE_URL:      '',

@@ -198,7 +198,28 @@ function loadSidebarStoreName() {
                 if (el) el.textContent = doc.store_name;
             }
         }).catch(function() {});
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT store_name FROM settings WHERE id = 1" }) })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.success && d.result && d.result[0].results && d.result[0].results[0]) {
+                var el = document.getElementById('sidebarStoreName');
+                if (el) el.textContent = d.result[0].results[0].store_name;
+            }
+        }).catch(function() {});
     }
+}
+
+// ── D1 Admin Query Helper (For cf_db write operations) ──────────
+function d1AdminQuery(sql, params) {
+    return fetch((CONFIG.VERCEL_API_BASE ? CONFIG.VERCEL_API_BASE.replace(/\/+$/, '') : '') + '/api/admin-query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
+        body: JSON.stringify({ sql: sql, params: params || [] })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (!d.success) throw new Error(d.error || 'D1 Admin Query Failed');
+        return d;
+    });
 }
 
 // ── Load sidebar badge counts ─────────────────────────────────

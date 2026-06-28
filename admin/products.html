@@ -328,7 +328,7 @@
                 showToast('Category load error: ' + err.message, 'error');
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
-            fetch("/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC" }) })
+            fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM categories WHERE is_active = 1 ORDER BY sort_order ASC" }) })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 allCategories = (d.success && d.result && d.result[0].results) ? d.result[0].results : [];
@@ -437,8 +437,8 @@
             });
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
             Promise.all([
-                fetch("/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM products ORDER BY created_at DESC" }) }).then(function(r) { return r.json(); }),
-                fetch("/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM product_categories" }) }).then(function(r) { return r.json(); })
+                fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM products ORDER BY created_at DESC" }) }).then(function(r) { return r.json(); }),
+                fetch((CONFIG.VERCEL_API_BASE||"")+"/api/d1-query", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + CONFIG.CF_D1_READ_TOKEN }, body: JSON.stringify({ sql: "SELECT * FROM product_categories" }) }).then(function(r) { return r.json(); })
             ]).then(function(results) {
                 document.getElementById('pageLoader').style.display = 'none';
                 document.getElementById('adminMain').style.display  = 'flex';

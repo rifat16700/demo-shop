@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -311,7 +311,7 @@
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
             fetch((CONFIG.VERCEL_API_BASE||'')+'/api/delete-order', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ id: id })
             }).then(function(r) { return r.json(); }).then(function(res) {
                 if (!res.success) { showToast('Failed to delete: ' + res.error, 'error'); return; }
@@ -621,7 +621,7 @@
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
             fetch((CONFIG.VERCEL_API_BASE||'')+'/api/update-order', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ id: orderId, upData: payload })
             }).then(function(r) { return r.json(); }).then(function(res) {
                 if (!res.success) { showToast('Update failed: ' + res.error, 'error'); return; }

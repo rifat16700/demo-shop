@@ -2,13 +2,19 @@
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
 export default async function handler(req, res) {
     Object.entries(CORS_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ success: false, error: 'Method Not Allowed' });
+
+    // Admin Security Check
+    const authHeader = req.headers.authorization || '';
+    if (!authHeader.startsWith('Bearer ') || authHeader.split(' ')[1] !== process.env.ADMIN_SECRET_TOKEN) {
+        return res.status(401).json({ success: false, error: 'Unauthorized' });
+    }
 
     try {
         const { id } = req.body;

@@ -606,7 +606,13 @@
 
         // ── Check session automatically ─────────────────────────
         function checkSession() {
-            if (CONFIG.DB_PROVIDER === 'supabase') {
+            if (CONFIG.DB_PROVIDER === 'cf_db') {
+                if (localStorage.getItem('admin_token')) {
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('redirectMsg').classList.add('show');
+                    window.location.href = 'dashboard.html';
+                }
+            } else if (CONFIG.DB_PROVIDER === 'supabase') {
                 supabaseClient.auth.getSession().then(function(res) {
                     var session = res.data && res.data.session;
                     if (session) {
@@ -632,9 +638,13 @@
         // Wait for DOM
         document.addEventListener('DOMContentLoaded', function() {
             console.log("DOM Loaded - Auth UI ready");
-            if (CONFIG.DB_PROVIDER === 'appwrite') {
+            if (CONFIG.DB_PROVIDER === 'appwrite' || CONFIG.DB_PROVIDER === 'cf_db') {
                 var web3Opts = document.getElementById('web3LoginSection');
                 if (web3Opts) web3Opts.style.display = 'none';
+                if (CONFIG.DB_PROVIDER === 'cf_db') {
+                    var googleOpts = document.getElementById('googleLoginSection');
+                    if (googleOpts) googleOpts.style.display = 'none';
+                }
             }
             checkSession();
         });
@@ -656,7 +666,24 @@
             btn.innerHTML = '<div class="spinner"></div><span>Signing in...</span>';
             // Try sign-in first; if user not found, sign-up
             var res, res2;
-            if (CONFIG.DB_PROVIDER === 'supabase') {
+            if (CONFIG.DB_PROVIDER === 'cf_db') {
+                try {
+                    const response = await fetch((CONFIG.VERCEL_API_BASE||'') + '/api/admin-login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: email, password: pass })
+                    });
+                    const data = await response.json();
+                    if (data.success && data.token) {
+                        localStorage.setItem('admin_token', data.token);
+                        res = { error: null };
+                    } else {
+                        res = { error: { message: data.error || 'Login failed' } };
+                    }
+                } catch(e) {
+                    res = { error: { message: e.message } };
+                }
+            } else if (CONFIG.DB_PROVIDER === 'supabase') {
                 res = await supabaseClient.auth.signInWithPassword({ email, password: pass });
                 if (res.error && (res.error.message.includes('Invalid login') || res.error.message.includes('user not found') || res.error.message.includes('Email not confirmed'))) {
                     // Try signup

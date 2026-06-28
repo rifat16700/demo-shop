@@ -898,7 +898,7 @@
             
             fetch(reqUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify(payload)
             }).then(function(r) { return r.json(); }).then(function(res) {
                 setBtnLoading(btn, false, 'ðŸ’¾ Save Product');
@@ -989,7 +989,7 @@
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
             fetch((CONFIG.VERCEL_API_BASE||'')+'/api/delete-product', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ id: id })
             }).then(function(r) { return r.json(); }).then(function(res) {
                 if (!res.success) { showToast('Delete failed: ' + res.error, 'error'); return; }
@@ -1031,7 +1031,7 @@
         } else if (CONFIG.DB_PROVIDER === 'cf_db') {
             fetch((CONFIG.VERCEL_API_BASE||'')+'/api/update-product', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('admin_token') || '') },
                 body: JSON.stringify({ id: id, is_active: !current })
             }).then(function(r) { return r.json(); }).then(function(res) {
                 if (!res.success) { showToast('Update failed: ' + res.error, 'error'); return; }

@@ -149,6 +149,8 @@ function adminInit(activePage, onReady) {
         sessionPromise = appwriteAccount.getSession('current')
         .then(function(s) { return s; })
         .catch(function() { return null; });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        sessionPromise = Promise.resolve(localStorage.getItem('admin_token') ? { user: 'admin' } : null);
     } else {
         sessionPromise = Promise.resolve(null);
     }
@@ -258,6 +260,9 @@ function adminLogout() {
         }).catch(function() {
             window.location.href = 'index.html';
         });
+    } else if (CONFIG.DB_PROVIDER === 'cf_db') {
+        localStorage.removeItem('admin_token');
+        window.location.href = 'index.html';
     } else {
         window.location.href = 'index.html';
     }

@@ -186,7 +186,6 @@ function saveCat() {
                 showToast('Error: ' + err.message, 'error');
             });
         }
-        }
     } else if (CONFIG.DB_PROVIDER === 'cf_db') {
         payload.is_active = payload.is_active ? 1 : 0;
         var p;

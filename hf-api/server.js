@@ -1,5 +1,8 @@
+
+
 const express = require('express');
 const cors = require('cors');
+const axios = require('axios');
 
 const app = express();
 app.use(cors());
@@ -12,10 +15,27 @@ const CF_READ_TOKEN = process.env.CF_READ_TOKEN || '';
 const CF_WRITE_TOKEN = process.env.CF_WRITE_TOKEN || '';
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const { exec } = require('child_process');
+
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '1234';
 const ADMIN_SECRET_TOKEN = process.env.ADMIN_SECRET_TOKEN || 'secure_admin_token';
 
-const CF_API_BASE = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/d1/database/${CF_DB_ID}/query`;
+app.get('/api/debug-curl', async (req, res) => {
+    try {
+        const start = Date.now();
+        const https = require('https');
+        const agent = new https.Agent({ rejectUnauthorized: false });
+        const response = await axios.get('https://104.19.193.29/client/v4/ips', {
+            timeout: 10000,
+            headers: { 'Host': 'api.cloudflare.com' },
+            httpsAgent: agent
+        });
+        res.json({ success: true, time: Date.now() - start, data: response.data });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+});
+
 
 // Helper: Make D1 Query
 async function queryD1(sql, params = [], useWriteToken = false) {
@@ -24,22 +44,23 @@ async function queryD1(sql, params = [], useWriteToken = false) {
         throw new Error("Missing Cloudflare D1 Credentials in Environment Variables.");
     }
     
-    // Cloudflare D1 REST API requires 'npm i node-fetch' if Node < 18, but Node 18+ has native fetch.
-    const response = await fetch(CF_API_BASE, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ sql, params })
-    });
-    
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`D1 API Error (${response.status}): ${errorText}`);
+    const url = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/d1/database/${CF_DB_ID}/query`;
+
+    try {
+        const response = await axios.post(url, { sql, params }, {
+            timeout: 15000,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        return response.data;
+    } catch (error) {
+        if (error.response) {
+            throw new Error(`D1 API Error (${error.response.status}): ${JSON.stringify(error.response.data)}`);
+        }
+        throw new Error(`D1 Network Error: ${error.message}`);
     }
-    
-    return await response.json();
 }
 
 // ── 1. PUBLIC READ QUERY (/api/d1-query) ──

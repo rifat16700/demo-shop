@@ -419,6 +419,17 @@
                 </div>
             </div>
 
+            <!-- System Tools (Cache) -->
+            <div class="card" style="margin-bottom:20px;border:1px solid rgba(255,59,48,0.2);">
+                <div class="settings-section-title" style="color:#FF3B30;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> System Tools</div>
+                <div style="font-size:12px;background:rgba(255,59,48,0.06);border:1px solid rgba(255,59,48,0.12);border-radius:10px;padding:10px 12px;margin-bottom:12px;color:#FF3B30;">
+                    💡 <strong>Purge Cloudflare Cache</strong> After adding or editing products, click this to clear the CDN cache so customers see the updates immediately.
+                </div>
+                <button class="btn btn-danger btn-full" onclick="purgeCloudflareCache()" id="purgeCacheBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:5px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg> Purge Cache
+                </button>
+            </div>
+
             <!-- Save Button -->
             <button class="btn btn-primary btn-full btn-lg" onclick="saveSettings()">
                 💾 Save All Settings
@@ -459,6 +470,40 @@
                 else showToast('❌ Invalid key: ' + (d.error ? d.error.message : 'Unknown'), 'error');
             })
             .catch(function(e){ showToast('❌ Network error: ' + e.message, 'error'); });
+    }
+
+    function purgeCloudflareCache() {
+        var token = localStorage.getItem('admin_token');
+        if (!token) { showToast('⚠️ Admin token missing. Please log in again.', 'error'); return; }
+        
+        var btn = document.getElementById('purgeCacheBtn');
+        var originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;margin-right:5px;border-top-color:white;"></span> Purging...';
+        btn.disabled = true;
+
+        fetch('/api/clear-cache', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.success) {
+                showToast('✅ Cache purged successfully!', 'success');
+            } else {
+                showToast('❌ Failed to purge cache', 'error');
+                console.error(d.error);
+            }
+        })
+        .catch(function(e) {
+            showToast('❌ Network error: ' + e.message, 'error');
+        })
+        .finally(function() {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
     }
 
     // Settings image preview helper
